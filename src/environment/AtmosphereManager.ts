@@ -34,11 +34,11 @@ export class AtmosphereManager {
         // Sun Light
         this.sunLight = new THREE.DirectionalLight(0xffffff, 1.0);
         this.sunLight.castShadow = true;
-        this.sunLight.shadow.mapSize.width = 2048;
-        this.sunLight.shadow.mapSize.height = 2048;
+        this.sunLight.shadow.mapSize.width = 1024;
+        this.sunLight.shadow.mapSize.height = 1024;
         this.sunLight.shadow.camera.near = 0.5;
-        this.sunLight.shadow.camera.far = 1500;
-        const d = 100;
+        this.sunLight.shadow.camera.far = 500;
+        const d = 50;
         this.sunLight.shadow.camera.left = -d;
         this.sunLight.shadow.camera.right = d;
         this.sunLight.shadow.camera.top = d;

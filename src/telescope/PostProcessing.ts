@@ -74,9 +74,9 @@ export class PostProcessing {
     this.renderPass = new RenderPass(scene, camera);
     this.composer.addPass(this.renderPass);
     
-    const resolution = new THREE.Vector2(window.innerWidth, window.innerHeight);
-    // Subtle bloom: threshold 0.92 (only bright star cores bloom), strength 0.35, radius 0.2
-    this.bloomPass = new UnrealBloomPass(resolution, 0.35, 0.2, 0.92);
+    const bloomRes = new THREE.Vector2(Math.floor(window.innerWidth / 2), Math.floor(window.innerHeight / 2));
+    // Optimized half-resolution bloom for high FPS and smooth soft glow
+    this.bloomPass = new UnrealBloomPass(bloomRes, 0.35, 0.2, 0.92);
     this.composer.addPass(this.bloomPass);
     
     this.vignettePass = new ShaderPass(VignetteShader);
@@ -109,6 +109,7 @@ export class PostProcessing {
 
   public resize(width: number, height: number) {
     this.composer.setSize(width, height);
+    this.bloomPass.setSize(Math.floor(width / 2), Math.floor(height / 2));
   }
 
   public dispose() {

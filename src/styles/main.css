@@ -404,11 +404,25 @@ html, body {
   background: rgba(239, 68, 68, 0.4);
 }
 
-/* UI Hidden mode */
-#ui-overlay.ui-hidden {
+/* UI Hidden mode: Hide all text, panels, badges, and controls */
+#ui-overlay.ui-hidden .hud,
+#ui-overlay.ui-hidden .telescope-info,
+#ui-overlay.ui-hidden .star-identifier,
+#ui-overlay.ui-hidden .waypoint-marker,
+#ui-overlay.ui-hidden .interact-prompt,
+#ui-overlay.ui-hidden .crosshair,
+#ui-overlay.ui-hidden .notification,
+#ui-overlay.ui-hidden .location-modal,
+#ui-overlay.ui-hidden .time-reversal-panel,
+#ui-overlay.ui-hidden .guide-modal,
+#ui-overlay.ui-hidden .audio-modal {
   opacity: 0 !important;
   pointer-events: none !important;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.2s ease;
+}
+
+#ui-overlay.ui-hidden .telescope-overlay {
+  opacity: 1 !important;
 }
 
 .star-identifier {
