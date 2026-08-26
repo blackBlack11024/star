@@ -242,7 +242,10 @@ export class Game {
     this.deepSkyObjects.update(state.currentFov, telescopeConfig.limitingMagnitude);
 
     // ---- Constellations ----
-    this.constellations.setVisible(state.showConstellations && state.gameMode !== GameMode.Studio);
+    this.constellations.update(this.sunElevation);
+    if (!state.showConstellations || state.gameMode === GameMode.Studio) {
+      this.constellations.setVisible(false);
+    }
 
     // ---- Cloud layer ----
     this.cloudLayer.update(deltaTime, cloudCoverage, new THREE.Vector2(1, 0.5));
@@ -328,9 +331,9 @@ export class Game {
     const state = gameStore.getState();
     if (state.gameMode === GameMode.Telescope) {
       const chrAb = this.telescopeOptics.getChromaticAberration();
-      this.postProcessing.setTelescopeMode(true, chrAb);
+      this.postProcessing.setTelescopeMode(true, chrAb, this.sunElevation);
     } else {
-      this.postProcessing.setTelescopeMode(false, 0);
+      this.postProcessing.setTelescopeMode(false, 0, this.sunElevation);
     }
     this.postProcessing.render();
   }

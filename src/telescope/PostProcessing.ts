@@ -88,16 +88,17 @@ export class PostProcessing {
     this.composer.addPass(this.caPass);
   }
 
-  public setTelescopeMode(enabled: boolean, caAmount: number) {
+  public setTelescopeMode(enabled: boolean, caAmount: number, sunElevation: number = -0.5) {
+    const isDay = sunElevation > 0.02;
     if (enabled) {
-      this.bloomPass.strength = 0.55;
-      this.bloomPass.threshold = 0.88;
+      this.bloomPass.strength = isDay ? 0.05 : 0.55;
+      this.bloomPass.threshold = isDay ? 0.99 : 0.88;
       this.vignettePass.uniforms.darkness.value = 1.0;
       this.caPass.uniforms.amount.value = Math.min(caAmount * 0.005, 0.015);
     } else {
-      this.bloomPass.strength = 0.3;
-      this.bloomPass.threshold = 0.93;
-      this.vignettePass.uniforms.darkness.value = 0.25;
+      this.bloomPass.strength = isDay ? 0.02 : 0.25;
+      this.bloomPass.threshold = isDay ? 0.99 : 0.93;
+      this.vignettePass.uniforms.darkness.value = 0.2;
       this.caPass.uniforms.amount.value = 0.000;
     }
   }

@@ -51,6 +51,14 @@ export class Constellations {
         this.group.add(this.lines);
     }
 
+    public update(sunElevation: number) {
+        if (!this.material) return;
+        // Fade out lines during daytime
+        const nightFactor = Math.max(0.0, Math.min(1.0, (-sunElevation) / 0.08));
+        this.material.opacity = 0.18 * nightFactor;
+        this.group.visible = this.material.opacity > 0.001;
+    }
+
     public setVisible(visible: boolean) {
         this.group.visible = visible;
     }

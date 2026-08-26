@@ -89,21 +89,22 @@ export class AtmosphereManager {
         if (sunElevDeg > 0) {
             // Day / Sunrise / Sunset
             const elevNorm = Math.min(1.0, sunElevDeg / 45.0);
-            uniforms['turbidity'].value = 2.0 + (1.0 - elevNorm) * 3.0;
-            uniforms['rayleigh'].value = 1.0 + (1.0 - elevNorm) * 2.0;
-            uniforms['mieCoefficient'].value = 0.003;
+            uniforms['turbidity'].value = 2.0;
+            uniforms['rayleigh'].value = 1.2 + (1.0 - elevNorm) * 1.5;
+            uniforms['mieCoefficient'].value = 0.0005; // Small mie avoids giant overexposed white disk
+            uniforms['mieDirectionalG'].value = 0.85;
             uniforms['sunPosition'].value.copy(sunVector);
 
-            this.sunLight.intensity = Math.max(0.1, elevNorm * 1.5);
+            this.sunLight.intensity = Math.max(0.2, elevNorm * 1.2);
             if (sunElevDeg < 10) {
                 // Golden hour
-                this.sunLight.color.setHSL(0.06, 0.9, 0.55);
-                this.ambientLight.color.setHex(0x301810);
+                this.sunLight.color.setHSL(0.08, 0.85, 0.6);
+                this.ambientLight.color.setHex(0x382018);
                 this.ambientLight.intensity = 0.35;
             } else {
-                this.sunLight.color.setHSL(0.12, 0.2, 0.98);
-                this.ambientLight.color.setHex(0x182840);
-                this.ambientLight.intensity = 0.5;
+                this.sunLight.color.setHSL(0.12, 0.15, 0.95);
+                this.ambientLight.color.setHex(0x203850);
+                this.ambientLight.intensity = 0.45;
             }
         } else {
             // Twilight & Night: gradually extinguish atmosphere scattering
