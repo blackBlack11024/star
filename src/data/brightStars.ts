@@ -319,8 +319,8 @@ export function generateFillerStars(count: number = 45000, seed: number = 42): B
 
     const eq = galacticToEquatorial(l, b);
 
-    // Realistic stellar luminosity function (scaled so ~15% are naked-eye, rest telescopic)
-    const mag = 4.5 + Math.pow(rand(), 0.7) * 9.5; // mag 4.5 to 14.0
+    // Telescopic background stars (mag 5.2 to 14.8, invisible to naked eye, revealed by binoculars and telescopes)
+    const mag = 5.2 + Math.pow(rand(), 0.6) * 9.6;
     const bv = -0.25 + rand() * 1.85;
 
     stars.push({ name: '', ra: eq.ra, dec: eq.dec, mag, bv });
@@ -331,8 +331,8 @@ export function generateFillerStars(count: number = 45000, seed: number = 42): B
   for (let i = 0; i < fieldCount; i++) {
     const ra = rand() * 24;
     const dec = Math.asin(2 * rand() - 1) * (180 / Math.PI);
-    // Real stellar magnitude distribution for field stars
-    const mag = 2.8 + Math.pow(rand(), 0.75) * 11.2; // mag 2.8 to 14.0
+    // Telescopic field stars (mag 5.4 to 14.8)
+    const mag = 5.4 + Math.pow(rand(), 0.65) * 9.4;
     const bv = -0.3 + rand() * 2.1;
 
     stars.push({ name: '', ra, dec, mag, bv });
