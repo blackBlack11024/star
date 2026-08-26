@@ -30,12 +30,12 @@ export class StarIdentifier {
     return Math.acos(Math.max(-1, Math.min(1, cosAngle))) * 180 / Math.PI;
   }
 
-  /** Check if a given RA/Dec position is above the local observer horizon (world Y >= 0). */
+  /** Check if a given RA/Dec position is above the local observer horizon (world Y >= 40). */
   private isAboveHorizon(ra: number, dec: number, celestialSphere?: CelestialSphere): boolean {
     if (!celestialSphere) return true;
     const vec = celestialSphere.getRaDecToVector(ra, dec);
     vec.applyMatrix4(celestialSphere.group.matrixWorld);
-    return vec.y >= 0.0;
+    return vec.y >= 40.0; // Above ground terrain / mountains (radius 1000)
   }
 
   /** Find all named objects within the telescope's field of view above the horizon. */
@@ -79,15 +79,20 @@ export class StarIdentifier {
     return results.sort((a, b) => a.magnitude - b.magnitude);
   }
 
-  /** Identify the closest/brightest object near the telescope center. */
+  /** Identify the closest/brightest object precisely near the center crosshair. */
   public identify(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere): IdentifiedObject | null {
-    // If telescope pointing itself is below horizon, return null
     if (!this.isAboveHorizon(telescopeRa, telescopeDec, celestialSphere)) {
       return null;
     }
     const objects = this.findObjectsInFov(telescopeRa, telescopeDec, fovDegrees, celestialSphere);
     if (objects.length === 0) return null;
     objects.sort((a, b) => a.angularDistance - b.angularDistance);
-    return objects[0];
+
+    // Only identify when within the center reticle crosshair (within 1.5 degrees or tight fov radius)
+    const maxCenterDist = Math.min(1.5, Math.max(0.3, fovDegrees * 0.15));
+    if (objects[0].angularDistance <= maxCenterDist) {
+      return objects[0];
+    }
+    return null;
   }
 }

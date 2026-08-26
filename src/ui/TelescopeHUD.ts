@@ -166,24 +166,25 @@ export class TelescopeHUD {
             const ownedAccessories: string[] = state.accessories || [];
             const hasFinderSystem = ownedAccessories.includes('finder_red_dot') || ownedAccessories.includes('mount_goto');
 
-            // Calculate angular distance and angle difference
-            let dRaDeg = (targetDso.ra - ra) * 15;
-            while (dRaDeg > 180) dRaDeg -= 360;
-            while (dRaDeg < -180) dRaDeg += 360;
-            const dDecDeg = targetDso.dec - dec;
-            const distDeg = Math.sqrt(Math.pow(dRaDeg * Math.cos(dec * Math.PI / 180), 2) + Math.pow(dDecDeg, 2));
-
-            const isLocked = distDeg <= Math.max(1.2, fov * 0.5);
+            // Precise lock check: target must be identified by optical crosshair
+            const isLocked = Boolean(identifiedTarget && (identifiedTarget.name.includes(targetDso.name) || identifiedTarget.name.includes(targetDso.commonName)));
 
             if (isLocked) {
                 this.finderGuidance.className = 'finder-guidance locked';
                 this.finderGuidance.innerHTML = `
-                    <div class="fg-badge">🎯 目標已入鏡</div>
+                    <div class="fg-badge">🎯 目標已精確入鏡</div>
                     <div class="fg-title">${targetDso.commonName || targetDso.name}</div>
                     <div class="fg-sub">已成功定位天體！按空白鍵開始長曝光攝影</div>
                 `;
+                this.finderGuidance.style.display = 'flex';
             } else if (hasFinderSystem) {
-                // Electronic Pointer Compass (Active only when finder accessory is purchased)
+                // Electronic Pointer Compass (Active only after purchasing finder accessory)
+                let dRaDeg = (targetDso.ra - ra) * 15;
+                while (dRaDeg > 180) dRaDeg -= 360;
+                while (dRaDeg < -180) dRaDeg += 360;
+                const dDecDeg = targetDso.dec - dec;
+                const distDeg = Math.sqrt(Math.pow(dRaDeg * Math.cos(dec * Math.PI / 180), 2) + Math.pow(dDecDeg, 2));
+
                 const angleRad = Math.atan2(dDecDeg, -dRaDeg);
                 const deg360 = (angleRad * 180 / Math.PI + 360) % 360;
                 const arrows = ['→', '↗', '↑', '↖', '←', '↙', '↓', '↘'];
@@ -194,21 +195,13 @@ export class TelescopeHUD {
                 this.finderGuidance.innerHTML = `
                     <div class="fg-badge">🧭 電子尋星系統已啟用</div>
                     <div class="fg-title">${arrow} ${targetDso.commonName || targetDso.name}</div>
-                    <div class="fg-dist">距離視野: ${distDeg.toFixed(1)}° · 請順箭頭方向轉動鏡筒</div>
+                    <div class="fg-dist">距離視野: ${distDeg.toFixed(1)}° · 請順指針轉動鏡筒</div>
                 `;
+                this.finderGuidance.style.display = 'flex';
             } else {
-                // Pure Character Star-Hopping Teaching (Before buying finder system: NO POINTERS, ONLY TEACHING)
-                const charAvatar = activeQuest?.character?.avatarIcon || '🔭';
-                const charName = activeQuest?.character?.name || '天文導師';
-
-                this.finderGuidance.className = 'finder-guidance seeking teaching';
-                this.finderGuidance.innerHTML = `
-                    <div class="fg-badge">${charAvatar} ${charName} · 認星尋星中</div>
-                    <div class="fg-title">當前目標：${targetDso.commonName || targetDso.name}</div>
-                    <div class="fg-note">（點擊左下任務或按 G 聆聽尋星對話 · 亦可在工作室購買「紅點尋星儀」）</div>
-                `;
+                // Pure immersion manual mode before buying finder system: no floating boxes
+                this.finderGuidance.style.display = 'none';
             }
-            this.finderGuidance.style.display = 'flex';
         } else {
             this.finderGuidance.style.display = 'none';
         }
