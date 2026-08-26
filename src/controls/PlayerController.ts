@@ -57,9 +57,10 @@ export class PlayerController {
     // Prevent browser context menu on right click
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // Click to lock pointer in walk mode (left or right click)
-    this.canvas.addEventListener('mousedown', (e) => {
-      if (gameStore.getState().gameMode === GameMode.Walk && !this.controls.isLocked) {
+    // Click to lock pointer in walk or telescope mode (left or right click)
+    this.canvas.addEventListener('mousedown', () => {
+      const mode = gameStore.getState().gameMode;
+      if ((mode === GameMode.Walk || mode === GameMode.Telescope) && !this.controls.isLocked) {
         this.controls.lock();
       }
     });
@@ -81,8 +82,13 @@ export class PlayerController {
       }
     } else if (newMode === GameMode.Telescope) {
       this.crosshair.style.display = 'none';
-      this.controls.unlock();
       this.telescopeModeOrigin.copy(this.camera.position);
+      // Auto-lock pointer to hide cursor and enable direct mouse look in telescope view
+      setTimeout(() => {
+        if (gameStore.getState().gameMode === GameMode.Telescope && !this.controls.isLocked) {
+          this.controls.lock();
+        }
+      }, 50);
     } else if (newMode === GameMode.Studio) {
       this.crosshair.style.display = 'none';
       this.controls.unlock();
@@ -184,25 +190,30 @@ export class PlayerController {
 
   private onMouseMove(event: MouseEvent) {
     const mode = gameStore.getState().gameMode;
-    if (mode === GameMode.Telescope && (event.buttons === 1 || event.buttons === 2 || event.buttons === 3)) {
-      const state = gameStore.getState();
-      const fovFactor = state.currentFov / 60;
-      
-      // Right-click drag: Fine precision slew (0.25x); Left-click drag: Normal slew (1.0x)
-      const speedMultiplier = event.buttons === 2 ? 0.25 : 1.0;
-      
-      let ra = state.telescopeRa;
-      let dec = state.telescopeDec;
+    if (mode === GameMode.Telescope) {
+      // Slew if pointer is locked or user is dragging mouse
+      if (this.controls.isLocked || event.buttons > 0) {
+        const state = gameStore.getState();
+        const fovFactor = state.currentFov / 60;
+        
+        // Right-click: Micro precision slew (0.25x); Normal: 1.0x
+        const speedMultiplier = event.buttons === 2 ? 0.25 : 1.0;
+        
+        let ra = state.telescopeRa;
+        let dec = state.telescopeDec;
 
-      ra -= event.movementX * 0.003 * fovFactor * speedMultiplier;
-      dec += event.movementY * 0.05 * fovFactor * speedMultiplier;
+        ra -= event.movementX * 0.0018 * fovFactor * speedMultiplier;
+        dec += event.movementY * 0.025 * fovFactor * speedMultiplier;
 
-      dec = Math.max(-90, Math.min(90, dec));
-      if (ra < 0) ra += 24;
-      if (ra >= 24) ra -= 24;
+        dec = Math.max(-90, Math.min(90, dec));
+        if (ra < 0) ra += 24;
+        if (ra >= 24) ra -= 24;
 
-      state.setTelescopePointing(ra, dec);
-      document.dispatchEvent(new CustomEvent('telescope-slew'));
+        state.setTelescopePointing(ra, dec);
+        if (Math.abs(event.movementX) > 2 || Math.abs(event.movementY) > 2) {
+          document.dispatchEvent(new CustomEvent('telescope-slew'));
+        }
+      }
     }
   }
 

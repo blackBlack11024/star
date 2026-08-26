@@ -13,6 +13,7 @@ export class TelescopeHUD {
     private exposureProgress: HTMLElement;
     private toggleExposureBtn: HTMLButtonElement;
     private unsubscribe: () => void;
+    private idleTimer: number | null = null;
 
     constructor() {
         const overlay = document.getElementById('ui-overlay');
@@ -54,6 +55,7 @@ export class TelescopeHUD {
         });
         durationSelect.onchange = () => {
             gameStore.setState({ exposureDuration: parseInt(durationSelect.value) });
+            this.showControls();
         };
 
         this.toggleExposureBtn = document.createElement('button');
@@ -61,6 +63,7 @@ export class TelescopeHUD {
         this.toggleExposureBtn.textContent = '開始長曝光 (空白鍵)';
         this.toggleExposureBtn.onclick = () => {
             document.dispatchEvent(new CustomEvent('capture-photo'));
+            this.showControls();
         };
 
         controlsRow.appendChild(durationSelect);
@@ -76,7 +79,7 @@ export class TelescopeHUD {
 
         const hints = document.createElement('div');
         hints.className = 'keyboard-hints';
-        hints.textContent = '滑鼠左鍵/方向鍵: 轉向 · 滑鼠右鍵: 微調對準 · 滾輪: 變焦縮放 · [空白鍵]: 拍照/曝光 · [ESC]: 退出';
+        hints.textContent = '滑鼠移動: 轉向視角 · 右鍵: 微調 · 滾輪: 變焦 · 空白鍵: 曝光 · ESC: 退出';
 
         this.infoPanel.appendChild(readouts);
         this.infoPanel.appendChild(controlsRow);
@@ -90,7 +93,34 @@ export class TelescopeHUD {
 
         overlay.appendChild(this.container);
 
+        this.setupActivityListeners();
         this.unsubscribe = gameStore.subscribe((state) => this.handleStateChange(state));
+    }
+
+    private setupActivityListeners() {
+        const onActivity = () => {
+            if (gameStore.getState().gameMode !== GameMode.Telescope) return;
+            this.showControls();
+        };
+
+        window.addEventListener('mousemove', onActivity);
+        window.addEventListener('wheel', onActivity, { passive: true });
+        window.addEventListener('keydown', onActivity);
+        window.addEventListener('mousedown', onActivity);
+    }
+
+    public showControls() {
+        this.infoPanel.classList.remove('idle-hidden');
+        if (this.idleTimer) clearTimeout(this.idleTimer);
+        
+        // If currently taking long exposure, keep panel visible
+        if (gameStore.getState().isExposing) return;
+
+        this.idleTimer = window.setTimeout(() => {
+            if (gameStore.getState().gameMode === GameMode.Telescope && !gameStore.getState().isExposing) {
+                this.infoPanel.classList.add('idle-hidden');
+            }
+        }, 2800);
     }
 
     private handleStateChange(state: any) {
@@ -116,6 +146,7 @@ export class TelescopeHUD {
         this.raDecDisplay.textContent = `RA: ${ra.toFixed(2)}h | Dec: ${dec.toFixed(2)}°`;
 
         if (isExposing) {
+            this.infoPanel.classList.remove('idle-hidden');
             this.exposureBar.style.display = 'block';
             this.exposureProgress.style.width = `${Math.min(100, progress * 100)}%`;
             this.toggleExposureBtn.textContent = `曝光中 (${Math.round(progress * 100)}%) - 點擊完成`;
@@ -128,14 +159,17 @@ export class TelescopeHUD {
 
     public show() {
         this.container.style.display = 'block';
+        this.showControls();
     }
 
     public hide() {
         this.container.style.display = 'none';
+        if (this.idleTimer) clearTimeout(this.idleTimer);
     }
 
     public dispose() {
         this.unsubscribe();
+        if (this.idleTimer) clearTimeout(this.idleTimer);
         this.container.remove();
     }
 }
