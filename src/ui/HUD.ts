@@ -273,7 +273,11 @@ export class HUD {
         this.muteBtn.onclick = () => {
             gameStore.getState().toggleMute();
         };
-        modal.appendChild(this.muteBtn);
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Escape' && this.audioModal.classList.contains('visible')) {
+                this.toggleAudioModal(false);
+            }
+        });
 
         return modal;
     }

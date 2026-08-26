@@ -144,6 +144,17 @@ export class PlayerController {
       return;
     }
 
+    // ESC key: Universal return/back handler
+    if (event.code === 'Escape') {
+      if (this.isAnyModalActive()) {
+        return; // Open modals will close themselves first on ESC
+      }
+      if (mode === GameMode.Telescope || mode === GameMode.Studio) {
+        state.setGameMode(GameMode.Walk);
+        return;
+      }
+    }
+
     if (mode === GameMode.Walk) {
       switch (event.code) {
         case 'KeyW': this.moveForward = true; break;
@@ -161,9 +172,6 @@ export class PlayerController {
       }
     } else if (mode === GameMode.Telescope) {
       switch (event.code) {
-        case 'Escape':
-          state.setGameMode(GameMode.Walk);
-          break;
         case 'Space':
         case 'KeyE':
           document.dispatchEvent(new CustomEvent('capture-photo'));
@@ -175,10 +183,6 @@ export class PlayerController {
           this.handleTelescopeSlew(event.code);
           document.dispatchEvent(new CustomEvent('telescope-slew'));
           break;
-      }
-    } else if (mode === GameMode.Studio) {
-      if (event.code === 'Escape') {
-        state.setGameMode(GameMode.Walk);
       }
     }
 

@@ -66,6 +66,10 @@ export class StoryDialogue {
                 if (e.code === 'Space' || e.code === 'Enter' || e.code === 'KeyE') {
                     this.handleNext();
                     e.preventDefault();
+                } else if (e.code === 'Escape') {
+                    this.hide();
+                    if (this.onFinishCallback) this.onFinishCallback();
+                    e.preventDefault();
                 }
             }
         });

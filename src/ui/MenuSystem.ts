@@ -193,6 +193,10 @@ export class MenuSystem {
                 } else {
                     this.hideGuide();
                 }
+            } else if (e.code === 'Escape') {
+                if (this.guideModal.style.display !== 'none') this.hideGuide();
+                if (this.locationModal.style.display !== 'none') this.hideLocationSelector();
+                if (this.timeReversalPanel.style.display !== 'none') this.hideTimeReversal();
             }
         });
     }
