@@ -263,16 +263,16 @@ export class Game {
     const currentCameraFov = isTelescope ? state.currentFov : this.camera.fov;
     const lightPollution = loc.lightPollution || 0;
 
-    let effectiveLimitingMag = 6.4;
+    let effectiveLimitingMag = 4.6;
     if (isTelescope) {
-      // Telescope Mode (Level 1: 10.0, Level 2: 12.0, Level 3: 13.5, Level 4: 14.5, Level 5: 16.0)
+      // Telescope Mode (Level 1: 10.0, Level 2: 11.5, Level 3: 12.8, Level 4: 13.5, Level 5: 14.8)
       effectiveLimitingMag = telescopeConfig.limitingMagnitude - lightPollution * 1.2;
     } else if (currentCameraFov < 35.0) {
-      // 8x42 Binoculars Mode (Hold Right Click)
-      effectiveLimitingMag = 9.5 - lightPollution * 1.5;
+      // 8x42 Binoculars Mode (Hold Right Click): ~8.8 mag
+      effectiveLimitingMag = 8.8 - lightPollution * 1.2;
     } else {
-      // Naked Eye Mode (Clear constellations & distinct Milky Way)
-      effectiveLimitingMag = Math.max(3.5, 6.4 - lightPollution * 2.2);
+      // Clean Naked Eye Mode (Clear major constellations & peaceful night sky, ~4.6 mag, ~400 stars in sky)
+      effectiveLimitingMag = Math.max(3.2, 4.6 - lightPollution * 1.5);
     }
 
     this.starField.update(elapsedTime, currentCameraFov, this.sunElevation, effectiveLimitingMag);

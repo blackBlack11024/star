@@ -107,23 +107,23 @@ export class StarField {
                 vec4 mvPosition = viewMatrix * worldPos;
                 gl_Position = projectionMatrix * mvPosition;
                 
-                // Optical Limiting Magnitude filter: stars beyond equipment limit shrink away
-                float magExtinction = smoothstep(uLimitingMagnitude + 0.6, uLimitingMagnitude - 0.8, aMagnitude);
-                if (magExtinction <= 0.001) {
+                // Strict Optical Limiting Magnitude: stars dimmer than threshold are completely culled
+                if (aMagnitude > uLimitingMagnitude + 0.25) {
                     gl_PointSize = 0.0;
                     return;
                 }
+                float magExtinction = smoothstep(uLimitingMagnitude + 0.25, uLimitingMagnitude - 0.35, aMagnitude);
                 
-                float twinkle = 0.82 + 0.18 * sin(uTime * aTwinkleSpeed + position.x * 0.1);
+                float twinkle = 0.85 + 0.15 * sin(uTime * aTwinkleSpeed + position.x * 0.1);
                 vTwinkle = twinkle;
                 
                 // Magnitude-based size scaling (apparent magnitude scale)
-                // Mag -1 (Sirius) -> size ~ 8.5px, Mag 2 -> ~5.5px, Mag 6 -> ~2.8px, Mag 12 -> ~1.5px
-                float magFactor = clamp((8.5 - aMagnitude) / 7.5, 0.2, 1.7);
-                float fovZoom = pow(clamp(60.0 / max(uCurrentFov, 0.4), 1.0, 50.0), 0.38);
+                // Mag -1 (Sirius) -> size ~ 8.0px, Mag 2 -> ~5.2px, Mag 4+ -> ~2.5px
+                float magFactor = clamp((7.5 - aMagnitude) / 6.5, 0.25, 1.6);
+                float fovZoom = pow(clamp(60.0 / max(uCurrentFov, 0.4), 1.0, 50.0), 0.35);
                 
                 float ptSize = uBaseSize * magFactor * fovZoom * uPixelRatio * twinkle * magExtinction;
-                gl_PointSize = clamp(ptSize, 1.5, 24.0);
+                gl_PointSize = clamp(ptSize, 1.6, 22.0);
             }
         `;
 
@@ -140,17 +140,17 @@ export class StarField {
                 if (vWorldPosition.y < 0.0) discard;
                 float horizonFade = smoothstep(0.0, 15.0, vWorldPosition.y);
                 
-                // Optical equipment limiting magnitude threshold
-                if (vMagnitude > uLimitingMagnitude + 0.5) discard;
-                float magAlpha = smoothstep(uLimitingMagnitude + 0.5, uLimitingMagnitude - 0.8, vMagnitude);
+                // Optical equipment limiting magnitude cutoff
+                if (vMagnitude > uLimitingMagnitude + 0.15) discard;
+                float magAlpha = smoothstep(uLimitingMagnitude + 0.15, uLimitingMagnitude - 0.3, vMagnitude);
                 
                 vec2 coord = gl_PointCoord * 2.0 - 1.0;
                 float dist = length(coord);
                 if (dist > 1.0) discard;
                 
                 // Gaussian Airy disk profile with crisp core and soft halo
-                float core = exp(-dist * dist * 3.0);
-                float halo = max(0.0, 1.0 - dist) * 0.35;
+                float core = exp(-dist * dist * 3.2);
+                float halo = max(0.0, 1.0 - dist) * 0.3;
                 float alpha = (core + halo) * horizonFade * magAlpha;
                 
                 // Daylight extinction based on sun elevation in degrees
