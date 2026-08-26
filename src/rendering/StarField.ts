@@ -39,7 +39,7 @@ export class StarField {
         }
 
         if (useFallback) {
-            starsData = [...BRIGHT_STARS, ...generateFillerStars(6000)].map(star => {
+            starsData = [...BRIGHT_STARS, ...generateFillerStars(32000)].map(star => {
                 const R = 1000;
                 const ra_rad = star.ra * Math.PI / 12;
                 const dec_rad = star.dec * Math.PI / 180;
@@ -106,16 +106,16 @@ export class StarField {
                 vec4 mvPosition = viewMatrix * worldPos;
                 gl_Position = projectionMatrix * mvPosition;
                 
-                float twinkle = 0.85 + 0.15 * sin(uTime * aTwinkleSpeed + position.x * 0.1);
+                float twinkle = 0.82 + 0.18 * sin(uTime * aTwinkleSpeed + position.x * 0.1);
                 vTwinkle = twinkle;
                 
                 // Magnitude-based size scaling (apparent magnitude scale)
-                // Mag -1 (Sirius) -> size ~ 7px, Mag 2 -> ~4px, Mag 6 -> ~2px
-                float magFactor = clamp((7.0 - aMagnitude) / 8.0, 0.15, 1.3);
-                float fovZoom = pow(clamp(60.0 / max(uCurrentFov, 0.5), 1.0, 40.0), 0.35);
+                // Mag -1 (Sirius) -> size ~ 8px, Mag 2 -> ~5px, Mag 6+ -> ~2.2px
+                float magFactor = clamp((8.5 - aMagnitude) / 7.5, 0.22, 1.6);
+                float fovZoom = pow(clamp(60.0 / max(uCurrentFov, 0.4), 1.0, 50.0), 0.38);
                 
                 float ptSize = uBaseSize * magFactor * fovZoom * uPixelRatio * twinkle;
-                gl_PointSize = clamp(ptSize, 1.5, 16.0);
+                gl_PointSize = clamp(ptSize, 1.8, 22.0);
             }
         `;
 
@@ -135,9 +135,9 @@ export class StarField {
                 float dist = length(coord);
                 if (dist > 1.0) discard;
                 
-                // Gaussian Airy disk profile with soft anti-aliased edge
-                float core = exp(-dist * dist * 3.5);
-                float halo = max(0.0, 1.0 - dist) * 0.25;
+                // Gaussian Airy disk profile with crisp core and soft halo
+                float core = exp(-dist * dist * 3.0);
+                float halo = max(0.0, 1.0 - dist) * 0.35;
                 float alpha = (core + halo) * horizonFade;
                 
                 // Daylight extinction based on sun elevation in degrees
@@ -145,8 +145,8 @@ export class StarField {
                 float daylight = smoothstep(-12.0, 0.0, sunElevDeg);
                 alpha *= max(0.0, 1.0 - daylight * 0.98);
                 
-                // Bright stars have slightly whiter/glowing core
-                vec3 finalColor = mix(vColor, vec3(1.0), (1.0 - dist) * clamp((3.0 - vMagnitude) * 0.2, 0.0, 0.6));
+                // Bright stars have brilliant luminous core
+                vec3 finalColor = mix(vColor, vec3(1.0), (1.0 - dist) * clamp((3.5 - vMagnitude) * 0.25, 0.0, 0.7));
                 
                 gl_FragColor = vec4(finalColor * vTwinkle, alpha);
             }
@@ -158,7 +158,7 @@ export class StarField {
             uniforms: {
                 uTime: { value: 0 },
                 uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) },
-                uBaseSize: { value: 4.5 },
+                uBaseSize: { value: 5.2 },
                 uCurrentFov: { value: 60.0 },
                 uMinFov: { value: 0.2 },
                 uSunElevation: { value: -0.2 }

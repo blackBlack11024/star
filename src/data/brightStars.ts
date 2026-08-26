@@ -118,30 +118,93 @@ export function bvToRgb(bv: number): [number, number, number] {
 }
 
 /**
- * Generate additional random filler stars for the celestial sphere.
- * These provide background density when HYG binary is not loaded.
+ * Converts Galactic coordinates (l, b) in degrees to Equatorial coordinates (RA, Dec).
+ * RA returned in hours [0, 24), Dec in degrees [-90, +90].
  */
-export function generateFillerStars(count: number, seed: number = 42): BrightStar[] {
+export function galacticToEquatorial(lDeg: number, bDeg: number): { ra: number; dec: number } {
+  const rad = Math.PI / 180;
+  const l = lDeg * rad;
+  const b = bDeg * rad;
+
+  // Galactic North Pole: RA = 192.85948 deg (12.8573 h), Dec = 27.12825 deg
+  const raGP = 192.85948 * rad;
+  const decGP = 27.12825 * rad;
+  const l0 = 32.93192 * rad;
+
+  const sinDec = Math.sin(decGP) * Math.sin(b) + Math.cos(decGP) * Math.cos(b) * Math.cos(l - l0);
+  const dec = Math.asin(Math.max(-1, Math.min(1, sinDec)));
+
+  const y = Math.cos(b) * Math.sin(l - l0);
+  const x = Math.cos(decGP) * Math.sin(b) - Math.sin(decGP) * Math.cos(b) * Math.cos(l - l0);
+  let ra = (raGP + Math.atan2(y, x)) / rad;
+  if (ra < 0) ra += 360;
+  if (ra >= 360) ra -= 360;
+
+  return {
+    ra: ra / 15, // Convert degrees to hours (0-24)
+    dec: dec / rad,
+  };
+}
+
+/**
+ * Generate a rich, realistic star catalog (32,000+ stars) including the dense Milky Way galactic band
+ * and telescopic background stars with accurate B-V colors.
+ */
+export function generateFillerStars(count: number = 32000, seed: number = 42): BrightStar[] {
   const stars: BrightStar[] = [];
-  // Simple seeded PRNG (Mulberry32)
   let s = seed;
   const rand = (): number => {
-    s |= 0; s = (s + 0x6D2B79F5) | 0;
+    s |= 0;
+    s = (s + 0x6D2B79F5) | 0;
     let t = Math.imul(s ^ (s >>> 15), 1 | s);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 
-  for (let i = 0; i < count; i++) {
-    // Uniform distribution on sphere using arccos for declination
+  // Standard Box-Muller normal distribution generator
+  const randNorm = (): number => {
+    const u1 = Math.max(1e-7, rand());
+    const u2 = rand();
+    return Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+  };
+
+  // 1. Milky Way Galactic Plane Band (~65% of stars concentrated along galactic equator)
+  const galacticCount = Math.floor(count * 0.65);
+  for (let i = 0; i < galacticCount; i++) {
+    // Galactic longitude: biased towards Galactic Center (l = 0/360) and Cygnus (l = 80)
+    let l = rand() * 360;
+    if (rand() < 0.35) {
+      // Galactic center concentration around Sagittarius
+      l = (randNorm() * 35 + 360) % 360;
+    } else if (rand() < 0.2) {
+      // Cygnus star cloud concentration
+      l = (randNorm() * 20 + 80 + 360) % 360;
+    }
+
+    // Galactic latitude: tight exponential/Gaussian distribution along b = 0 (galactic disk)
+    const b = randNorm() * (rand() < 0.5 ? 5.5 : 12.0); // tightly clamped to galactic plane
+
+    const eq = galacticToEquatorial(l, b);
+
+    // Magnitude distribution: faint Milky Way dust & background stars
+    const mag = 4.5 + Math.pow(rand(), 0.6) * 6.5; // mag 4.5 to 11.0
+    // Color temperature: mixture of warm giants and hot young disk stars
+    const bv = -0.2 + rand() * 1.8;
+
+    stars.push({ name: '', ra: eq.ra, dec: eq.dec, mag, bv });
+  }
+
+  // 2. Uniform All-Sky Field Stars (~35% of stars)
+  const fieldCount = count - galacticCount;
+  for (let i = 0; i < fieldCount; i++) {
     const ra = rand() * 24;
-    const dec = Math.acos(2 * rand() - 1) * (180 / Math.PI) - 90;
-    // Magnitude distribution: more faint stars than bright
-    const mag = 2.0 + rand() * 6.5; // range 2.0 to 8.5
-    // B-V roughly between -0.3 and 2.0
-    const bv = -0.3 + rand() * 2.3;
+    const dec = Math.asin(2 * rand() - 1) * (180 / Math.PI);
+    // Real stellar luminosity function distribution (power-law)
+    const mag = 2.5 + Math.pow(rand(), 0.7) * 7.5; // mag 2.5 to 10.0
+    const bv = -0.3 + rand() * 2.1;
 
     stars.push({ name: '', ra, dec, mag, bv });
   }
+
   return stars;
 }
