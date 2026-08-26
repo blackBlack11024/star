@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { gameStore } from '../game/GameStore';
 import { GameMode, WeatherState } from '../types';
+import { calculateTargetVisibility } from '../astronomy/AstroTimeCalc';
+import { DEEP_SKY_OBJECTS } from '../data/deepSkyObjects';
 
 export class HUD {
     private container: HTMLElement;
@@ -417,11 +419,14 @@ export class HUD {
         }, duration);
     }
 
+    private lastQuestTrackerKey = '';
+
     /** Update the quest tracker widget on the HUD. */
     public updateQuestTracker(activeQuest: any) {
         let tracker = document.getElementById('quest-tracker-hud');
         if (!activeQuest) {
             if (tracker) tracker.style.display = 'none';
+            this.lastQuestTrackerKey = '';
             return;
         }
         if (!tracker) {
@@ -432,11 +437,37 @@ export class HUD {
             tracker.title = '點擊聆聽角色教學對話 · 按 G 開啟圖鑑';
             document.getElementById('ui-overlay')?.appendChild(tracker);
         }
-        tracker.onclick = () => {
+
+        let timeAdvice = '';
+        const targetObj = activeQuest.objectives?.find((o: any) => o.targetId);
+        if (targetObj?.targetId) {
+            const dso = DEEP_SKY_OBJECTS.find(d => d.id === targetObj.targetId || d.name === targetObj.targetId);
+            if (dso) {
+                const state = gameStore.getState();
+                const vis = calculateTargetVisibility(dso, state.currentLocation.latitude, state.currentLocation.longitude, state.currentTime);
+                if (vis.isCurrentlyVisible) {
+                    timeAdvice = `<div class="qt-time-badge visible">✨ 目前空中可見 (仰角 ${Math.round(vis.currentAltitude)}°) · 最佳觀測中</div>`;
+                } else if (vis.riseTimeStr) {
+                    timeAdvice = `<div class="qt-time-badge waiting">⏳ 預計 ${vis.riseTimeStr} 升起 · 最佳時段 ${vis.bestTimeStr}（按 R/T 快轉）</div>`;
+                } else {
+                    timeAdvice = `<div class="qt-time-badge waiting">⏳ 最佳觀測時段：${vis.bestTimeStr}（按 R/T 調整時間）</div>`;
+                }
+            }
+        }
+
+        const cacheKey = `${activeQuest.id}_${activeQuest.title}_${timeAdvice}_${(activeQuest.objectives || []).map((o: any) => o.description).join('')}`;
+        if (this.lastQuestTrackerKey === cacheKey) {
+            return;
+        }
+        this.lastQuestTrackerKey = cacheKey;
+
+        tracker.onclick = (e) => {
+            e.stopPropagation();
             document.dispatchEvent(new CustomEvent('play-story-dialogue', {
                 detail: { quest: activeQuest, mode: 'intro' }
             }));
         };
+
         tracker.style.display = 'block';
         tracker.innerHTML = `
             <div class="qt-header">
@@ -449,6 +480,7 @@ export class HUD {
             <div class="qt-objectives">
                 ${(activeQuest.objectives || []).slice(0, 2).map((o: any) => `<div class="qt-obj">○ ${o.description}</div>`).join('')}
             </div>
+            ${timeAdvice}
             <div class="qt-hint">💬 點擊聆聽角色尋星對話 [G]</div>
         `;
     }

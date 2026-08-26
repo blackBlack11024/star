@@ -2,12 +2,14 @@ import { gameStore } from '../game/GameStore';
 import { DEEP_SKY_OBJECTS } from '../data/deepSkyObjects';
 import { QUESTS } from '../data/quests';
 import { GameMode } from '../types';
+import { calculateTargetVisibility } from '../astronomy/AstroTimeCalc';
 
 export class CodexUI {
     private container: HTMLElement;
     private isVisible = false;
     private currentTab = 0;
-    private unsubscribe: () => void;
+    private onPhotoCapturedHandler: () => void;
+    private onQuestCompletedHandler: () => void;
 
     constructor() {
         this.container = document.createElement('div');
@@ -15,9 +17,16 @@ export class CodexUI {
         this.container.style.display = 'none';
         document.body.appendChild(this.container);
 
-        this.unsubscribe = gameStore.subscribe(() => {
+        // Only re-render when a photo is taken or a quest is completed (NOT on every frame!)
+        this.onPhotoCapturedHandler = () => {
             if (this.isVisible) this.render();
-        });
+        };
+        this.onQuestCompletedHandler = () => {
+            if (this.isVisible) this.render();
+        };
+
+        document.addEventListener('photo-captured', this.onPhotoCapturedHandler);
+        document.addEventListener('quest-completed', this.onQuestCompletedHandler);
 
         // Toggle on G key or Escape to close
         document.addEventListener('keydown', (e) => {
@@ -44,7 +53,6 @@ export class CodexUI {
     public show() {
         this.isVisible = true;
         this.container.style.display = 'flex';
-        // Release pointer lock so cursor is visible and interactive
         if (document.pointerLockElement) {
             document.exitPointerLock();
         }
@@ -79,49 +87,52 @@ export class CodexUI {
         <div class="codex-body ${this.currentTab === 1 ? 'quest-mode' : ''}" id="codex-body"></div>
         `;
 
-        const closeBtn = this.container.querySelector('#codex-close-btn');
+        const closeBtn = this.container.querySelector('#codex-close-btn') as HTMLElement | null;
         if (closeBtn) {
-            closeBtn.addEventListener('click', (e) => {
+            closeBtn.onclick = (e: MouseEvent) => {
                 e.stopPropagation();
                 this.hide();
-            });
+            };
         }
 
-        const tab0 = this.container.querySelector('#codex-tab-0');
+        const tab0 = this.container.querySelector('#codex-tab-0') as HTMLElement | null;
         if (tab0) {
-            tab0.addEventListener('click', (e) => {
+            tab0.onclick = (e: MouseEvent) => {
                 e.stopPropagation();
                 this.currentTab = 0;
                 this.render();
-            });
+            };
         }
 
-        const tab1 = this.container.querySelector('#codex-tab-1');
+        const tab1 = this.container.querySelector('#codex-tab-1') as HTMLElement | null;
         if (tab1) {
-            tab1.addEventListener('click', (e) => {
+            tab1.onclick = (e: MouseEvent) => {
                 e.stopPropagation();
                 this.currentTab = 1;
                 this.render();
-            });
+            };
         }
 
         const body = this.container.querySelector('#codex-body') as HTMLElement;
         if (body) {
-            if (this.currentTab === 0) this.renderDSOGrid(body, capturedTargets, photos);
+            if (this.currentTab === 0) this.renderDSOGrid(body, capturedTargets, photos, state);
             else this.renderQuestLog(body, completedQuestIds);
         }
     }
 
-    private renderDSOGrid(body: HTMLElement, capturedTargets: Set<string>, photos: any[]) {
+    private renderDSOGrid(body: HTMLElement, capturedTargets: Set<string>, photos: any[], state: any) {
         body.innerHTML = '';
         const typeLabels: Record<string, string> = {
             'galaxy': '星系', 'nebula': '星雲', 'cluster': '星團', 'planetary_nebula': '行星狀星雲'
         };
+
         for (const dso of DEEP_SKY_OBJECTS) {
             const captured = capturedTargets.has(dso.commonName) || capturedTargets.has(dso.name);
             const bestPhoto = photos
                 .filter((p: any) => p.targetName === dso.commonName || p.targetName === dso.name)
                 .sort((a: any, b: any) => (b.score || 0) - (a.score || 0))[0];
+
+            const vis = calculateTargetVisibility(dso, state.currentLocation.latitude, state.currentLocation.longitude, state.currentTime);
 
             const card = document.createElement('div');
             card.className = `codex-dso-card ${captured ? 'captured' : 'locked'}`;
@@ -130,6 +141,7 @@ export class CodexUI {
                 <div class="codex-dso-info">
                     <div class="codex-dso-name">${captured ? dso.commonName : dso.name}</div>
                     <div class="codex-dso-meta">${typeLabels[dso.type] || dso.type} &bull; 視星等 ${dso.magnitude}</div>
+                    <div style="font-size:11px; color:#94a3b8; margin: 2px 0;">⏰ 最佳時段: ${vis.bestTimeStr}</div>
                     ${captured ? `<div class="codex-dso-grade quality ${bestPhoto?.quality}">最高評級: ${bestPhoto?.quality}級 (${bestPhoto?.score}分)</div>` : '<div class="codex-dso-lock-icon">未觀測解鎖</div>'}
                 </div>
             `;
@@ -194,7 +206,8 @@ export class CodexUI {
     }
 
     public dispose() {
-        this.unsubscribe();
+        document.removeEventListener('photo-captured', this.onPhotoCapturedHandler);
+        document.removeEventListener('quest-completed', this.onQuestCompletedHandler);
         this.container.remove();
     }
 }
