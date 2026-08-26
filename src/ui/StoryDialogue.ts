@@ -26,7 +26,7 @@ export class StoryDialogue {
             <div class="story-backdrop"></div>
             <div class="story-box">
                 <div class="story-char-header">
-                    <div class="story-avatar" id="story-avatar">👴</div>
+                    <div class="story-avatar" id="story-avatar"></div>
                     <div class="story-char-meta">
                         <div class="story-char-name" id="story-name">陳伯</div>
                         <div class="story-char-role" id="story-role">合歡山老氣象員</div>
@@ -37,7 +37,7 @@ export class StoryDialogue {
                     <div class="story-text" id="story-text"></div>
                 </div>
                 <div class="story-footer">
-                    <button class="story-btn" id="story-next-btn">點擊繼續 ▶</button>
+                    <button class="story-btn" id="story-next-btn">點擊繼續</button>
                 </div>
             </div>
         `;
@@ -123,7 +123,7 @@ export class StoryDialogue {
         this.currentLineText = line;
         this.isTyping = true;
         this.textEl.textContent = '';
-        this.btnEl.textContent = this.lineIndex === this.currentLines.length - 1 ? '接受委託 / 繼續 ▶' : '點擊繼續 ▶';
+        this.btnEl.textContent = this.lineIndex === this.currentLines.length - 1 ? '接受委託 / 繼續' : '點擊繼續';
 
         if (this.typingTimer) clearInterval(this.typingTimer);
         let charIdx = 0;

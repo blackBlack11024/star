@@ -160,11 +160,11 @@ export class CodexUI {
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
                     <div>
-                        <div class="quest-status">${done ? '已完成 ✓' : available ? '進行中 ▶' : '未解鎖 🔒'}</div>
+                        <div class="quest-status">${done ? '[已完成]' : available ? '[進行中]' : '[未解鎖]'}</div>
                         <div class="quest-chapter">第 ${quest.chapter} 章 · ${quest.title}</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:16px;">
-                        <span style="font-size:16px;">${char.avatarIcon}</span>
+                        <span style="font-size:12px; color:${char.color}; font-weight:700;">[${char.avatarIcon}]</span>
                         <span style="font-size:12px; color:${char.color}; font-weight:600;">${char.name}</span>
                     </div>
                 </div>
@@ -172,12 +172,12 @@ export class CodexUI {
                 ${done || available ? `
                     <div class="quest-objectives">
                         <div style="font-size:11px; color:#64748b; margin-bottom:4px;">任務目標：</div>
-                        ${quest.objectives.map(o => `<div class="quest-obj ${done ? 'done' : ''}">${done ? '✓' : '○'} ${o.description}</div>`).join('')}
+                        ${quest.objectives.map(o => `<div class="quest-obj ${done ? 'done' : ''}">${done ? '[完成]' : '[進行]'} ${o.description}</div>`).join('')}
                     </div>
                 ` : ''}
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;">
                     <div class="quest-reward">獎勵: ${quest.rewards.money ? `$${quest.rewards.money}` : ''}${quest.rewards.unlockLocation ? ` · 解鎖新地點` : ''}</div>
-                    ${done || available ? `<button class="quest-replay-btn" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:4px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:all 0.2s;">📖 聆聽劇情對話</button>` : ''}
+                    ${done || available ? `<button class="quest-replay-btn" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:4px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:all 0.2s;">聆聽劇情對話</button>` : ''}
                 </div>
             `;
 
