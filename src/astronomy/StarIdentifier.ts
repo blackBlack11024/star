@@ -2,6 +2,7 @@ import { BRIGHT_STARS } from '../data/brightStars';
 import { DEEP_SKY_OBJECTS } from '../data/deepSkyObjects';
 import { TargetType } from '../types';
 import { CelestialSphere } from './CelestialSphere';
+import { PlanetData } from './PlanetarySystem';
 
 export interface IdentifiedObject {
   name: string;
@@ -39,10 +40,29 @@ export class StarIdentifier {
   }
 
   /** Find all named objects within the telescope's field of view above the horizon. */
-  public findObjectsInFov(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere): IdentifiedObject[] {
+  public findObjectsInFov(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere, planets?: PlanetData[]): IdentifiedObject[] {
     const results: IdentifiedObject[] = [];
     const radius = fovDegrees / 2;
 
+    // 1. Solar System Planets (High Priority)
+    if (planets) {
+      for (const p of planets) {
+        if (!this.isAboveHorizon(p.ra, p.dec, celestialSphere)) continue;
+        const dist = this.angularDistance(telescopeRa, telescopeDec, p.ra, p.dec);
+        if (dist <= radius) {
+          results.push({
+            name: `${p.name} · ${p.features}`,
+            type: TargetType.Planet,
+            magnitude: p.magnitude,
+            angularDistance: dist,
+            ra: p.ra,
+            dec: p.dec,
+          });
+        }
+      }
+    }
+
+    // 2. Bright Constellation & Navigation Stars
     for (const star of BRIGHT_STARS) {
       if (!star.name) continue;
       if (!this.isAboveHorizon(star.ra, star.dec, celestialSphere)) continue;
@@ -60,6 +80,7 @@ export class StarIdentifier {
       }
     }
 
+    // 3. Deep Sky Messier Objects
     for (const dso of DEEP_SKY_OBJECTS) {
       if (!this.isAboveHorizon(dso.ra, dso.dec, celestialSphere)) continue;
 
@@ -80,15 +101,15 @@ export class StarIdentifier {
   }
 
   /** Identify the closest/brightest object near the center crosshair. */
-  public identify(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere): IdentifiedObject | null {
+  public identify(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere, planets?: PlanetData[]): IdentifiedObject | null {
     if (!this.isAboveHorizon(telescopeRa, telescopeDec, celestialSphere)) {
       return null;
     }
-    const objects = this.findObjectsInFov(telescopeRa, telescopeDec, fovDegrees, celestialSphere);
+    const objects = this.findObjectsInFov(telescopeRa, telescopeDec, fovDegrees, celestialSphere, planets);
     if (objects.length === 0) return null;
     objects.sort((a, b) => a.angularDistance - b.angularDistance);
 
-    // Clean and precise identification: only triggers when crosshair directly aims at the star
+    // Clean and precise identification: only triggers when crosshair directly aims at the target
     const maxCenterDist = Math.min(2.2, Math.max(0.4, fovDegrees * 0.06));
     if (objects[0].angularDistance <= maxCenterDist) {
       return objects[0];

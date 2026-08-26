@@ -11,6 +11,7 @@ import { CelestialSphere } from './astronomy/CelestialSphere';
 import { Constellations } from './astronomy/Constellations';
 import { StarIdentifier } from './astronomy/StarIdentifier';
 import { DeepSkyObjects } from './astronomy/DeepSkyObjects';
+import { PlanetarySystem } from './astronomy/PlanetarySystem';
 import { AtmosphereManager } from './environment/AtmosphereManager';
 import { TimeManager } from './environment/TimeManager';
 import { WeatherSystem } from './environment/WeatherSystem';
@@ -52,6 +53,7 @@ export class Game {
   private constellations!: Constellations;
   private starIdentifier!: StarIdentifier;
   private deepSkyObjects!: DeepSkyObjects;
+  private planetarySystem!: PlanetarySystem;
 
   private atmosphere!: AtmosphereManager;
   private timeManager!: TimeManager;
@@ -138,6 +140,10 @@ export class Game {
     // ---- Deep sky objects ----
     progress(0.25, '正在放置深空天體...');
     this.deepSkyObjects = new DeepSkyObjects(this.celestialSphere.group);
+
+    // ---- Solar System Planets & Moon ----
+    progress(0.28, '正在計算太陽系行星與月球軌道...');
+    this.planetarySystem = new PlanetarySystem(this.celestialSphere.group);
 
     // ---- Star identifier ----
     this.starIdentifier = new StarIdentifier();
@@ -277,8 +283,10 @@ export class Game {
 
     this.starField.update(elapsedTime, currentCameraFov, this.sunElevation, effectiveLimitingMag);
 
-    // ---- Deep sky objects ----
+    // ---- Deep sky objects & Planetary System ----
     this.deepSkyObjects.update(currentCameraFov, isTelescope, effectiveLimitingMag);
+    this.planetarySystem.update(gameTime, currentCameraFov);
+    const planets = this.planetarySystem.getPlanets();
 
     // ---- Constellations ----
     this.constellations.update(this.sunElevation);
@@ -318,9 +326,9 @@ export class Game {
       this.camera.fov = state.currentFov;
       this.camera.updateProjectionMatrix();
 
-      // Star identification (filtered by horizon)
+      // Star & Planet identification (filtered by horizon)
       const identified = this.starIdentifier.identify(
-        state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere,
+        state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere, planets
       );
 
       // Long exposure accumulation
@@ -344,7 +352,7 @@ export class Game {
       );
     }
 
-    // ---- Interaction prompts & Sky Star Identification ----
+    // ---- Interaction prompts & Sky Star/Planet Identification ----
     if (state.gameMode === GameMode.Walk) {
       if (this.telescopeModel.isPlayerNear(this.camera.position)) {
         this.hud.showInteractPrompt('按 E 使用望遠鏡');
@@ -354,13 +362,13 @@ export class Game {
         this.hud.hideInteractPrompt();
       }
 
-      // Check what star the player is looking at in the sky
+      // Check what star or planet the player is looking at in the sky
       const lookDir = new THREE.Vector3();
       this.camera.getWorldDirection(lookDir);
       if (lookDir.y > 0.05) {
         const pointing = this.celestialSphere.vectorToRaDec(lookDir);
         const identifiedStar = this.starIdentifier.identify(
-          pointing.ra, pointing.dec, this.camera.fov, this.celestialSphere
+          pointing.ra, pointing.dec, this.camera.fov, this.celestialSphere, planets
         );
         this.hud.updateStarLookTarget(identifiedStar);
       } else {
@@ -547,6 +555,7 @@ export class Game {
     cancelAnimationFrame(this.animationFrameId);
     this.starField.dispose();
     this.deepSkyObjects.dispose();
+    this.planetarySystem.dispose();
     this.atmosphere.dispose();
     this.cloudLayer.dispose();
     this.rainEffect.dispose();
