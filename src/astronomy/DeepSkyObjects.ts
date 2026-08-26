@@ -302,20 +302,29 @@ export class DeepSkyObjects {
 
     private tempWorldPos = new THREE.Vector3();
 
-    public update(fov: number, limitingMagnitude: number) {
-        // Naked-eye view (FOV >= 35 deg): Human vision cannot perceive faint DSO colors/structures.
-        // DSOs only become visible when zooming in with binoculars (FOV <= 15 deg) or telescope optics.
-        const isOpticsActive = fov < 35.0;
-        const zoomFactor = isOpticsActive ? Math.min(1.0, (35.0 - fov) / 20.0) : 0.0;
+    public update(cameraFov: number, isTelescope: boolean, limitingMagnitude: number) {
+        // DSOs are ONLY visible when in Telescope mode OR when actively zoomed in with binoculars (FOV < 35 deg).
+        // In normal naked-eye Walk mode (FOV >= 35 deg), all DSO sprites are completely hidden (visible = false).
+        const isOpticsActive = isTelescope || cameraFov < 35.0;
+
+        if (!isOpticsActive) {
+            for (const { sprite } of this.sprites) {
+                sprite.visible = false;
+            }
+            return;
+        }
+
+        const fov = isTelescope ? Math.max(0.5, cameraFov) : cameraFov;
+        const zoomFactor = isTelescope ? 1.0 : Math.min(1.0, (35.0 - fov) / 20.0);
         
         // Stellarium-like dynamic magnification: as FOV decreases, DSO scales up smoothly and reveals HD details
-        const zoomMagnification = Math.min(7.0, Math.pow(60.0 / Math.max(0.5, fov), 0.8));
+        const zoomMagnification = Math.min(7.0, Math.pow(60.0 / fov, 0.8));
 
         for (const { sprite, dso, baseScale } of this.sprites) {
             sprite.getWorldPosition(this.tempWorldPos);
             
-            // Hide DSO if below horizon, naked-eye mode, or too faint for current telescope optics
-            if (this.tempWorldPos.y < 0.0 || !isOpticsActive || dso.magnitude > limitingMagnitude) {
+            // Hide DSO if below horizon or too faint for current optics
+            if (this.tempWorldPos.y < 0.0 || dso.magnitude > limitingMagnitude) {
                 sprite.visible = false;
             } else {
                 sprite.visible = true;

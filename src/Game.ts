@@ -262,7 +262,13 @@ export class Game {
 
     // ---- Deep sky objects ----
     const telescopeConfig = getTelescopeConfig(state.telescopeLevel);
-    this.deepSkyObjects.update(state.currentFov, telescopeConfig.limitingMagnitude);
+    const isTelescope = state.gameMode === GameMode.Telescope;
+    const currentCameraFov = isTelescope ? state.currentFov : this.camera.fov;
+    const effectiveLimitingMag = isTelescope 
+      ? telescopeConfig.limitingMagnitude 
+      : (currentCameraFov < 35.0 ? 8.5 : 5.5);
+
+    this.deepSkyObjects.update(currentCameraFov, isTelescope, effectiveLimitingMag);
 
     // ---- Constellations ----
     this.constellations.update(this.sunElevation);
@@ -467,6 +473,7 @@ export class Game {
       this.camera.rotation.copy(this.savedWalkRot);
       this.camera.fov = 60;
       this.camera.updateProjectionMatrix();
+      gameStore.getState().setFov(60);
       this.telescopeHUD.hide();
     }
 
