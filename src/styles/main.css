@@ -1829,6 +1829,91 @@ html, body {
   color: #475569;
   margin-top: 4px;
 }
+.codex-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.dso-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+.codex-vis-badge {
+  font-size: 11px;
+  margin: 4px 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.codex-vis-badge.visible {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+.codex-vis-badge.waiting {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.codex-guide-text {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin: 6px 0;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border-left: 2px solid #38bdf8;
+}
+.codex-card-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px 12px 12px;
+}
+.codex-track-btn {
+  flex: 1;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.codex-track-btn:hover {
+  background: rgba(56, 189, 248, 0.3);
+  border-color: #38bdf8;
+}
+.codex-track-btn.active {
+  background: rgba(52, 211, 153, 0.25);
+  border-color: #34d399;
+  color: #34d399;
+}
+.codex-view-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.codex-view-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.codex-dso-card.tracking {
+  border-color: #34d399;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.25);
+}
 .codex-dso-grade {
   font-size: 12px;
   font-weight: 700;

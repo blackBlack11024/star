@@ -102,6 +102,8 @@ export interface GameState {
   toggleStarNames: () => void;
   toggleGrid: () => void;
   // ---- Quest & Codex ----
+  customTrackedDsoId: string | null;
+  setCustomTrackedDso: (id: string | null) => void;
   completedQuestIds: string[];
   discoveredTargets: string[];
   resetSaveData: () => void;
@@ -352,6 +354,8 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   toggleConstellations: () => set((s) => ({ showConstellations: !s.showConstellations })),
   toggleStarNames: () => set((s) => ({ showStarNames: !s.showStarNames })),
   toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
+  customTrackedDsoId: null,
+  setCustomTrackedDso: (id) => set({ customTrackedDsoId: id }),
 
   resetSaveData: () => {
     try {
