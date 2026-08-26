@@ -164,7 +164,7 @@ export class CodexUI {
                         <div class="quest-chapter">第 ${quest.chapter} 章 · ${quest.title}</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:16px;">
-                        <span style="font-size:12px; color:${char.color}; font-weight:700;">[${char.avatarIcon}]</span>
+                        <span style="font-size:16px;">${char.avatarIcon}</span>
                         <span style="font-size:12px; color:${char.color}; font-weight:600;">${char.name}</span>
                     </div>
                 </div>
