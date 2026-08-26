@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>觀星模擬器 — Stargazer Simulator</title>
+  <script type="module" crossorigin src="./assets/index-DVG45Ean.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CZm9VgoK.css">
+</head>
+<body>
+  <!-- Three.js canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Loading screen -->
+  <div id="loading-screen">
+    <div class="loader-content">
+      <div class="loader-icon"></div>
+      <h1>觀星模擬器</h1>
+      <p>Stargazer Simulator</p>
+      <div class="loader-bar"><div class="loader-fill" id="loader-fill"></div></div>
+      <p class="loader-text" id="loader-text">正在載入星表數據...</p>
+    </div>
+  </div>
+
+  <!-- UI overlay container — all HUD/UI elements are created dynamically -->
+  <div id="ui-overlay"></div>
+
+</body>
+</html>
