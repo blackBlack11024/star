@@ -10,11 +10,10 @@ export class CodexUI {
     private unsubscribe: () => void;
 
     constructor() {
-        const overlay = document.getElementById('ui-overlay') || document.body;
         this.container = document.createElement('div');
         this.container.className = 'codex-panel';
         this.container.style.display = 'none';
-        overlay.appendChild(this.container);
+        document.body.appendChild(this.container);
 
         this.unsubscribe = gameStore.subscribe(() => {
             if (this.isVisible) this.render();
