@@ -270,17 +270,17 @@ export class Game {
 
     // ---- Telescope mode logic ----
     if (state.gameMode === GameMode.Telescope) {
-      // Position camera at center and point directly at the sky coordinates
-      this.camera.position.set(0, 0, 0);
+      // Position camera at optical center and point directly at the sky coordinates
+      this.camera.position.set(0, 0.2, 0);
       const skyTarget = this.celestialSphere.getRaDecToVector(state.telescopeRa, state.telescopeDec);
       skyTarget.applyMatrix4(this.celestialSphere.group.matrixWorld);
       this.camera.lookAt(skyTarget);
       this.camera.fov = state.currentFov;
       this.camera.updateProjectionMatrix();
 
-      // Star identification
+      // Star identification (filtered by horizon)
       const identified = this.starIdentifier.identify(
-        state.telescopeRa, state.telescopeDec, state.currentFov,
+        state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere,
       );
 
       // Long exposure accumulation
@@ -373,7 +373,7 @@ export class Game {
         this.audioManager.playShutter();
       } else {
         const identified = this.starIdentifier.identify(
-          state.telescopeRa, state.telescopeDec, state.currentFov,
+          state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere,
         );
         this.finishExposure(identified);
       }
@@ -391,7 +391,7 @@ export class Game {
       this.savedWalkPos.copy(this.camera.position);
       this.savedWalkRot.copy(this.camera.rotation);
       this.telescopeModel.setVisible(false);
-      this.terrain.setVisible(false);
+      this.terrain.setVisible(true);
       this.studio.setVisible(false);
       this.telescopeHUD.show();
     } else if (from === GameMode.Telescope) {

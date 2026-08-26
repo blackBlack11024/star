@@ -146,11 +146,15 @@ export class DeepSkyObjects {
         }
     }
 
+    private tempWorldPos = new THREE.Vector3();
+
     public update(fov: number, limitingMagnitude: number) {
         // Deep sky objects only become clearly visible under magnification or bright telescope limiting mag
         const isZoomed = fov < 45.0;
         for (const { sprite, dso } of this.sprites) {
-            if (dso.magnitude > limitingMagnitude) {
+            sprite.getWorldPosition(this.tempWorldPos);
+            // Hide DSO immediately if below the horizon or too faint
+            if (this.tempWorldPos.y < 0.0 || dso.magnitude > limitingMagnitude) {
                 sprite.visible = false;
             } else {
                 sprite.visible = true;

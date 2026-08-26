@@ -1,6 +1,7 @@
 import { BRIGHT_STARS } from '../data/brightStars';
 import { DEEP_SKY_OBJECTS } from '../data/deepSkyObjects';
 import { TargetType } from '../types';
+import { CelestialSphere } from './CelestialSphere';
 
 export interface IdentifiedObject {
   name: string;
@@ -29,13 +30,23 @@ export class StarIdentifier {
     return Math.acos(Math.max(-1, Math.min(1, cosAngle))) * 180 / Math.PI;
   }
 
-  /** Find all named objects within the telescope's field of view. */
-  public findObjectsInFov(telescopeRa: number, telescopeDec: number, fovDegrees: number): IdentifiedObject[] {
+  /** Check if a given RA/Dec position is above the local observer horizon (world Y >= 0). */
+  private isAboveHorizon(ra: number, dec: number, celestialSphere?: CelestialSphere): boolean {
+    if (!celestialSphere) return true;
+    const vec = celestialSphere.getRaDecToVector(ra, dec);
+    vec.applyMatrix4(celestialSphere.group.matrixWorld);
+    return vec.y >= 0.0;
+  }
+
+  /** Find all named objects within the telescope's field of view above the horizon. */
+  public findObjectsInFov(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere): IdentifiedObject[] {
     const results: IdentifiedObject[] = [];
     const radius = fovDegrees / 2;
 
     for (const star of BRIGHT_STARS) {
       if (!star.name) continue;
+      if (!this.isAboveHorizon(star.ra, star.dec, celestialSphere)) continue;
+
       const dist = this.angularDistance(telescopeRa, telescopeDec, star.ra, star.dec);
       if (dist <= radius) {
         results.push({
@@ -50,6 +61,8 @@ export class StarIdentifier {
     }
 
     for (const dso of DEEP_SKY_OBJECTS) {
+      if (!this.isAboveHorizon(dso.ra, dso.dec, celestialSphere)) continue;
+
       const dist = this.angularDistance(telescopeRa, telescopeDec, dso.ra, dso.dec);
       if (dist <= radius) {
         results.push({
@@ -67,8 +80,12 @@ export class StarIdentifier {
   }
 
   /** Identify the closest/brightest object near the telescope center. */
-  public identify(telescopeRa: number, telescopeDec: number, fovDegrees: number): IdentifiedObject | null {
-    const objects = this.findObjectsInFov(telescopeRa, telescopeDec, fovDegrees);
+  public identify(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere): IdentifiedObject | null {
+    // If telescope pointing itself is below horizon, return null
+    if (!this.isAboveHorizon(telescopeRa, telescopeDec, celestialSphere)) {
+      return null;
+    }
+    const objects = this.findObjectsInFov(telescopeRa, telescopeDec, fovDegrees, celestialSphere);
     if (objects.length === 0) return null;
     objects.sort((a, b) => a.angularDistance - b.angularDistance);
     return objects[0];

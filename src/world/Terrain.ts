@@ -41,10 +41,11 @@ export class Terrain {
       color: 0x223020,
       roughness: 0.95,
       metalness: 0.05,
+      side: THREE.DoubleSide,
     });
     
     const groundMesh = new THREE.Mesh(geometry, material);
-    groundMesh.position.y = 0;
+    groundMesh.position.y = -0.2;
     groundMesh.receiveShadow = true;
     this.group.add(groundMesh);
 

@@ -94,12 +94,16 @@ export class StarField {
             varying vec3 vColor;
             varying float vMagnitude;
             varying float vTwinkle;
+            varying vec3 vWorldPosition;
             
             void main() {
                 vColor = aColor;
                 vMagnitude = aMagnitude;
                 
-                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPos.xyz;
+                
+                vec4 mvPosition = viewMatrix * worldPos;
                 gl_Position = projectionMatrix * mvPosition;
                 
                 float twinkle = 0.85 + 0.15 * sin(uTime * aTwinkleSpeed + position.x * 0.1);
@@ -120,8 +124,13 @@ export class StarField {
             varying vec3 vColor;
             varying float vMagnitude;
             varying float vTwinkle;
+            varying vec3 vWorldPosition;
             
             void main() {
+                // Strict Horizon Extinction: Discard stars below ground (y < 0)
+                if (vWorldPosition.y < 0.0) discard;
+                float horizonFade = smoothstep(0.0, 15.0, vWorldPosition.y);
+                
                 vec2 coord = gl_PointCoord * 2.0 - 1.0;
                 float dist = length(coord);
                 if (dist > 1.0) discard;
@@ -129,7 +138,7 @@ export class StarField {
                 // Gaussian Airy disk profile with soft anti-aliased edge
                 float core = exp(-dist * dist * 3.5);
                 float halo = max(0.0, 1.0 - dist) * 0.25;
-                float alpha = core + halo;
+                float alpha = (core + halo) * horizonFade;
                 
                 // Daylight extinction based on sun elevation in degrees
                 float sunElevDeg = uSunElevation * 57.2957795;

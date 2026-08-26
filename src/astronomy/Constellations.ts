@@ -4,7 +4,7 @@ import { CONSTELLATIONS } from '../data/constellationLines';
 export class Constellations {
     private group: THREE.Group;
     private lines: THREE.LineSegments | null = null;
-    private material: THREE.LineBasicMaterial | null = null;
+    private material: THREE.ShaderMaterial | null = null;
     private geometry: THREE.BufferGeometry | null = null;
 
     constructor(parentGroup: THREE.Group) {
@@ -39,11 +39,34 @@ export class Constellations {
         this.geometry = new THREE.BufferGeometry();
         this.geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
         
-        // Subtle, elegant astronomical cyan line
-        this.material = new THREE.LineBasicMaterial({
-            color: 0x38bdf8,
+        const vertexShader = `
+            varying vec3 vWorldPos;
+            void main() {
+                vec4 wp = modelMatrix * vec4(position, 1.0);
+                vWorldPos = wp.xyz;
+                gl_Position = projectionMatrix * viewMatrix * wp;
+            }
+        `;
+
+        const fragmentShader = `
+            uniform vec3 uColor;
+            uniform float uOpacity;
+            varying vec3 vWorldPos;
+            void main() {
+                if (vWorldPos.y < 0.0) discard;
+                float horizonFade = smoothstep(0.0, 15.0, vWorldPos.y);
+                gl_FragColor = vec4(uColor, uOpacity * horizonFade);
+            }
+        `;
+
+        this.material = new THREE.ShaderMaterial({
+            vertexShader,
+            fragmentShader,
+            uniforms: {
+                uColor: { value: new THREE.Color(0x38bdf8) },
+                uOpacity: { value: 0.18 }
+            },
             transparent: true,
-            opacity: 0.18,
             depthWrite: false
         });
 
@@ -55,8 +78,8 @@ export class Constellations {
         if (!this.material) return;
         // Fade out lines during daytime
         const nightFactor = Math.max(0.0, Math.min(1.0, (-sunElevation) / 0.08));
-        this.material.opacity = 0.18 * nightFactor;
-        this.group.visible = this.material.opacity > 0.001;
+        this.material.uniforms.uOpacity.value = 0.18 * nightFactor;
+        this.group.visible = this.material.uniforms.uOpacity.value > 0.001;
     }
 
     public setVisible(visible: boolean) {
