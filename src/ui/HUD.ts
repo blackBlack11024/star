@@ -16,6 +16,7 @@ export class HUD {
     private crosshair: HTMLElement;
     private telescopeMarker: HTMLElement;
     private studioMarker: HTMLElement;
+    private starTargetBadge: HTMLElement;
     private audioModal: HTMLElement;
     private timeButtons: HTMLButtonElement[] = [];
     private unsubscribe: () => void;
@@ -186,6 +187,11 @@ export class HUD {
         this.studioMarker.className = 'waypoint-marker studio';
         this.studioMarker.innerHTML = `<span>工作室</span><span class="key-hint">F</span><span class="dist" style="opacity:0.6"></span>`;
 
+        // 9. Looking Star Identifier Badge (Walk / Binoculars mode)
+        this.starTargetBadge = document.createElement('div');
+        this.starTargetBadge.className = 'hud-star-target-badge';
+        this.starTargetBadge.style.display = 'none';
+
         this.container.appendChild(topLeft);
         this.container.appendChild(topRight);
         this.container.appendChild(this.audioModal);
@@ -195,6 +201,7 @@ export class HUD {
         this.container.appendChild(this.crosshair);
         this.container.appendChild(this.telescopeMarker);
         this.container.appendChild(this.studioMarker);
+        this.container.appendChild(this.starTargetBadge);
 
         overlay.appendChild(this.container);
 
@@ -526,6 +533,20 @@ export class HUD {
         } else {
             this.studioMarker.style.display = 'none';
         }
+    }
+
+    /** Update real-time star identification badge when looking at the sky. */
+    public updateStarLookTarget(target: any) {
+        if (!target) {
+            this.starTargetBadge.style.display = 'none';
+            return;
+        }
+        this.starTargetBadge.innerHTML = `
+            <span class="stb-icon">✨</span>
+            <span class="stb-name">${target.name}</span>
+            <span class="stb-meta">視星等 ${target.magnitude.toFixed(1)}</span>
+        `;
+        this.starTargetBadge.style.display = 'flex';
     }
 
     public dispose() {

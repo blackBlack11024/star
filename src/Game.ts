@@ -344,7 +344,7 @@ export class Game {
       );
     }
 
-    // ---- Interaction prompts ----
+    // ---- Interaction prompts & Sky Star Identification ----
     if (state.gameMode === GameMode.Walk) {
       if (this.telescopeModel.isPlayerNear(this.camera.position)) {
         this.hud.showInteractPrompt('按 E 使用望遠鏡');
@@ -353,8 +353,22 @@ export class Game {
       } else {
         this.hud.hideInteractPrompt();
       }
+
+      // Check what star the player is looking at in the sky
+      const lookDir = new THREE.Vector3();
+      this.camera.getWorldDirection(lookDir);
+      if (lookDir.y > 0.05) {
+        const pointing = this.celestialSphere.vectorToRaDec(lookDir);
+        const identifiedStar = this.starIdentifier.identify(
+          pointing.ra, pointing.dec, this.camera.fov, this.celestialSphere
+        );
+        this.hud.updateStarLookTarget(identifiedStar);
+      } else {
+        this.hud.updateStarLookTarget(null);
+      }
     } else {
       this.hud.hideInteractPrompt();
+      this.hud.updateStarLookTarget(null);
     }
 
     // ---- UI & 3D Waypoints & Quest Tracker ----

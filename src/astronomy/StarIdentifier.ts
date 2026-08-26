@@ -79,7 +79,7 @@ export class StarIdentifier {
     return results.sort((a, b) => a.magnitude - b.magnitude);
   }
 
-  /** Identify the closest/brightest object precisely near the center crosshair. */
+  /** Identify the closest/brightest object near the center crosshair. */
   public identify(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere): IdentifiedObject | null {
     if (!this.isAboveHorizon(telescopeRa, telescopeDec, celestialSphere)) {
       return null;
@@ -88,8 +88,8 @@ export class StarIdentifier {
     if (objects.length === 0) return null;
     objects.sort((a, b) => a.angularDistance - b.angularDistance);
 
-    // Only identify when within the center reticle crosshair (within 1.5 degrees or tight fov radius)
-    const maxCenterDist = Math.min(1.5, Math.max(0.3, fovDegrees * 0.15));
+    // Clean and precise identification: only triggers when crosshair directly aims at the star
+    const maxCenterDist = Math.min(2.2, Math.max(0.4, fovDegrees * 0.06));
     if (objects[0].angularDistance <= maxCenterDist) {
       return objects[0];
     }
