@@ -303,25 +303,28 @@ export class DeepSkyObjects {
     private tempWorldPos = new THREE.Vector3();
 
     public update(fov: number, limitingMagnitude: number) {
-        const isZoomed = fov < 45.0;
+        // Naked-eye view (FOV >= 35 deg): Human vision cannot perceive faint DSO colors/structures.
+        // DSOs only become visible when zooming in with binoculars (FOV <= 15 deg) or telescope optics.
+        const isOpticsActive = fov < 35.0;
+        const zoomFactor = isOpticsActive ? Math.min(1.0, (35.0 - fov) / 20.0) : 0.0;
         
         // Stellarium-like dynamic magnification: as FOV decreases, DSO scales up smoothly and reveals HD details
-        const zoomMagnification = Math.min(6.0, Math.pow(60.0 / Math.max(0.5, fov), 0.75));
+        const zoomMagnification = Math.min(7.0, Math.pow(60.0 / Math.max(0.5, fov), 0.8));
 
         for (const { sprite, dso, baseScale } of this.sprites) {
             sprite.getWorldPosition(this.tempWorldPos);
             
-            // Hide DSO if below horizon or too faint for current telescope optics
-            if (this.tempWorldPos.y < 0.0 || dso.magnitude > limitingMagnitude) {
+            // Hide DSO if below horizon, naked-eye mode, or too faint for current telescope optics
+            if (this.tempWorldPos.y < 0.0 || !isOpticsActive || dso.magnitude > limitingMagnitude) {
                 sprite.visible = false;
             } else {
                 sprite.visible = true;
                 const dynamicScale = baseScale * zoomMagnification;
                 sprite.scale.set(dynamicScale, dynamicScale, 1);
 
-                const brightness = Math.max(0.1, (limitingMagnitude - dso.magnitude) * 0.2);
-                const zoomAlpha = Math.min(0.95, brightness * (0.35 + zoomMagnification * 0.12));
-                (sprite.material as THREE.SpriteMaterial).opacity = isZoomed ? zoomAlpha : 0.08;
+                const brightness = Math.max(0.15, (limitingMagnitude - dso.magnitude) * 0.22);
+                const zoomAlpha = Math.min(0.95, brightness * (0.4 + zoomMagnification * 0.12) * zoomFactor);
+                (sprite.material as THREE.SpriteMaterial).opacity = zoomAlpha;
             }
         }
     }
