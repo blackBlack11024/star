@@ -299,7 +299,7 @@ export class MenuSystem {
 
         this.timeReversalPanel.innerHTML = `
             <div class="time-modal-header">
-                <h3>📅 日期與時間穿梭控制中心</h3>
+                <h3>日期與時間穿梭控制中心</h3>
                 <button class="close-btn" id="close-time">&times;</button>
             </div>
 
@@ -308,14 +308,14 @@ export class MenuSystem {
                 <div class="phase-str">${phaseText} · 隨意穿梭時空與四季星空</div>
             </div>
 
-            <div style="font-size:12px;color:#38bdf8;margin-bottom:6px;font-weight:600;">📆 任意自訂日期與時刻</div>
+            <div style="font-size:12px;color:#38bdf8;margin-bottom:6px;font-weight:600;">自訂日期與時刻</div>
             <div class="date-picker-row">
                 <input type="date" id="input-custom-date" class="time-input-field" value="${dateInputVal}">
                 <input type="time" id="input-custom-time" class="time-input-field" value="${timeInputVal}">
                 <button id="btn-apply-custom-date" class="apply-date-btn">設定天象</button>
             </div>
 
-            <div style="font-size:12px;color:#94a3b8;margin:12px 0 6px 0;font-weight:600;">🗓️ 日期與年份跨度跳轉</div>
+            <div style="font-size:12px;color:#94a3b8;margin:12px 0 6px 0;font-weight:600;">日期與年份跨度跳轉</div>
             <div class="time-btn-grid" style="grid-template-columns: repeat(6, 1fr);">
                 <button class="time-step-btn" id="btn-sub-1y">-1年</button>
                 <button class="time-step-btn" id="btn-sub-30d">-30天</button>
@@ -325,15 +325,15 @@ export class MenuSystem {
                 <button class="time-step-btn" id="btn-add-1y">+1年</button>
             </div>
 
-            <div style="font-size:12px;color:#94a3b8;margin:10px 0 6px 0;font-weight:600;">🌌 四季著名星空一鍵跳轉</div>
+            <div style="font-size:12px;color:#94a3b8;margin:10px 0 6px 0;font-weight:600;">四季著名星空一鍵跳轉</div>
             <div class="time-preset-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 12px;">
-                <button class="preset-btn" id="season-spring" title="4月15日 21:00 · 北斗七星與大角星">🌸 春季星空</button>
-                <button class="preset-btn" id="season-summer" title="7月15日 21:00 · 夏季大三角與璀璨銀河">☀️ 夏季銀河</button>
-                <button class="preset-btn" id="season-autumn" title="10月15日 21:00 · 飛馬座與仙女座星系">🍂 秋季仙女</button>
-                <button class="preset-btn" id="season-winter" title="1月15日 21:00 · 獵戶座與冬季大三角">❄️ 冬季獵戶</button>
+                <button class="preset-btn" id="season-spring" title="4月15日 21:00 · 北斗七星與大角星">春季星空</button>
+                <button class="preset-btn" id="season-summer" title="7月15日 21:00 · 夏季大三角與璀璨銀河">夏季銀河</button>
+                <button class="preset-btn" id="season-autumn" title="10月15日 21:00 · 飛馬座與仙女座星系">秋季仙女</button>
+                <button class="preset-btn" id="season-winter" title="1月15日 21:00 · 獵戶座與冬季大三角">冬季獵戶</button>
             </div>
 
-            <div style="font-size:12px;color:#94a3b8;margin:10px 0 6px 0;font-weight:600;">⏱️ 當日時刻微調與跳轉</div>
+            <div style="font-size:12px;color:#94a3b8;margin:10px 0 6px 0;font-weight:600;">當日時刻微調與跳轉</div>
             <div class="time-btn-grid" style="margin-bottom: 8px;">
                 <button class="time-step-btn" id="btn-sub-6h">-6小時</button>
                 <button class="time-step-btn" id="btn-sub-1h">-1小時</button>
@@ -349,7 +349,7 @@ export class MenuSystem {
             </div>
 
             <button class="reset-realtime-btn" id="btn-reset-realtime">
-                <span>🔄 一鍵回到目前現實時間</span>
+                <span>一鍵回到目前現實時間</span>
             </button>
         `;
 

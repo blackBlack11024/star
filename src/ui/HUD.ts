@@ -131,7 +131,7 @@ export class HUD {
 
         this.quickMuteBtn = document.createElement('button');
         this.quickMuteBtn.className = 'hud-vol-icon-btn';
-        this.quickMuteBtn.innerHTML = '🔊';
+        this.quickMuteBtn.textContent = '音量';
         this.quickMuteBtn.title = '點擊靜音 / 解除靜音 [M]';
         this.quickMuteBtn.onclick = () => gameStore.getState().toggleMute();
 
@@ -156,7 +156,7 @@ export class HUD {
 
         const mixerBtn = document.createElement('button');
         mixerBtn.className = 'hud-vol-mixer-btn';
-        mixerBtn.innerHTML = '⚙️';
+        mixerBtn.textContent = '設定';
         mixerBtn.title = '開啟四聲道混音設定 (蟲鳴/鳥叫/微風/馬達/雨聲)';
         mixerBtn.onclick = () => this.toggleAudioModal();
 
@@ -403,7 +403,7 @@ export class HUD {
         if (this.quickVolSlider) {
             this.quickVolSlider.value = (state.isMuted ? 0 : masterPct).toString();
             this.quickVolVal.textContent = state.isMuted ? '靜音' : `${masterPct}%`;
-            this.quickMuteBtn.innerHTML = state.isMuted ? '🔇' : (masterPct === 0 ? '🔈' : '🔊');
+            this.quickMuteBtn.textContent = state.isMuted ? '靜音' : '音量';
             this.quickMuteBtn.classList.toggle('muted', state.isMuted);
         }
 
@@ -498,11 +498,11 @@ export class HUD {
                 const state = gameStore.getState();
                 const vis = calculateTargetVisibility(dso, state.currentLocation.latitude, state.currentLocation.longitude, state.currentTime);
                 if (vis.isCurrentlyVisible) {
-                    timeAdvice = `<div class="qt-time-badge visible">✨ 目前空中可見 (仰角 ${Math.round(vis.currentAltitude)}°) · 最佳觀測中</div>`;
+                    timeAdvice = `<div class="qt-time-badge visible">目前空中可見 (仰角 ${Math.round(vis.currentAltitude)}°) · 最佳觀測中</div>`;
                 } else if (vis.riseTimeStr) {
-                    timeAdvice = `<div class="qt-time-badge waiting">⏳ 預計 ${vis.riseTimeStr} 升起 · 最佳時段 ${vis.bestTimeStr}（按 R/T 快轉）</div>`;
+                    timeAdvice = `<div class="qt-time-badge waiting">預計 ${vis.riseTimeStr} 升起 · 最佳時段 ${vis.bestTimeStr}（按 R/T 快轉）</div>`;
                 } else {
-                    timeAdvice = `<div class="qt-time-badge waiting">⏳ 最佳觀測時段：${vis.bestTimeStr}（按 R/T 調整時間）</div>`;
+                    timeAdvice = `<div class="qt-time-badge waiting">最佳觀測時段：${vis.bestTimeStr}（按 R/T 調整時間）</div>`;
                 }
             }
         }
@@ -523,7 +523,7 @@ export class HUD {
         tracker.style.display = 'block';
         tracker.innerHTML = `
             <div class="qt-header">
-                <span class="qt-avatar">${activeQuest.character?.avatarIcon || '🌌'}</span>
+                <span class="qt-avatar">${activeQuest.character?.avatarIcon || ''}</span>
                 <div>
                     <div class="qt-title">${activeQuest.character?.name || '任務導師'} · 主線任務</div>
                     <div class="qt-quest">${activeQuest.title}</div>
@@ -533,7 +533,7 @@ export class HUD {
                 ${(activeQuest.objectives || []).slice(0, 2).map((o: any) => `<div class="qt-obj">○ ${o.description}</div>`).join('')}
             </div>
             ${timeAdvice}
-            <div class="qt-hint">💬 點擊聆聽角色尋星對話 [G]</div>
+            <div class="qt-hint">點擊聆聽角色尋星對話 [G]</div>
         `;
     }
 
@@ -580,18 +580,9 @@ export class HUD {
         }
     }
 
-    /** Update real-time star identification badge when looking at the sky. */
-    public updateStarLookTarget(target: any) {
-        if (!target) {
-            this.starTargetBadge.style.display = 'none';
-            return;
-        }
-        this.starTargetBadge.innerHTML = `
-            <span class="stb-icon">✨</span>
-            <span class="stb-name">${target.name}</span>
-            <span class="stb-meta">視星等 ${target.magnitude.toFixed(1)}</span>
-        `;
-        this.starTargetBadge.style.display = 'flex';
+    /** No HUD target badge in Walk or Binoculars mode. */
+    public updateStarLookTarget(_target: any) {
+        this.starTargetBadge.style.display = 'none';
     }
 
     public dispose() {

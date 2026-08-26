@@ -141,7 +141,7 @@ export class CodexUI {
                 <div class="codex-dso-info">
                     <div class="codex-dso-name">${captured ? dso.commonName : dso.name}</div>
                     <div class="codex-dso-meta">${typeLabels[dso.type] || dso.type} &bull; 視星等 ${dso.magnitude}</div>
-                    <div style="font-size:11px; color:#94a3b8; margin: 2px 0;">⏰ 最佳時段: ${vis.bestTimeStr}</div>
+                    <div style="font-size:11px; color:#94a3b8; margin: 2px 0;">最佳時段: ${vis.bestTimeStr}</div>
                     ${captured ? `<div class="codex-dso-grade quality ${bestPhoto?.quality}">最高評級: ${bestPhoto?.quality}級 (${bestPhoto?.score}分)</div>` : '<div class="codex-dso-lock-icon">未觀測解鎖</div>'}
                 </div>
             `;

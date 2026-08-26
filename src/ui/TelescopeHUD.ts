@@ -172,7 +172,7 @@ export class TelescopeHUD {
             if (isLocked) {
                 this.finderGuidance.className = 'finder-guidance locked';
                 this.finderGuidance.innerHTML = `
-                    <div class="fg-badge">🎯 目標已精確入鏡</div>
+                    <div class="fg-badge">目標已精確入鏡</div>
                     <div class="fg-title">${targetDso.commonName || targetDso.name}</div>
                     <div class="fg-sub">已成功定位天體！按空白鍵開始長曝光攝影</div>
                 `;
@@ -193,7 +193,7 @@ export class TelescopeHUD {
 
                 this.finderGuidance.className = 'finder-guidance seeking pointer';
                 this.finderGuidance.innerHTML = `
-                    <div class="fg-badge">🧭 電子尋星系統已啟用</div>
+                    <div class="fg-badge">電子尋星系統已啟用</div>
                     <div class="fg-title">${arrow} ${targetDso.commonName || targetDso.name}</div>
                     <div class="fg-dist">距離視野: ${distDeg.toFixed(1)}° · 請順指針轉動鏡筒</div>
                 `;

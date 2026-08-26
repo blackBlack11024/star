@@ -104,15 +104,15 @@ export function calculateTargetVisibility(
 
   let summary = '';
   if (isCurrentlyVisible) {
-    summary = `✨ 目前空中可見（仰角 ${Math.round(currentAlt)}° · 正值最佳觀測時段）`;
+    summary = `目前空中可見（仰角 ${Math.round(currentAlt)}° · 正值最佳觀測時段）`;
   } else if (!isDarkNow) {
-    summary = `☀️ 目前為白天，夜間最佳觀測時段為 ${bestTimeStr}`;
+    summary = `目前為白天，夜間最佳觀測時段為 ${bestTimeStr}`;
   } else if (currentAlt < 10) {
     summary = riseTimeStr
-      ? `⏳ 目前在地平線下（預計 ${riseTimeStr} 升起 · 最佳觀測：${bestTimeStr}）`
-      : `⏳ 最佳觀測時段為 ${bestTimeStr}`;
+      ? `目前在地平線下（預計 ${riseTimeStr} 升起 · 最佳觀測：${bestTimeStr}）`
+      : `最佳觀測時段為 ${bestTimeStr}`;
   } else {
-    summary = `⏳ 最佳觀測時段為 ${bestTimeStr}`;
+    summary = `最佳觀測時段為 ${bestTimeStr}`;
   }
 
   return {
