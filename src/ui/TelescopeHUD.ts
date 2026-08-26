@@ -198,16 +198,14 @@ export class TelescopeHUD {
                 `;
             } else {
                 // Pure Character Star-Hopping Teaching (Before buying finder system: NO POINTERS, ONLY TEACHING)
-                const hoppingGuide = targetDso.starHoppingGuide || activeQuest?.starHoppingTip || '按 C 開啟星座連線，參考鄰近亮星特徵手動定位。';
                 const charAvatar = activeQuest?.character?.avatarIcon || '🔭';
                 const charName = activeQuest?.character?.name || '天文導師';
 
                 this.finderGuidance.className = 'finder-guidance seeking teaching';
                 this.finderGuidance.innerHTML = `
-                    <div class="fg-badge">${charAvatar} ${charName} 傳授 · 認星尋星法</div>
-                    <div class="fg-title">尋找目標：${targetDso.commonName || targetDso.name}</div>
-                    <div class="fg-tip">📖 ${hoppingGuide}</div>
-                    <div class="fg-note">（手動認星探索中 · 亦可在工作室購買「紅點尋星儀」開啟電子指針）</div>
+                    <div class="fg-badge">${charAvatar} ${charName} · 認星尋星中</div>
+                    <div class="fg-title">當前目標：${targetDso.commonName || targetDso.name}</div>
+                    <div class="fg-note">（點擊左下任務或按 G 聆聽尋星對話 · 亦可在工作室購買「紅點尋星儀」）</div>
                 `;
             }
             this.finderGuidance.style.display = 'flex';

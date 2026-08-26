@@ -429,12 +429,14 @@ export class HUD {
             tracker.id = 'quest-tracker-hud';
             tracker.className = 'quest-tracker-hud';
             tracker.style.cursor = 'pointer';
-            tracker.title = '點擊開啟觀測圖鑑與任務日誌 [G]';
-            tracker.onclick = () => {
-                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', code: 'KeyG' }));
-            };
+            tracker.title = '點擊聆聽角色教學對話 · 按 G 開啟圖鑑';
             document.getElementById('ui-overlay')?.appendChild(tracker);
         }
+        tracker.onclick = () => {
+            document.dispatchEvent(new CustomEvent('play-story-dialogue', {
+                detail: { quest: activeQuest, mode: 'intro' }
+            }));
+        };
         tracker.style.display = 'block';
         tracker.innerHTML = `
             <div class="qt-header">
@@ -447,8 +449,7 @@ export class HUD {
             <div class="qt-objectives">
                 ${(activeQuest.objectives || []).slice(0, 2).map((o: any) => `<div class="qt-obj">○ ${o.description}</div>`).join('')}
             </div>
-            ${activeQuest.starHoppingTip ? `<div class="qt-tip"><span class="qt-tip-tag">尋星指引</span> ${activeQuest.starHoppingTip}</div>` : ''}
-            <div class="qt-hint">按 G 開啟完整圖鑑 · 按 C 開啟星座連線</div>
+            <div class="qt-hint">💬 點擊聆聽角色尋星對話 [G]</div>
         `;
     }
 
