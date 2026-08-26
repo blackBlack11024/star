@@ -171,12 +171,8 @@ export function autoSaveState(state: GameState) {
 const savedData = loadSavedData();
 
 export const gameStore = createStore<GameState>()((set, get) => ({
-  // ---- Initial state (Default to clear stargazing night at 21:30) ----
-  currentTime: (() => {
-    const d = new Date();
-    d.setHours(21, 30, 0, 0);
-    return d;
-  })(),
+  // ---- Initial state (Default to player's current real-world time) ----
+  currentTime: new Date(),
   timeScale: 1,
   isTimePaused: false,
 
