@@ -116,10 +116,140 @@ export class PlanetarySystem {
   private planetDataList: PlanetData[] = [];
   private textures: Map<string, THREE.Texture> = new Map();
 
+  // Real NASA Lunar Photographic Texture System
+  private moonCanvas!: HTMLCanvasElement;
+  private moonCtx!: CanvasRenderingContext2D;
+  private moonTexture!: THREE.CanvasTexture;
+  private moonImage: HTMLImageElement | null = null;
+  private lastRenderedMoonPhase: number = -1;
+
   constructor(celestialGroup: THREE.Group) {
     this.celestialGroup = celestialGroup;
+    this.initMoonSystem();
     this.initTextures();
     this.createPlanetSprites();
+  }
+
+  private initMoonSystem() {
+    this.moonCanvas = document.createElement('canvas');
+    this.moonCanvas.width = 1024;
+    this.moonCanvas.height = 1024;
+    this.moonCtx = this.moonCanvas.getContext('2d')!;
+
+    this.moonTexture = new THREE.CanvasTexture(this.moonCanvas);
+    this.moonTexture.generateMipmaps = true;
+    this.moonTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    this.moonTexture.magFilter = THREE.LinearFilter;
+
+    // Load real NASA Photographic Moon Map from public directory
+    const baseUrl = (import.meta as any).env?.BASE_URL || './';
+    const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    const moonUrl = `${cleanBase}textures/moon_map.jpg`;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      this.moonImage = img;
+      this.redrawMoon(this.lastRenderedMoonPhase >= 0 ? this.lastRenderedMoonPhase : 0.5);
+    };
+    img.onerror = () => {
+      console.warn('Could not load NASA Moon texture, using high-res procedural fallback');
+      this.redrawMoon(0.5);
+    };
+    img.src = moonUrl;
+
+    // Initial render
+    this.redrawMoon(0.5);
+  }
+
+  private redrawMoon(phase: number) {
+    this.lastRenderedMoonPhase = phase;
+    const ctx = this.moonCtx;
+    const w = 1024, h = 1024;
+    const cx = 512, cy = 512, R = 440;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // 1. Lunar outer glow / atmospheric halo
+    const halo = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.18);
+    halo.addColorStop(0, 'rgba(241, 245, 249, 0.45)');
+    halo.addColorStop(0.5, 'rgba(203, 213, 225, 0.12)');
+    halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(0, 0, w, h);
+
+    // 2. Draw Real NASA Photographic Moon Disk (or fallback)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.clip();
+
+    if (this.moonImage && this.moonImage.complete && this.moonImage.naturalWidth > 0) {
+      // Draw real NASA photo map
+      ctx.drawImage(this.moonImage, cx - R, cy - R, R * 2, R * 2);
+    } else {
+      // Procedural lunar base
+      const base = ctx.createRadialGradient(cx - 50, cy - 50, 50, cx, cy, R);
+      base.addColorStop(0, '#f8fafc');
+      base.addColorStop(0.5, '#cbd5e1');
+      base.addColorStop(0.8, '#94a3b8');
+      base.addColorStop(1, '#475569');
+      ctx.fillStyle = base;
+      ctx.fill();
+
+      // Procedural Maria (Oceanus Procellarum, Mare Tranquillitatis, etc.)
+      ctx.fillStyle = 'rgba(71, 85, 105, 0.65)';
+      ctx.beginPath();
+      ctx.ellipse(cx - 140, cy - 100, 180, 140, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx + 100, cy - 60, 120, 100, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx + 40, cy + 110, 140, 80, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. Dynamic Lunar Phase Terminator & Earthshine Shadow
+    // phase: 0=New Moon, 0.25=First Quarter, 0.5=Full Moon, 0.75=Last Quarter, 1=New Moon
+    const normPhase = ((phase % 1) + 1) % 1;
+    
+    // Draw Earthshine / Dark side overlay
+    ctx.fillStyle = 'rgba(10, 15, 26, 0.94)';
+
+    if (normPhase < 0.02 || normPhase > 0.98) {
+      // New Moon: completely in shadow
+      ctx.fillRect(0, 0, w, h);
+    } else if (normPhase > 0.48 && normPhase < 0.52) {
+      // Full Moon: fully lit, no shadow
+    } else {
+      // Crescent / Quarter / Gibbous terminator curve
+      ctx.beginPath();
+      if (normPhase < 0.5) {
+        // Waxing (First Quarter side): Right side is lit, Left side is in shadow
+        ctx.arc(cx, cy, R + 1, Math.PI * 0.5, Math.PI * 1.5, false);
+        // Terminator ellipse
+        const k = Math.cos(normPhase * Math.PI * 2); // 1 at new -> 0 at quarter -> -1 at full
+        ctx.ellipse(cx, cy, Math.abs(k) * R, R + 1, 0, Math.PI * 1.5, Math.PI * 0.5, k > 0);
+      } else {
+        // Waning (Last Quarter side): Left side is lit, Right side is in shadow
+        ctx.arc(cx, cy, R + 1, Math.PI * 1.5, Math.PI * 0.5, false);
+        const k = Math.cos(normPhase * Math.PI * 2);
+        ctx.ellipse(cx, cy, Math.abs(k) * R, R + 1, 0, Math.PI * 0.5, Math.PI * 1.5, k > 0);
+      }
+      ctx.fill();
+    }
+
+    // Subtle 3D limb darkening along the outer circular edge
+    const limb = ctx.createRadialGradient(cx, cy, R * 0.75, cx, cy, R);
+    limb.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    limb.addColorStop(1, 'rgba(15, 23, 42, 0.4)');
+    ctx.fillStyle = limb;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.restore();
+
+    this.moonTexture.needsUpdate = true;
   }
 
   private initTextures() {
@@ -130,7 +260,7 @@ export class PlanetarySystem {
     this.textures.set('saturn', this.createSaturnTexture());
     this.textures.set('uranus', this.createUranusTexture());
     this.textures.set('neptune', this.createNeptuneTexture());
-    this.textures.set('moon', this.createMoonTexture());
+    this.textures.set('moon', this.moonTexture);
   }
 
   // =========================================================================
@@ -703,6 +833,12 @@ export class PlanetarySystem {
   public update(date: Date, fov: number) {
     const planets = this.calculatePlanets(date);
     const R = 995; // Just slightly inside the star sphere
+
+    // Dynamically update Moon phase on the NASA photographic texture
+    const moonIllum = SunCalc.getMoonIllumination(date);
+    if (Math.abs(moonIllum.phase - this.lastRenderedMoonPhase) > 0.003) {
+      this.redrawMoon(moonIllum.phase);
+    }
 
     for (const p of planets) {
       const sprite = this.planetSprites.get(p.id);
