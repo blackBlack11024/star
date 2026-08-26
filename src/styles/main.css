@@ -1743,3 +1743,118 @@ html, body {
   letter-spacing: 0.03em;
   float: right;
 }
+
+/* =============================================
+   Story Dialogue Modal (RPG / Visual Novel Style)
+   ============================================= */
+.story-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 36px;
+  pointer-events: auto;
+}
+.story-backdrop {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(2, 6, 23, 0.85) 0%, rgba(2, 6, 23, 0.4) 60%, rgba(0, 0, 0, 0.1) 100%);
+  pointer-events: none;
+}
+.story-box {
+  position: relative;
+  width: 90%;
+  max-width: 820px;
+  background: rgba(10, 18, 38, 0.94);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(100, 160, 255, 0.35);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75), 0 0 32px rgba(56, 189, 248, 0.15);
+  border-radius: 16px;
+  padding: 24px 28px;
+  z-index: 1;
+  cursor: pointer;
+  animation: storySlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes storySlideUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.story-char-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+.story-avatar {
+  font-size: 38px;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.story-char-meta {
+  flex: 1;
+}
+.story-char-name {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #38bdf8;
+  margin-bottom: 2px;
+}
+.story-char-role {
+  font-size: 12px;
+  color: #94a3b8;
+}
+.story-quest-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+.story-body {
+  min-height: 72px;
+  margin-bottom: 16px;
+}
+.story-text {
+  font-size: 16px;
+  line-height: 1.75;
+  color: #f1f5f9;
+  letter-spacing: 0.02em;
+  white-space: pre-line;
+}
+.story-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.story-btn {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+.story-btn:hover {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  transform: translateY(-1px);
+}
+

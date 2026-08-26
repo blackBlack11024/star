@@ -64,13 +64,15 @@ export class PlayerController {
       const location = document.querySelector('.location-modal') as HTMLElement | null;
       const timeRev = document.querySelector('.time-reversal-panel') as HTMLElement | null;
       const audio = document.querySelector('.audio-modal') as HTMLElement | null;
+      const story = document.querySelector('.story-modal') as HTMLElement | null;
       return (
         (codex && codex.style.display !== 'none') ||
         (lightbox && lightbox.style.display !== 'none') ||
         (guide && guide.style.display !== 'none') ||
         (location && location.style.display !== 'none') ||
         (timeRev && timeRev.style.display !== 'none') ||
-        (audio && audio.style.display !== 'none')
+        (audio && audio.style.display !== 'none') ||
+        (story && story.style.display !== 'none')
       );
     };
 

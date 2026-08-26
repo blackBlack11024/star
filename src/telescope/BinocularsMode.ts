@@ -1,100 +1,81 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import { gameStore } from '../game/GameStore';
 import { GameMode } from '../types';
 
 /**
- * BinocularsMode — Hold Right Mouse Button in Walk mode to look through
- * simulated 8x42 binoculars.  Narrows the camera FOV to ~7 deg and renders
- * an SVG vignette overlay that mimics two eyepieces.
+ * BinocularsMode — Hold Right Mouse Button in Walk mode for smooth optical zoom.
+ * Pure magnification (FOV ~10°) with no mask/overlay obstruction.
+ * Listens on window so it triggers seamlessly regardless of pointer lock state.
  */
 export class BinocularsMode {
     private camera: THREE.PerspectiveCamera;
-    private canvas: HTMLCanvasElement;
-    private overlay: HTMLElement;
-    private isActive = false;
-    private originalFov = 60;
-    private readonly BINO_FOV = 7.0; // 8x42 binoculars field of view
+    private isHoldingRightClick = false;
+    private targetFov = 60;
+    private readonly BINO_FOV = 10.0;
+    private readonly DEFAULT_FOV = 60.0;
 
-    constructor(camera: THREE.PerspectiveCamera, canvas: HTMLCanvasElement) {
+    constructor(camera: THREE.PerspectiveCamera, _canvas: HTMLCanvasElement) {
         this.camera = camera;
-        this.canvas = canvas;
-        this.overlay = this.createOverlay();
         this.setupEvents();
     }
 
-    private createOverlay(): HTMLElement {
-        const el = document.createElement('div');
-        el.className = 'binoculars-overlay';
-        el.style.display = 'none';
-        el.innerHTML = `
-        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <mask id="bino-mask">
-              <rect width="100" height="100" fill="white"/>
-              <!-- Two circular holes for binocular vision -->
-              <circle cx="30" cy="50" r="22" fill="black"/>
-              <circle cx="70" cy="50" r="22" fill="black"/>
-            </mask>
-          </defs>
-          <rect width="100" height="100" fill="rgba(0,0,0,0.97)" mask="url(#bino-mask)"/>
-          <!-- Subtle vignette inside each eyepiece -->
-          <circle cx="30" cy="50" r="22" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3"/>
-          <circle cx="70" cy="50" r="22" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="3"/>
-          <!-- Center divider bar (bridge) -->
-          <rect x="47" y="38" width="6" height="24" fill="rgba(0,0,0,0.9)"/>
-        </svg>
-        <div class="bino-info">8x42 雙筒望遠鏡 &bull; FOV 7&deg; &bull; 放大倍率 8x</div>
-        `;
-        document.getElementById('ui-overlay')?.appendChild(el);
-        return el;
-    }
-
     private setupEvents(): void {
-        // Activate on right mousedown when in Walk mode
-        this.canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 2 && gameStore.getState().gameMode === GameMode.Walk) {
-                this.activate();
+        // Listen on window for reliable right-click hold in any pointer lock state
+        window.addEventListener('mousedown', (e) => {
+            if (e.button === 2) {
+                const mode = gameStore.getState().gameMode;
+                if (mode === GameMode.Walk) {
+                    this.isHoldingRightClick = true;
+                    this.targetFov = this.BINO_FOV;
+                }
             }
         });
 
-        // Deactivate on right mouseup (listen on window to catch releases outside canvas)
         window.addEventListener('mouseup', (e) => {
-            if (e.button === 2 && this.isActive) {
-                this.deactivate();
+            if (e.button === 2) {
+                if (this.isHoldingRightClick) {
+                    this.isHoldingRightClick = false;
+                    this.targetFov = this.DEFAULT_FOV;
+                }
             }
         });
 
-        // Deactivate immediately if the game mode changes away from Walk
+        // Reset FOV immediately if switching away from Walk mode
         gameStore.subscribe((state, prev) => {
-            if (state.gameMode !== prev.gameMode && this.isActive) {
-                this.deactivate();
+            if (state.gameMode !== prev.gameMode) {
+                this.isHoldingRightClick = false;
+                this.targetFov = this.DEFAULT_FOV;
+                if (state.gameMode === GameMode.Walk) {
+                    this.camera.fov = this.DEFAULT_FOV;
+                    this.camera.updateProjectionMatrix();
+                }
             }
         });
     }
 
-    private activate(): void {
-        if (this.isActive) return;
-        this.isActive = true;
-        this.originalFov = this.camera.fov;
-        this.camera.fov = this.BINO_FOV;
-        this.camera.updateProjectionMatrix();
-        this.overlay.style.display = 'block';
+    /** Called every frame in Game.update to smoothly lerp FOV. */
+    public update(deltaTime: number): void {
+        const mode = gameStore.getState().gameMode;
+        if (mode !== GameMode.Walk) return;
+
+        if (Math.abs(this.camera.fov - this.targetFov) > 0.05) {
+            // Smooth zoom lerp
+            this.camera.fov += (this.targetFov - this.camera.fov) * Math.min(1.0, deltaTime * 14);
+            this.camera.updateProjectionMatrix();
+        } else if (this.camera.fov !== this.targetFov) {
+            this.camera.fov = this.targetFov;
+            this.camera.updateProjectionMatrix();
+        }
     }
 
-    private deactivate(): void {
-        if (!this.isActive) return;
-        this.isActive = false;
-        this.camera.fov = this.originalFov;
-        this.camera.updateProjectionMatrix();
-        this.overlay.style.display = 'none';
-    }
-
-    /** Whether binoculars are currently active. */
     public get active(): boolean {
-        return this.isActive;
+        return this.isHoldingRightClick;
     }
 
     public dispose(): void {
-        this.overlay.remove();
+        this.isHoldingRightClick = false;
+        this.camera.fov = this.DEFAULT_FOV;
+        this.camera.updateProjectionMatrix();
     }
 }
+

@@ -33,6 +33,7 @@ import { TelescopeHUD } from './ui/TelescopeHUD';
 import { StudioUI } from './ui/StudioUI';
 import { CodexUI } from './ui/CodexUI';
 import { PhotoLightbox } from './ui/PhotoLightbox';
+import { StoryDialogue } from './ui/StoryDialogue';
 import { MenuSystem } from './ui/MenuSystem';
 import { getTelescopeConfig } from './data/telescopes';
 
@@ -79,6 +80,7 @@ export class Game {
   private studioUI!: StudioUI;
   private codexUI!: CodexUI;
   private photoLightbox!: PhotoLightbox;
+  private storyDialogue!: StoryDialogue;
   private menuSystem!: MenuSystem;
 
   // ---- State ----
@@ -191,6 +193,7 @@ export class Game {
     this.studioUI = new StudioUI();
     this.codexUI = new CodexUI();
     this.photoLightbox = new PhotoLightbox();
+    this.storyDialogue = new StoryDialogue();
     this.menuSystem = new MenuSystem();
 
     // ---- Wire up interactions ----
@@ -213,6 +216,14 @@ export class Game {
     };
     document.addEventListener('click', initAudio);
     document.addEventListener('keydown', initAudio);
+
+    // If first time playing, show Chapter 0 intro dialogue
+    const firstQuest = this.questManager.getNextQuest();
+    if (firstQuest && (gameStore.getState().completedQuestIds || []).length === 0 && (gameStore.getState().photos || []).length === 0) {
+      setTimeout(() => {
+        this.storyDialogue.playIntroDialogue(firstQuest);
+      }, 1500);
+    }
 
     this.animate();
   }
@@ -277,8 +288,9 @@ export class Game {
     // ---- World objects ----
     this.telescopeModel.update(this.camera.position);
 
-    // ---- Player controller ----
+    // ---- Player controller & Binoculars smooth zoom ----
     this.playerController.update(deltaTime);
+    this.binocularsMode.update(deltaTime);
 
     // ---- Telescope mode logic ----
     if (state.gameMode === GameMode.Telescope) {
@@ -375,11 +387,31 @@ export class Game {
       }
     });
 
-    // Quest completion event
+    // Quest completion event with story dialogue
     document.addEventListener('quest-completed', (e: any) => {
       const quest = e.detail.quest;
       this.hud.showNotification(`任務完成：${quest.title}！獲得 $${quest.rewards.money || 0}`, 'success');
       this.hud.updateQuestTracker(this.questManager.getNextQuest());
+
+      // Trigger character dialogue
+      this.storyDialogue.playCompleteDialogue(quest, () => {
+        const nextQuest = this.questManager.getNextQuest();
+        if (nextQuest) {
+          setTimeout(() => {
+            this.storyDialogue.playIntroDialogue(nextQuest);
+          }, 800);
+        }
+      });
+    });
+
+    // Replay story dialogue event from Codex
+    document.addEventListener('play-story-dialogue', (e: any) => {
+      const { quest, mode } = e.detail;
+      if (mode === 'complete') {
+        this.storyDialogue.playCompleteDialogue(quest);
+      } else {
+        this.storyDialogue.playIntroDialogue(quest);
+      }
     });
 
     // Custom notification event
@@ -502,6 +534,7 @@ export class Game {
     this.studioUI.dispose();
     this.codexUI.dispose();
     this.photoLightbox.dispose();
+    this.storyDialogue.dispose();
     this.menuSystem.dispose();
     this.renderer.dispose();
   }

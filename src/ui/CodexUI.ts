@@ -155,14 +155,41 @@ export class CodexUI {
 
             const card = document.createElement('div');
             card.className = `codex-quest-card ${done ? 'done' : available ? 'available' : 'locked'}`;
+            
+            const char = quest.character;
             card.innerHTML = `
-                <div class="quest-status">${done ? '已完成' : available ? '進行中' : '未解鎖'}</div>
-                <div class="quest-chapter">第 ${quest.chapter} 章</div>
-                <div class="quest-title">${done || available ? quest.title : '???'}</div>
-                <div class="quest-story">${done || available ? quest.story : '完成前置任務以解鎖劇情'}</div>
-                ${done || available ? `<div class="quest-objectives">${quest.objectives.map(o => `<div class="quest-obj ${done ? 'done' : ''}">${done ? '✓' : '○'} ${o.description}</div>`).join('')}</div>` : ''}
-                <div class="quest-reward">任務獎勵: ${quest.rewards.money ? `$${quest.rewards.money}` : ''}${quest.rewards.title ? ` · 稱號「${quest.rewards.title}」` : ''}${quest.rewards.unlockLocation ? ` · 解鎖新地點` : ''}</div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                    <div>
+                        <div class="quest-status">${done ? '已完成 ✓' : available ? '進行中 ▶' : '未解鎖 🔒'}</div>
+                        <div class="quest-chapter">第 ${quest.chapter} 章 · ${quest.title}</div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:16px;">
+                        <span style="font-size:16px;">${char.avatarIcon}</span>
+                        <span style="font-size:12px; color:${char.color}; font-weight:600;">${char.name}</span>
+                    </div>
+                </div>
+                <div class="quest-story">${done || available ? quest.storySummary : '完成前置章節任務以解鎖劇情'}</div>
+                ${done || available ? `
+                    <div class="quest-objectives">
+                        <div style="font-size:11px; color:#64748b; margin-bottom:4px;">任務目標：</div>
+                        ${quest.objectives.map(o => `<div class="quest-obj ${done ? 'done' : ''}">${done ? '✓' : '○'} ${o.description}</div>`).join('')}
+                    </div>
+                ` : ''}
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;">
+                    <div class="quest-reward">獎勵: ${quest.rewards.money ? `$${quest.rewards.money}` : ''}${quest.rewards.unlockLocation ? ` · 解鎖新地點` : ''}</div>
+                    ${done || available ? `<button class="quest-replay-btn" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:4px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:all 0.2s;">📖 聆聽劇情對話</button>` : ''}
+                </div>
             `;
+
+            const replayBtn = card.querySelector('.quest-replay-btn') as HTMLButtonElement | null;
+            if (replayBtn) {
+                replayBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    this.hide();
+                    document.dispatchEvent(new CustomEvent('play-story-dialogue', { detail: { quest, mode: done ? 'complete' : 'intro' } }));
+                };
+            }
+
             body.appendChild(card);
         }
     }
