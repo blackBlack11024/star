@@ -853,14 +853,23 @@ export class PlanetarySystem {
 
       sprite.position.set(x, y, z);
 
-      // Scale sprite based on planet size and telescope zoom FOV
-      let baseScale = 4.0;
-      if (p.id === 'moon') baseScale = 22.0;
-      else if (p.id === 'saturn' || p.id === 'jupiter') baseScale = 6.0;
-      else if (p.id === 'venus') baseScale = 5.0;
+      // Dynamic optical scaling based on planet type and telescope magnification FOV
+      // Real planetary optical expansion:
+      // At 60° (Naked Eye): prominent bright disks
+      // At 7° (Binoculars): clearly resolved disks and shapes
+      // At 1° ~ 0.2° (Telescope): huge, glorious details filling the eyepiece!
+      let baseScale = 8.0;
+      if (p.id === 'moon') baseScale = 38.0;
+      else if (p.id === 'saturn') baseScale = 14.0;
+      else if (p.id === 'jupiter') baseScale = 13.5;
+      else if (p.id === 'venus') baseScale = 12.0;
+      else if (p.id === 'mars') baseScale = 9.0;
+      else if (p.id === 'uranus' || p.id === 'neptune') baseScale = 7.0;
 
-      const zoomFactor = Math.pow(Math.max(1.0, 60.0 / Math.max(0.2, fov)), 0.65);
-      const scale = baseScale * zoomFactor * 0.28;
+      // Optical zoom curve (scaled with telescope aperture and FOV)
+      const zoomRatio = 60.0 / Math.max(0.18, fov);
+      const opticalFactor = Math.pow(zoomRatio, 0.82);
+      const scale = baseScale * (1.0 + (opticalFactor - 1.0) * 0.55);
 
       sprite.scale.set(scale, scale, 1);
     }
