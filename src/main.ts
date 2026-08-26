@@ -1,6 +1,7 @@
 // ============================================================
 // Stargazer Simulator — Entry Point
 // ============================================================
+import './styles/main.css';
 import { Game } from './Game';
 
 async function main() {
