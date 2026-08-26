@@ -285,7 +285,7 @@ export class Game {
 
     // ---- Deep sky objects & Planetary System ----
     this.deepSkyObjects.update(currentCameraFov, isTelescope, effectiveLimitingMag);
-    this.planetarySystem.update(gameTime, currentCameraFov);
+    this.planetarySystem.update(gameTime, currentCameraFov, loc.latitude, loc.longitude);
     const planets = this.planetarySystem.getPlanets();
 
     // ---- Constellations ----

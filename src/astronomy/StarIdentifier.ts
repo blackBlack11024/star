@@ -107,7 +107,18 @@ export class StarIdentifier {
     }
     const objects = this.findObjectsInFov(telescopeRa, telescopeDec, fovDegrees, celestialSphere, planets);
     if (objects.length === 0) return null;
-    objects.sort((a, b) => a.angularDistance - b.angularDistance);
+
+    // Prioritize Planets/Moon and DSOs over faint background point stars
+    objects.sort((a, b) => {
+      // 1. If one is a Planet / Moon and within targeting range, strongly prioritize it
+      if (a.type === TargetType.Planet && b.type !== TargetType.Planet) return -1;
+      if (b.type === TargetType.Planet && a.type !== TargetType.Planet) return 1;
+      // 2. If one is a DSO and the other is a background star
+      if (a.type === TargetType.Messier && b.type === TargetType.StarField) return -1;
+      if (b.type === TargetType.Messier && a.type === TargetType.StarField) return 1;
+      // 3. Otherwise closest to optical center
+      return a.angularDistance - b.angularDistance;
+    });
 
     // Forgiving identification: recognized as long as object is comfortably inside eyepiece field
     const maxCenterDist = Math.max(1.8, Math.min(8.0, fovDegrees * 0.45));

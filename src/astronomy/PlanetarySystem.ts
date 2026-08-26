@@ -719,7 +719,7 @@ export class PlanetarySystem {
   }
 
   /** Compute Geocentric RA and Dec for all planets for a given date */
-  public calculatePlanets(date: Date): PlanetData[] {
+  public calculatePlanets(date: Date, latitude: number = 24.14, longitude: number = 121.27): PlanetData[] {
     const jd = date.getTime() / 86400000.0 + 2440587.5;
     const d = jd - 2451545.0; // Days from J2000.0
 
@@ -780,15 +780,29 @@ export class PlanetarySystem {
       });
     }
 
-    // Add Moon from SunCalc
-    const moonPos = SunCalc.getMoonPosition(date, 24.14, 121.27);
+    // Add Moon from SunCalc with exact Equatorial coordinate conversion
+    const lat = latitude ?? 24.14;
+    const lon = longitude ?? 121.27;
+    const moonPos = SunCalc.getMoonPosition(date, lat, lon);
     const moonIllum = SunCalc.getMoonIllumination(date);
     const phaseNames = ['新月', '眉月', '上弦月', '盈凸月', '滿月', '虧凸月', '下弦月', '殘月'];
     const phaseIdx = Math.round(moonIllum.phase * 8) % 8;
 
-    // Convert Moon azimuth/altitude to RA/Dec (approximate)
-    let moonRa = ((moonPos.azimuth * 12) / Math.PI + 12) % 24;
-    let moonDec = (moonPos.altitude * 180) / Math.PI;
+    // Convert SunCalc horizontal coordinates (altitude, azimuth) to Three.js world vector
+    const moonPhi = Math.PI / 2 - moonPos.altitude;
+    const moonTheta = moonPos.azimuth;
+    const moonWorldVec = new THREE.Vector3().setFromSphericalCoords(995, moonPhi, moonTheta);
+
+    // Transform to local space of rotating celestialGroup
+    this.celestialGroup.updateMatrixWorld(true);
+    const moonLocalVec = moonWorldVec.clone();
+    this.celestialGroup.worldToLocal(moonLocalVec);
+
+    // Derive true Right Ascension (0-24h) and Declination (-90 to +90 deg)
+    const normLocal = moonLocalVec.clone().normalize();
+    const moonDec = Math.asin(Math.max(-1, Math.min(1, normLocal.y))) * (180 / Math.PI);
+    let moonRa = Math.atan2(normLocal.z, normLocal.x) * (12 / Math.PI);
+    if (moonRa < 0) moonRa += 24;
 
     result.push({
       id: 'moon',
@@ -830,8 +844,8 @@ export class PlanetarySystem {
   }
 
   /** Update planet positions and visual scaling based on camera FOV */
-  public update(date: Date, fov: number) {
-    const planets = this.calculatePlanets(date);
+  public update(date: Date, fov: number, latitude?: number, longitude?: number) {
+    const planets = this.calculatePlanets(date, latitude, longitude);
     const R = 995; // Just slightly inside the star sphere
 
     // Dynamically update Moon phase on the NASA photographic texture
