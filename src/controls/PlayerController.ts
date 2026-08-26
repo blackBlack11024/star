@@ -17,6 +17,7 @@ export class PlayerController {
   private moveLeft = false;
   private moveRight = false;
   private isSprinting = false;
+  private isAltHeld = false;
 
   private velocity = new THREE.Vector3();
   private direction = new THREE.Vector3();
@@ -57,31 +58,18 @@ export class PlayerController {
     // Prevent browser context menu on right click
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    const isAnyModalActive = (): boolean => {
-      const modalSelectors = [
-        '.codex-panel',
-        '.lightbox-overlay',
-        '.guide-modal',
-        '.location-modal',
-        '.time-reversal-panel',
-        '.audio-modal',
-        '.story-modal'
-      ];
-      for (const sel of modalSelectors) {
-        const el = document.querySelector(sel) as HTMLElement | null;
-        if (el && el.style.display !== 'none' && getComputedStyle(el).display !== 'none') {
-          return true;
-        }
-      }
-      return false;
-    };
+    // Reset Alt state when window loses focus
+    window.addEventListener('blur', () => {
+      this.isAltHeld = false;
+    });
 
     // Click to lock pointer in walk or telescope mode (left click)
     const handleViewportLock = (e: MouseEvent) => {
       if (e.button !== 0) return; // Only left click locks pointer
-      if (isAnyModalActive()) return;
+      if (this.isAltHeld) return; // While holding Alt, clicks are for UI interaction
+      if (this.isAnyModalActive()) return;
       const target = e.target as HTMLElement;
-      if (target && target.closest('.hud-panel, .studio-panel, button, input, select, .guide-badge, .money-badge, .weather-badge, .audio-badge')) {
+      if (target && target.closest('.hud-panel, .studio-panel, button, input, select, .guide-badge, .money-badge, .weather-badge, .audio-badge, .story-box, .codex-panel, .lightbox-content')) {
         return;
       }
       const mode = gameStore.getState().gameMode;
@@ -98,6 +86,25 @@ export class PlayerController {
         this.handleModeChange(state.gameMode, prevState.gameMode);
       }
     });
+  }
+
+  private isAnyModalActive(): boolean {
+    const modalSelectors = [
+      '.codex-panel',
+      '.lightbox-overlay',
+      '.guide-modal',
+      '.location-modal',
+      '.time-reversal-panel',
+      '.audio-modal',
+      '.story-modal'
+    ];
+    for (const sel of modalSelectors) {
+      const el = document.querySelector(sel) as HTMLElement | null;
+      if (el && el.style.display !== 'none' && getComputedStyle(el).display !== 'none') {
+        return true;
+      }
+    }
+    return false;
   }
 
   private handleModeChange(newMode: GameMode, oldMode: GameMode) {
@@ -126,6 +133,16 @@ export class PlayerController {
   private onKeyDown(event: KeyboardEvent) {
     const state = gameStore.getState();
     const mode = state.gameMode;
+
+    // Alt key: Hold Alt to free mouse cursor for UI interaction
+    if (event.key === 'Alt' || event.code === 'AltLeft' || event.code === 'AltRight') {
+      event.preventDefault();
+      if (!this.isAltHeld) {
+        this.isAltHeld = true;
+        this.controls.unlock();
+      }
+      return;
+    }
 
     if (mode === GameMode.Walk) {
       switch (event.code) {
@@ -206,6 +223,17 @@ export class PlayerController {
   }
 
   private onKeyUp(event: KeyboardEvent) {
+    if (event.key === 'Alt' || event.code === 'AltLeft' || event.code === 'AltRight') {
+      event.preventDefault();
+      this.isAltHeld = false;
+      const state = gameStore.getState();
+      const mode = state.gameMode;
+      if ((mode === GameMode.Walk || mode === GameMode.Telescope) && !this.isAnyModalActive() && !this.controls.isLocked) {
+        this.controls.lock();
+      }
+      return;
+    }
+
     switch (event.code) {
       case 'KeyW': this.moveForward = false; break;
       case 'KeyA': this.moveLeft = false; break;

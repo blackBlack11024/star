@@ -157,6 +157,7 @@ export class HUD {
         const bottomRight = document.createElement('div');
         bottomRight.className = 'hud-panel bottom-right';
         bottomRight.innerHTML = `
+            <span><span class="key-tag">Alt</span>游標</span>
             <span><span class="key-tag">C</span>星座</span>
             <span><span class="key-tag">L</span>地點</span>
             <span><span class="key-tag">R</span>倒流</span>
