@@ -147,10 +147,10 @@ export function galacticToEquatorial(lDeg: number, bDeg: number): { ra: number; 
 }
 
 /**
- * Generate a rich, realistic star catalog (32,000+ stars) including the dense Milky Way galactic band
- * and telescopic background stars with accurate B-V colors.
+ * Generate a rich, realistic star catalog (65,000+ stars) including the dense Milky Way galactic band,
+ * galactic center bulge, and telescopic background stars with accurate B-V colors.
  */
-export function generateFillerStars(count: number = 32000, seed: number = 42): BrightStar[] {
+export function generateFillerStars(count: number = 65000, seed: number = 42): BrightStar[] {
   const stars: BrightStar[] = [];
   let s = seed;
   const rand = (): number => {
@@ -168,39 +168,46 @@ export function generateFillerStars(count: number = 32000, seed: number = 42): B
     return Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
   };
 
-  // 1. Milky Way Galactic Plane Band (~65% of stars concentrated along galactic equator)
-  const galacticCount = Math.floor(count * 0.65);
+  // 1. Milky Way Galactic Plane & Bulge (~70% of stars)
+  const galacticCount = Math.floor(count * 0.7);
   for (let i = 0; i < galacticCount; i++) {
-    // Galactic longitude: biased towards Galactic Center (l = 0/360) and Cygnus (l = 80)
-    let l = rand() * 360;
-    if (rand() < 0.35) {
-      // Galactic center concentration around Sagittarius
-      l = (randNorm() * 35 + 360) % 360;
-    } else if (rand() < 0.2) {
-      // Cygnus star cloud concentration
-      l = (randNorm() * 20 + 80 + 360) % 360;
-    }
+    let l: number;
+    let b: number;
+    const r = rand();
 
-    // Galactic latitude: tight exponential/Gaussian distribution along b = 0 (galactic disk)
-    const b = randNorm() * (rand() < 0.5 ? 5.5 : 12.0); // tightly clamped to galactic plane
+    if (r < 0.4) {
+      // Galactic Center & Bulge (Sagittarius / Scorpius region)
+      l = (randNorm() * 28 + 360) % 360;
+      b = randNorm() * 5.0;
+    } else if (r < 0.62) {
+      // Cygnus & Summer Triangle Star Stream
+      l = (randNorm() * 22 + 78 + 360) % 360;
+      b = randNorm() * 6.5;
+    } else if (r < 0.82) {
+      // Winter Milky Way (Auriga, Gemini, Orion, Monoceros)
+      l = (randNorm() * 30 + 195 + 360) % 360;
+      b = randNorm() * 7.5;
+    } else {
+      // Continuous Galactic Disk
+      l = rand() * 360;
+      b = randNorm() * (rand() < 0.6 ? 4.5 : 11.0);
+    }
 
     const eq = galacticToEquatorial(l, b);
 
-    // Magnitude distribution: faint Milky Way dust & background stars
-    const mag = 4.5 + Math.pow(rand(), 0.6) * 6.5; // mag 4.5 to 11.0
-    // Color temperature: mixture of warm giants and hot young disk stars
-    const bv = -0.2 + rand() * 1.8;
+    // Magnitude distribution: realistic exponential curve for faint stars
+    const mag = 4.2 + Math.pow(rand(), 0.55) * 7.2; // mag 4.2 to 11.4
+    const bv = -0.25 + rand() * 1.9;
 
     stars.push({ name: '', ra: eq.ra, dec: eq.dec, mag, bv });
   }
 
-  // 2. Uniform All-Sky Field Stars (~35% of stars)
+  // 2. Uniform All-Sky Field Stars (~30% of stars)
   const fieldCount = count - galacticCount;
   for (let i = 0; i < fieldCount; i++) {
     const ra = rand() * 24;
     const dec = Math.asin(2 * rand() - 1) * (180 / Math.PI);
-    // Real stellar luminosity function distribution (power-law)
-    const mag = 2.5 + Math.pow(rand(), 0.7) * 7.5; // mag 2.5 to 10.0
+    const mag = 2.5 + Math.pow(rand(), 0.65) * 7.8; // mag 2.5 to 10.3
     const bv = -0.3 + rand() * 2.1;
 
     stars.push({ name: '', ra, dec, mag, bv });

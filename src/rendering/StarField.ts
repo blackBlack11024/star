@@ -39,7 +39,7 @@ export class StarField {
         }
 
         if (useFallback) {
-            starsData = [...BRIGHT_STARS, ...generateFillerStars(32000)].map(star => {
+            starsData = [...BRIGHT_STARS, ...generateFillerStars(65000)].map(star => {
                 const R = 1000;
                 const ra_rad = star.ra * Math.PI / 12;
                 const dec_rad = star.dec * Math.PI / 180;
