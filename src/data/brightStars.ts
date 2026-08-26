@@ -319,8 +319,14 @@ export function generateFillerStars(count: number = 45000, seed: number = 42): B
 
     const eq = galacticToEquatorial(l, b);
 
-    // Telescopic background stars (mag 5.2 to 14.8, invisible to naked eye, revealed by binoculars and telescopes)
-    const mag = 5.2 + Math.pow(rand(), 0.6) * 9.6;
+    // Natural stellar luminosity distribution:
+    // ~5% are secondary naked-eye stars (mag 3.8 to 5.0), rest are telescopic background (mag 5.2 to 14.8)
+    let mag: number;
+    if (r < 0.05) {
+      mag = 3.8 + Math.pow(rand(), 0.7) * 1.2; // mag 3.8 - 5.0 (rich natural starry sky)
+    } else {
+      mag = 5.2 + Math.pow(rand(), 0.6) * 9.6; // mag 5.2 - 14.8 (telescopic)
+    }
     const bv = -0.25 + rand() * 1.85;
 
     stars.push({ name: '', ra: eq.ra, dec: eq.dec, mag, bv });
@@ -331,8 +337,15 @@ export function generateFillerStars(count: number = 45000, seed: number = 42): B
   for (let i = 0; i < fieldCount; i++) {
     const ra = rand() * 24;
     const dec = Math.asin(2 * rand() - 1) * (180 / Math.PI);
-    // Telescopic field stars (mag 5.4 to 14.8)
-    const mag = 5.4 + Math.pow(rand(), 0.65) * 9.4;
+    const r = rand();
+
+    // ~8% are secondary naked-eye stars (mag 3.5 to 5.0), rest are telescopic
+    let mag: number;
+    if (r < 0.08) {
+      mag = 3.5 + Math.pow(rand(), 0.75) * 1.5; // mag 3.5 - 5.0
+    } else {
+      mag = 5.2 + Math.pow(rand(), 0.65) * 9.6; // mag 5.2 - 14.8
+    }
     const bv = -0.3 + rand() * 2.1;
 
     stars.push({ name: '', ra, dec, mag, bv });
