@@ -311,20 +311,16 @@ export class Game {
       if (state.isExposing) {
         // Render scene to offscreen target and accumulate
         this.longExposure.accumulate(this.scene, this.camera, 1.0);
-        const progress = this.longExposure.getProgress();
-        state.updateExposureProgress(progress);
-
-        // Auto-finish when done
-        if (progress >= 1.0) {
-          this.finishExposure(identified);
-        }
+        const elapsed = this.longExposure.getElapsedSeconds();
+        state.updateExposureElapsed(elapsed);
       }
 
       // Update telescope HUD
       this.telescopeHUD.update(
         identified,
-        state.exposureProgress,
         state.isExposing,
+        this.longExposure.getElapsedSeconds(),
+        this.longExposure.getSampleCount(),
         state.currentFov,
         60 / state.currentFov,
         state.telescopeRa,
@@ -431,13 +427,14 @@ export class Game {
     });
 
     // Photo capture event
+    // Photo capture event (Manual Start / Stop Exposure)
     document.addEventListener('capture-photo', () => {
       const state = gameStore.getState();
       if (state.gameMode !== GameMode.Telescope) return;
 
       if (!state.isExposing) {
-        this.longExposure.startExposure(state.exposureDuration);
-        state.startExposure(state.exposureDuration);
+        this.longExposure.startExposure();
+        state.startExposure();
         this.audioManager.playShutter();
       } else {
         const identified = this.starIdentifier.identify(
@@ -484,7 +481,7 @@ export class Game {
   private finishExposure(identified: { name: string; type: any; magnitude: number } | null): void {
     const state = gameStore.getState();
 
-    this.longExposure.finishExposure();
+    const elapsedSeconds = this.longExposure.finishExposure();
     state.stopExposure();
 
     // Determine target info
@@ -492,13 +489,14 @@ export class Game {
     const targetType = identified?.type || 'star_field';
 
     // Capture and score the photo
-    this.photoManager.capturePhoto(
+    const photo = this.photoManager.capturePhoto(
       this.renderer, this.scene, this.camera,
       { name: targetName, type: targetType, difficulty: 1 },
+      elapsedSeconds
     );
 
     this.audioManager.playShutter();
-    this.hud.showNotification(`照片已儲存: ${targetName}`, 'success');
+    this.hud.showNotification(`照片已儲存: ${targetName}（曝光 ${elapsedSeconds.toFixed(1)} 秒 · ${photo.quality}級）`, 'success');
   }
 
   /** Handle window resize. */

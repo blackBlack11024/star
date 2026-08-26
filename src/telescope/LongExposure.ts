@@ -78,9 +78,9 @@ export class LongExposure {
     this.resultCanvas = document.createElement('canvas');
   }
 
-  public startExposure(durationSeconds: number) {
+  public startExposure(_durationSeconds?: number) {
     this.isExposingFlag = true;
-    this.duration = Math.max(1, durationSeconds);
+    this.duration = 0;
     this.startTime = performance.now();
     this.sampleCount = 0;
     
@@ -90,6 +90,15 @@ export class LongExposure {
     this.renderer.clear();
     this.renderer.setRenderTarget(null);
     this.bufferIdx = 0;
+  }
+
+  public getElapsedSeconds(): number {
+    if (!this.isExposingFlag) return 0;
+    return (performance.now() - this.startTime) / 1000;
+  }
+
+  public getSampleCount(): number {
+    return this.sampleCount;
   }
 
   public accumulate(mainScene: THREE.Scene, mainCamera: THREE.PerspectiveCamera, gain: number = 1.0) {
@@ -117,14 +126,15 @@ export class LongExposure {
     this.bufferIdx = 1 - this.bufferIdx;
   }
 
-  public finishExposure() {
+  public finishExposure(): number {
+    const elapsed = this.getElapsedSeconds();
     this.isExposingFlag = false;
     const finalTarget = this.bufferIdx === 0 ? this.rtA : this.rtB;
     
     this.resultCanvas.width = this.width;
     this.resultCanvas.height = this.height;
     const ctx = this.resultCanvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) return elapsed;
     
     const buffer = new Uint16Array(this.width * this.height * 4);
     this.renderer.readRenderTargetPixels(finalTarget, 0, 0, this.width, this.height, buffer);
@@ -147,6 +157,7 @@ export class LongExposure {
         }
     }
     ctx.putImageData(flipped, 0, 0);
+    return elapsed;
   }
 
   public getResultAsDataUrl(): string {
@@ -158,9 +169,7 @@ export class LongExposure {
   }
 
   public getProgress(): number {
-    if (!this.isExposingFlag) return 0;
-    const elapsed = (performance.now() - this.startTime) / 1000;
-    return Math.min(1.0, elapsed / this.duration);
+    return this.isExposingFlag ? 1 : 0;
   }
 
   public getAccumulatedTexture(): THREE.Texture {

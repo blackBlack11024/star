@@ -165,14 +165,9 @@ export class PlayerController {
           state.setGameMode(GameMode.Walk);
           break;
         case 'Space':
+        case 'KeyE':
           document.dispatchEvent(new CustomEvent('capture-photo'));
           break;
-        case 'KeyE': {
-          const idx = this.exposureCycle.indexOf(state.exposureDuration);
-          const next = this.exposureCycle[(idx + 1) % this.exposureCycle.length];
-          gameStore.setState({ exposureDuration: next });
-          break;
-        }
         case 'ArrowUp':
         case 'ArrowDown':
         case 'ArrowLeft':

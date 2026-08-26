@@ -22,8 +22,9 @@ export class PhotoManager {
 
     constructor() {}
 
-    public capturePhoto(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, targetInfo: any): Photo {
+    public capturePhoto(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, targetInfo: any, actualExposureSeconds?: number): Photo {
         const state = gameStore.getState();
+        const expSec = Math.max(0.5, actualExposureSeconds ?? state.exposureDuration ?? 5);
         
         // Render scene to get imageDataUrl
         renderer.render(scene, camera);
@@ -36,7 +37,7 @@ export class PhotoManager {
         const penaltyFactor = getRepeatPenaltyFactor(targetId);
         targetPhotoCounts[targetId] = (targetPhotoCounts[targetId] || 0) + 1;
 
-        const qualityScore = this.calculateQuality(targetInfo, state);
+        const qualityScore = this.calculateQuality(targetInfo, state, expSec);
         const quality = this.getQualityGrade(qualityScore);
         const basePrice = this.calculatePrice(quality, targetInfo?.type || TargetType.StarField);
         const finalPrice = Math.floor(basePrice * penaltyFactor);
@@ -46,7 +47,7 @@ export class PhotoManager {
             imageDataUrl,
             targetName: targetInfo?.name || '未知星野',
             targetType: targetInfo?.type || TargetType.StarField,
-            exposureSeconds: state.exposureDuration || 5,
+            exposureSeconds: parseFloat(expSec.toFixed(1)),
             telescopeLevel: state.telescopeLevel || 1,
             weatherCondition: state.weather,
             locationId: state.currentLocation?.id || 'hehuanshan',
@@ -74,8 +75,8 @@ export class PhotoManager {
         return photo as Photo;
     }
 
-    public calculateQuality(targetInfo: any, state: any): number {
-        let score = 50;
+    public calculateQuality(targetInfo: any, state: any, expSec: number = 5): number {
+        let score = 45;
 
         // Weather multiplier
         let weatherMult = 1.0;
@@ -89,9 +90,12 @@ export class PhotoManager {
         const telLevel = state.telescopeLevel || 1;
         score += telLevel * 8;
 
-        // Exposure bonus (up to 20 points for longer exposure)
-        const expSec = state.exposureDuration || 5;
-        score += Math.min(20, Math.log2(expSec + 1) * 3);
+        // Exposure signal-to-noise accumulation bonus
+        if (expSec < 2.0) {
+            score -= 15; // Underexposed
+        } else {
+            score += Math.min(26, Math.log2(expSec + 1) * 4.8);
+        }
 
         // Difficulty bonus
         if (targetInfo?.difficulty) {
