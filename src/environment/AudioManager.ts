@@ -1,6 +1,6 @@
 /**
  * Manages all game audio with smooth, soothing procedural acoustic generation via Web Audio API.
- * High frequencies are softened and a master limiter/compressor prevents any clipping or popping.
+ * Includes gentle night crickets, daytime bird songs, warm mountain breeze, telescope motor, and master compressor limiter.
  */
 export class AudioManager {
     private ctx: AudioContext | null = null;
@@ -18,7 +18,10 @@ export class AudioManager {
     
     private activeWeather: AudioBufferSourceNode | null = null;
     private weatherGain: GainNode | null = null;
-    private currentWeatherState: string = '';
+
+    // Wildlife audio scheduler
+    private natureTimer: number | null = null;
+    private isRaining: boolean = false;
 
     constructor() {}
 
@@ -40,10 +43,10 @@ export class AudioManager {
             this.masterCompressor.attack.setValueAtTime(0.003, this.ctx.currentTime);
             this.masterCompressor.release.setValueAtTime(0.25, this.ctx.currentTime);
 
-            // 2. Master lowpass filter to soften harsh digital frequencies > 2800Hz
+            // 2. Master lowpass filter to soften harsh digital frequencies > 3000Hz
             this.masterFilter = this.ctx.createBiquadFilter();
             this.masterFilter.type = 'lowpass';
-            this.masterFilter.frequency.setValueAtTime(2800, this.ctx.currentTime);
+            this.masterFilter.frequency.setValueAtTime(3000, this.ctx.currentTime);
             this.masterFilter.Q.setValueAtTime(0.7, this.ctx.currentTime);
 
             // 3. Master Volume Gain
@@ -55,7 +58,7 @@ export class AudioManager {
             this.masterGain.connect(this.masterCompressor);
             this.masterCompressor.connect(this.ctx.destination);
             
-            // Create category gains: ambient, weather, machine (motor & equipment), sfx
+            // Create category gains: ambient, weather, machine, sfx
             ['ambient', 'weather', 'machine', 'sfx'].forEach(cat => {
                 const gain = this.ctx!.createGain();
                 gain.connect(this.masterFilter!);
@@ -63,13 +66,14 @@ export class AudioManager {
             });
             
             this.initialized = true;
+            this.startNatureScheduler();
         } catch (e) {
             console.error('Failed to initialize AudioContext:', e);
         }
     }
 
     /**
-     * Seamless noise buffer generator with crossfaded boundaries (zero loop click/pop).
+     * Seamless noise buffer generator with crossfaded boundaries.
      */
     private createNoiseBuffer(type: 'pink' | 'brown', duration: number = 6.0): AudioBuffer | null {
         if (!this.ctx) return null;
@@ -93,11 +97,10 @@ export class AudioManager {
             }
         }
 
-        // Apply 100ms smooth crossfade at loop boundary to eliminate any loop click
+        // 100ms smooth crossfade at loop boundary
         const fadeSamples = Math.floor(sampleRate * 0.1);
         for (let i = 0; i < fadeSamples; i++) {
             const factor = i / fadeSamples;
-            // Smoothly blend start and end
             const startVal = output[i];
             const endVal = output[bufferSize - fadeSamples + i];
             output[i] = startVal * factor + endVal * (1 - factor);
@@ -109,16 +112,15 @@ export class AudioManager {
 
     /**
      * Soothing, soft night breeze and gentle ambient air.
-     * Only updates when sunPhase changes to avoid 60fps audio recreate pops!
      */
     public setAmbientForPhase(sunPhase: string) {
         if (!this.ctx || !this.initialized) return;
-        if (this.currentSunPhase === sunPhase && this.activeAmbientSource) return; // Prevent 60fps recreation!
+        if (this.currentSunPhase === sunPhase && this.activeAmbientSource) return;
 
         this.currentSunPhase = sunPhase;
         const now = this.ctx.currentTime;
 
-        // Smoothly fade out old source if exists
+        // Fade out old source
         if (this.ambientGain && this.activeAmbientSource) {
             const oldSource = this.activeAmbientSource;
             const oldGain = this.ambientGain;
@@ -133,7 +135,7 @@ export class AudioManager {
         this.ambientGain.gain.setValueAtTime(0.001, now);
         this.ambientGain.connect(this.categories['ambient']);
         
-        // Deep warm brown noise (soft mountain night air)
+        // Deep warm brown noise (soft mountain air)
         const buffer = this.createNoiseBuffer('brown', 6.0);
         if (!buffer) return;
 
@@ -145,11 +147,11 @@ export class AudioManager {
         filter.type = 'lowpass';
         
         if (sunPhase === 'night' || sunPhase === 'astronomical_twilight') {
-            filter.frequency.setValueAtTime(140, now); // Gentle deep mountain night breeze
-            this.ambientGain.gain.setTargetAtTime(0.09, now, 0.8);
+            filter.frequency.setValueAtTime(140, now);
+            this.ambientGain.gain.setTargetAtTime(0.08, now, 0.8);
         } else {
             filter.frequency.setValueAtTime(200, now);
-            this.ambientGain.gain.setTargetAtTime(0.06, now, 0.8);
+            this.ambientGain.gain.setTargetAtTime(0.05, now, 0.8);
         }
         
         source.connect(filter);
@@ -160,8 +162,145 @@ export class AudioManager {
         this.activeAmbientFilter = filter;
     }
 
+    // =========================================================================
+    // Wildlife Audio: Night Crickets & Daytime Birds
+    // =========================================================================
+
+    private startNatureScheduler() {
+        if (this.natureTimer) clearInterval(this.natureTimer);
+
+        const loop = () => {
+            if (!this.ctx || !this.initialized || this.isRaining) {
+                this.natureTimer = window.setTimeout(loop, 3000);
+                return;
+            }
+
+            const isNight = this.currentSunPhase === 'night' ||
+                            this.currentSunPhase === 'astronomical_twilight' ||
+                            this.currentSunPhase === 'nautical_twilight';
+
+            if (isNight) {
+                // Nighttime: gentle cricket chirps
+                this.triggerCricketChirp();
+                const nextDelay = 1800 + Math.random() * 3200; // every 1.8s - 5.0s
+                this.natureTimer = window.setTimeout(loop, nextDelay);
+            } else {
+                // Daytime / Dawn / Golden Hour: melodic bird songs
+                this.triggerBirdSong();
+                const nextDelay = 3500 + Math.random() * 4500; // every 3.5s - 8.0s
+                this.natureTimer = window.setTimeout(loop, nextDelay);
+            }
+        };
+
+        this.natureTimer = window.setTimeout(loop, 2000);
+    }
+
+    /**
+     * Procedural Night Cricket Chirp (3-pulse rhythmic micro-chirp at ~4.7kHz).
+     */
+    private triggerCricketChirp() {
+        if (!this.ctx || !this.initialized) return;
+
+        const now = this.ctx.currentTime;
+        const baseFreq = 4600 + Math.random() * 400; // 4600 - 5000 Hz
+        const pulses = 3;
+        const pulseLen = 0.035;
+        const pulseGap = 0.025;
+
+        // Stereo panner for spatial immersion
+        let panNode: StereoPannerNode | null = null;
+        if (typeof this.ctx.createStereoPanner === 'function') {
+            panNode = this.ctx.createStereoPanner();
+            panNode.pan.setValueAtTime((Math.random() * 1.4 - 0.7), now);
+        }
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(baseFreq, now);
+        filter.Q.setValueAtTime(4.0, now);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, now);
+
+        for (let i = 0; i < pulses; i++) {
+            const pStart = now + i * (pulseLen + pulseGap);
+            const pPeak = pStart + pulseLen * 0.3;
+            const pEnd = pStart + pulseLen;
+            const vol = 0.05 + Math.random() * 0.03; // Gentle volume
+            gain.gain.setValueAtTime(0.0001, pStart);
+            gain.gain.linearRampToValueAtTime(vol, pPeak);
+            gain.gain.linearRampToValueAtTime(0.0001, pEnd);
+        }
+
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseFreq, now);
+
+        osc.connect(filter);
+        filter.connect(gain);
+
+        if (panNode) {
+            gain.connect(panNode);
+            panNode.connect(this.categories['ambient']);
+        } else {
+            gain.connect(this.categories['ambient']);
+        }
+
+        osc.start(now);
+        osc.stop(now + pulses * (pulseLen + pulseGap) + 0.05);
+    }
+
+    /**
+     * Procedural Forest Bird Song (melodic 2 to 3 note frequency sweeps).
+     */
+    private triggerBirdSong() {
+        if (!this.ctx || !this.initialized) return;
+
+        const now = this.ctx.currentTime;
+        const notesCount = Math.random() < 0.5 ? 2 : 3;
+        
+        // Random stereo panning
+        let panNode: StereoPannerNode | null = null;
+        if (typeof this.ctx.createStereoPanner === 'function') {
+            panNode = this.ctx.createStereoPanner();
+            panNode.pan.setValueAtTime((Math.random() * 1.4 - 0.7), now);
+        }
+
+        let timeCursor = now;
+        for (let i = 0; i < notesCount; i++) {
+            const noteStart = timeCursor;
+            const noteDuration = 0.12 + Math.random() * 0.1;
+            const freqStart = 2400 + Math.random() * 800;
+            const freqEnd = freqStart + (Math.random() * 800 - 300);
+
+            const osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freqStart, noteStart);
+            osc.frequency.exponentialRampToValueAtTime(Math.max(1000, freqEnd), noteStart + noteDuration);
+
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.0001, noteStart);
+            gain.gain.linearRampToValueAtTime(0.045, noteStart + noteDuration * 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + noteDuration);
+
+            osc.connect(gain);
+            if (panNode) {
+                gain.connect(panNode);
+                panNode.connect(this.categories['ambient']);
+            } else {
+                gain.connect(this.categories['ambient']);
+            }
+
+            osc.start(noteStart);
+            osc.stop(noteStart + noteDuration + 0.02);
+
+            timeCursor += noteDuration + (0.05 + Math.random() * 0.08);
+        }
+    }
+
     public setWeatherAudio(weather: string, intensity: number) {
         if (!this.ctx || !this.initialized) return;
+        this.isRaining = (weather === 'Rainy');
         
         if (weather === 'Rainy') {
             if (!this.activeWeather) {
@@ -173,7 +312,7 @@ export class AudioManager {
                 
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(650, this.ctx.currentTime); // Soft gentle rain sound
+                filter.frequency.setValueAtTime(650, this.ctx.currentTime);
                 
                 this.weatherGain = this.ctx.createGain();
                 this.weatherGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
@@ -302,6 +441,10 @@ export class AudioManager {
     }
 
     public dispose() {
+        if (this.natureTimer) {
+            clearTimeout(this.natureTimer);
+            this.natureTimer = null;
+        }
         if (this.ctx) {
             this.ctx.close();
             this.initialized = false;

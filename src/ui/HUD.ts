@@ -10,7 +10,9 @@ export class HUD {
     private sunPhaseDisplay: HTMLElement;
     private moneyDisplay: HTMLElement;
     private weatherDisplay: HTMLElement;
-    private audioDisplay: HTMLElement;
+    private quickVolSlider!: HTMLInputElement;
+    private quickVolVal!: HTMLElement;
+    private quickMuteBtn!: HTMLElement;
     private locationDisplay: HTMLElement;
     private promptDisplay: HTMLElement;
     private crosshair: HTMLElement;
@@ -120,10 +122,48 @@ export class HUD {
         this.weatherDisplay.className = 'weather-badge';
         this.weatherDisplay.textContent = '晴朗';
 
-        this.audioDisplay = document.createElement('div');
-        this.audioDisplay.className = 'audio-badge';
-        this.audioDisplay.innerHTML = `<span>音量</span> <span>70%</span>`;
-        this.audioDisplay.onclick = () => this.toggleAudioModal();
+        this.weatherDisplay.className = 'weather-badge';
+        this.weatherDisplay.textContent = '晴朗';
+
+        // 2. Direct on-HUD Volume Slider Bar
+        const volumeBar = document.createElement('div');
+        volumeBar.className = 'hud-volume-bar';
+
+        this.quickMuteBtn = document.createElement('button');
+        this.quickMuteBtn.className = 'hud-vol-icon-btn';
+        this.quickMuteBtn.innerHTML = '🔊';
+        this.quickMuteBtn.title = '點擊靜音 / 解除靜音 [M]';
+        this.quickMuteBtn.onclick = () => gameStore.getState().toggleMute();
+
+        this.quickVolSlider = document.createElement('input');
+        this.quickVolSlider.type = 'range';
+        this.quickVolSlider.className = 'hud-quick-vol-slider';
+        this.quickVolSlider.min = '0';
+        this.quickVolSlider.max = '100';
+        this.quickVolSlider.value = '70';
+        this.quickVolSlider.title = '拖曳直接調整音量大小';
+        this.quickVolSlider.oninput = () => {
+            const frac = parseInt(this.quickVolSlider.value) / 100;
+            if (gameStore.getState().isMuted) {
+                gameStore.getState().toggleMute();
+            }
+            gameStore.getState().setMasterVolume(frac);
+        };
+
+        this.quickVolVal = document.createElement('span');
+        this.quickVolVal.className = 'hud-vol-percent';
+        this.quickVolVal.textContent = '70%';
+
+        const mixerBtn = document.createElement('button');
+        mixerBtn.className = 'hud-vol-mixer-btn';
+        mixerBtn.innerHTML = '⚙️';
+        mixerBtn.title = '開啟四聲道混音設定 (蟲鳴/鳥叫/微風/馬達/雨聲)';
+        mixerBtn.onclick = () => this.toggleAudioModal();
+
+        volumeBar.appendChild(this.quickMuteBtn);
+        volumeBar.appendChild(this.quickVolSlider);
+        volumeBar.appendChild(this.quickVolVal);
+        volumeBar.appendChild(mixerBtn);
 
         const codexBtn = document.createElement('div');
         codexBtn.className = 'guide-badge';
@@ -143,7 +183,7 @@ export class HUD {
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
-        topRight.appendChild(this.audioDisplay);
+        topRight.appendChild(volumeBar);
         topRight.appendChild(codexBtn);
         topRight.appendChild(guideBtn);
 
@@ -354,22 +394,27 @@ export class HUD {
         this.moneyDisplay.innerHTML = `$${state.money}`;
         this.weatherDisplay.textContent = this.getWeatherBadge(state.weather);
         
-        // Update audio badge & modal values
+        // Update audio badge, quick slider, & modal values
         const masterPct = Math.round(state.masterVolume * 100);
         const machinePct = Math.round(state.machineVolume * 100);
         const ambientPct = Math.round(state.ambientVolume * 100);
         const weatherPct = Math.round(state.weatherVolume * 100);
 
-        if (state.isMuted) {
-            this.audioDisplay.innerHTML = `<span>靜音</span>`;
-            this.audioDisplay.classList.add('muted');
-            this.muteBtn.textContent = '解除靜音 (Unmute)';
-            this.muteBtn.classList.add('active');
-        } else {
-            this.audioDisplay.innerHTML = `<span>音量 ${masterPct}%</span>`;
-            this.audioDisplay.classList.remove('muted');
-            this.muteBtn.textContent = '一鍵靜音 (Mute)';
-            this.muteBtn.classList.remove('active');
+        if (this.quickVolSlider) {
+            this.quickVolSlider.value = (state.isMuted ? 0 : masterPct).toString();
+            this.quickVolVal.textContent = state.isMuted ? '靜音' : `${masterPct}%`;
+            this.quickMuteBtn.innerHTML = state.isMuted ? '🔇' : (masterPct === 0 ? '🔈' : '🔊');
+            this.quickMuteBtn.classList.toggle('muted', state.isMuted);
+        }
+
+        if (this.muteBtn) {
+            if (state.isMuted) {
+                this.muteBtn.textContent = '解除靜音 (Unmute)';
+                this.muteBtn.classList.add('active');
+            } else {
+                this.muteBtn.textContent = '一鍵靜音 (Mute)';
+                this.muteBtn.classList.remove('active');
+            }
         }
 
         if (this.masterSlider) {
