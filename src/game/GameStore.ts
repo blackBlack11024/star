@@ -76,6 +76,8 @@ export interface GameState {
   advanceTime: (deltaMs: number) => void;
   reverseTime: (hours: number) => boolean;
   advanceTimeHours: (hours: number) => void;
+  advanceTimeDays: (days: number) => void;
+  advanceTimeYears: (years: number) => void;
   resetToRealTime: () => void;
   setTime: (date: Date) => void;
   setWeather: (weather: WeatherState) => void;
@@ -250,6 +252,22 @@ export const gameStore = createStore<GameState>()((set, get) => ({
     set((s) => ({
       currentTime: new Date(s.currentTime.getTime() + hours * 3600000),
     }));
+  },
+
+  advanceTimeDays: (days) => {
+    set((s) => {
+      const d = new Date(s.currentTime);
+      d.setDate(d.getDate() + days);
+      return { currentTime: d };
+    });
+  },
+
+  advanceTimeYears: (years) => {
+    set((s) => {
+      const d = new Date(s.currentTime);
+      d.setFullYear(d.getFullYear() + years);
+      return { currentTime: d };
+    });
   },
 
   resetToRealTime: () => {

@@ -275,13 +275,23 @@ export class MenuSystem {
 
     public showTimeReversal() {
         const state = gameStore.getState();
-        const timeStr = state.currentTime.toLocaleString('zh-TW', {
+        const curr = state.currentTime;
+        const timeStr = curr.toLocaleString('zh-TW', {
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit',
             hour12: false
         });
 
-        const hour = state.currentTime.getHours();
+        const year = curr.getFullYear();
+        const month = String(curr.getMonth() + 1).padStart(2, '0');
+        const day = String(curr.getDate()).padStart(2, '0');
+        const dateInputVal = `${year}-${month}-${day}`;
+
+        const hours = String(curr.getHours()).padStart(2, '0');
+        const minutes = String(curr.getMinutes()).padStart(2, '0');
+        const timeInputVal = `${hours}:${minutes}`;
+
+        const hour = curr.getHours();
         let phaseText = '觀星夜';
         if (hour >= 6 && hour < 17) phaseText = '白晝';
         else if (hour >= 17 && hour < 19) phaseText = '黃昏';
@@ -289,25 +299,48 @@ export class MenuSystem {
 
         this.timeReversalPanel.innerHTML = `
             <div class="time-modal-header">
-                <h3>時間控制與倒流中心</h3>
+                <h3>📅 日期與時間穿梭控制中心</h3>
                 <button class="close-btn" id="close-time">&times;</button>
             </div>
 
             <div class="current-time-box">
                 <div class="time-str">${timeStr}</div>
-                <div class="phase-str">${phaseText} · 隨意穿梭時空（無須消耗金錢）</div>
+                <div class="phase-str">${phaseText} · 隨意穿梭時空與四季星空</div>
             </div>
 
-            <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;font-weight:600;">快速微調與倒退時間</div>
-            <div class="time-btn-grid">
+            <div style="font-size:12px;color:#38bdf8;margin-bottom:6px;font-weight:600;">📆 任意自訂日期與時刻</div>
+            <div class="date-picker-row">
+                <input type="date" id="input-custom-date" class="time-input-field" value="${dateInputVal}">
+                <input type="time" id="input-custom-time" class="time-input-field" value="${timeInputVal}">
+                <button id="btn-apply-custom-date" class="apply-date-btn">設定天象</button>
+            </div>
+
+            <div style="font-size:12px;color:#94a3b8;margin:12px 0 6px 0;font-weight:600;">🗓️ 日期與年份跨度跳轉</div>
+            <div class="time-btn-grid" style="grid-template-columns: repeat(6, 1fr);">
+                <button class="time-step-btn" id="btn-sub-1y">-1年</button>
+                <button class="time-step-btn" id="btn-sub-30d">-30天</button>
+                <button class="time-step-btn" id="btn-sub-1d">-1天</button>
+                <button class="time-step-btn" id="btn-add-1d">+1天</button>
+                <button class="time-step-btn" id="btn-add-30d">+30天</button>
+                <button class="time-step-btn" id="btn-add-1y">+1年</button>
+            </div>
+
+            <div style="font-size:12px;color:#94a3b8;margin:10px 0 6px 0;font-weight:600;">🌌 四季著名星空一鍵跳轉</div>
+            <div class="time-preset-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 12px;">
+                <button class="preset-btn" id="season-spring" title="4月15日 21:00 · 北斗七星與大角星">🌸 春季星空</button>
+                <button class="preset-btn" id="season-summer" title="7月15日 21:00 · 夏季大三角與璀璨銀河">☀️ 夏季銀河</button>
+                <button class="preset-btn" id="season-autumn" title="10月15日 21:00 · 飛馬座與仙女座星系">🍂 秋季仙女</button>
+                <button class="preset-btn" id="season-winter" title="1月15日 21:00 · 獵戶座與冬季大三角">❄️ 冬季獵戶</button>
+            </div>
+
+            <div style="font-size:12px;color:#94a3b8;margin:10px 0 6px 0;font-weight:600;">⏱️ 當日時刻微調與跳轉</div>
+            <div class="time-btn-grid" style="margin-bottom: 8px;">
                 <button class="time-step-btn" id="btn-sub-6h">-6小時</button>
                 <button class="time-step-btn" id="btn-sub-1h">-1小時</button>
                 <button class="time-step-btn" id="btn-add-1h">+1小時</button>
                 <button class="time-step-btn" id="btn-add-6h">+6小時</button>
             </div>
-
-            <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;font-weight:600;">天象預設時間快速跳轉</div>
-            <div class="time-preset-grid">
+            <div class="time-preset-grid" style="margin-bottom: 14px;">
                 <button class="preset-btn" id="preset-dawn">黎明 (05:30)</button>
                 <button class="preset-btn" id="preset-noon">正午 (12:00)</button>
                 <button class="preset-btn" id="preset-dusk">日落 (18:30)</button>
@@ -316,15 +349,72 @@ export class MenuSystem {
             </div>
 
             <button class="reset-realtime-btn" id="btn-reset-realtime">
-                <span>一鍵回到目前現實時間</span>
+                <span>🔄 一鍵回到目前現實時間</span>
             </button>
         `;
 
-        // Wire events
+        // Wire close
         const closeBtn = this.timeReversalPanel.querySelector('#close-time') as HTMLElement;
         closeBtn.onclick = () => this.hideTimeReversal();
 
-        // Stepper buttons
+        // Direct date & time picker
+        const dateInput = this.timeReversalPanel.querySelector('#input-custom-date') as HTMLInputElement;
+        const timeInput = this.timeReversalPanel.querySelector('#input-custom-time') as HTMLInputElement;
+        const applyBtn = this.timeReversalPanel.querySelector('#btn-apply-custom-date') as HTMLButtonElement;
+
+        const applyCustomDateTime = () => {
+            if (!dateInput.value) return;
+            const [y, m, d] = dateInput.value.split('-').map(Number);
+            const [hh, mm] = (timeInput.value || '21:00').split(':').map(Number);
+            const newDate = new Date(y, m - 1, d, hh, mm, 0);
+            state.setTime(newDate);
+            this.showTimeReversal();
+        };
+
+        applyBtn.onclick = applyCustomDateTime;
+        dateInput.onchange = applyCustomDateTime;
+        timeInput.onchange = applyCustomDateTime;
+
+        // Day and Year steppers
+        this.timeReversalPanel.querySelector('#btn-sub-1y')!.addEventListener('click', () => {
+            state.advanceTimeYears(-1);
+            this.showTimeReversal();
+        });
+        this.timeReversalPanel.querySelector('#btn-sub-30d')!.addEventListener('click', () => {
+            state.advanceTimeDays(-30);
+            this.showTimeReversal();
+        });
+        this.timeReversalPanel.querySelector('#btn-sub-1d')!.addEventListener('click', () => {
+            state.advanceTimeDays(-1);
+            this.showTimeReversal();
+        });
+        this.timeReversalPanel.querySelector('#btn-add-1d')!.addEventListener('click', () => {
+            state.advanceTimeDays(1);
+            this.showTimeReversal();
+        });
+        this.timeReversalPanel.querySelector('#btn-add-30d')!.addEventListener('click', () => {
+            state.advanceTimeDays(30);
+            this.showTimeReversal();
+        });
+        this.timeReversalPanel.querySelector('#btn-add-1y')!.addEventListener('click', () => {
+            state.advanceTimeYears(1);
+            this.showTimeReversal();
+        });
+
+        // Four Seasons presets
+        const jumpToSeason = (monthIndex: number, dayNum: number) => {
+            const currentYear = state.currentTime.getFullYear();
+            const seasonDate = new Date(currentYear, monthIndex, dayNum, 21, 0, 0);
+            state.setTime(seasonDate);
+            this.showTimeReversal();
+        };
+
+        this.timeReversalPanel.querySelector('#season-spring')!.addEventListener('click', () => jumpToSeason(3, 15)); // Apr 15
+        this.timeReversalPanel.querySelector('#season-summer')!.addEventListener('click', () => jumpToSeason(6, 15)); // Jul 15
+        this.timeReversalPanel.querySelector('#season-autumn')!.addEventListener('click', () => jumpToSeason(9, 15)); // Oct 15
+        this.timeReversalPanel.querySelector('#season-winter')!.addEventListener('click', () => jumpToSeason(0, 15)); // Jan 15
+
+        // Hour Steppers
         this.timeReversalPanel.querySelector('#btn-sub-6h')!.addEventListener('click', () => {
             state.reverseTime(6);
             this.showTimeReversal();
@@ -342,7 +432,7 @@ export class MenuSystem {
             this.showTimeReversal();
         });
 
-        // Presets
+        // Time of Day Presets
         const jumpToHour = (h: number, m: number = 0) => {
             const d = new Date(state.currentTime);
             d.setHours(h, m, 0, 0);
