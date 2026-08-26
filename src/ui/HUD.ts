@@ -390,12 +390,40 @@ export class HUD {
 
     public showNotification(text: string, type: string = 'info') {
         const notif = document.createElement('div');
-        notif.className = 'notification';
+        notif.className = `notification notification-${type}`;
         notif.textContent = text;
         document.getElementById('ui-overlay')?.appendChild(notif);
+        // Animate in
+        requestAnimationFrame(() => notif.classList.add('visible'));
+        const duration = type === 'warning' ? 4500 : type === 'success' ? 3500 : 3000;
         setTimeout(() => {
-            notif.remove();
-        }, 3000);
+            notif.classList.remove('visible');
+            setTimeout(() => notif.remove(), 400);
+        }, duration);
+    }
+
+    /** Update the quest tracker widget on the HUD. */
+    public updateQuestTracker(activeQuest: { title: string; objectives: { description: string }[] } | null) {
+        let tracker = document.getElementById('quest-tracker-hud');
+        if (!activeQuest) {
+            if (tracker) tracker.style.display = 'none';
+            return;
+        }
+        if (!tracker) {
+            tracker = document.createElement('div');
+            tracker.id = 'quest-tracker-hud';
+            tracker.className = 'quest-tracker-hud';
+            document.getElementById('ui-overlay')?.appendChild(tracker);
+        }
+        tracker.style.display = 'block';
+        tracker.innerHTML = `
+            <div class="qt-title">目前任務</div>
+            <div class="qt-quest">${activeQuest.title}</div>
+            <div class="qt-objectives">
+                ${activeQuest.objectives.slice(0, 2).map(o => `<div class="qt-obj">\u25cb ${o.description}</div>`).join('')}
+            </div>
+            <div class="qt-hint">G 開啟圖鑑</div>
+        `;
     }
 
     public updateWaypoints(camera: THREE.Camera, telescopePos: THREE.Vector3, studioPos: THREE.Vector3) {

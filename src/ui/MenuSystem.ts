@@ -112,12 +112,14 @@ export class MenuSystem {
                     <tbody>
                         <tr><td><span class="key-hint">W</span> <span class="key-hint">A</span> <span class="key-hint">S</span> <span class="key-hint">D</span></td><td>前後左右移動角色（點擊畫面鎖定滑鼠視角）</td><td>第一人稱漫遊</td></tr>
                         <tr><td><span class="key-hint">Shift</span> + 移動</td><td>奔跑加速</td><td>第一人稱漫遊</td></tr>
+                        <tr><td><span class="key-hint">按住滑鼠右鍵</span></td><td>手持 8x42 雙筒望遠鏡（7° 廣重視野巡天）</td><td>第一人稱漫遊</td></tr>
                         <tr><td><span class="key-hint">E</span></td><td>靠近望遠鏡時進入 / 望遠鏡模式下切換曝光秒數</td><td>全域</td></tr>
-                        <tr><td><span class="key-hint">F</span></td><td>靠近小木屋時進入工作室（照片庫與商店）</td><td>漫遊模式</td></tr>
-                        <tr><td><span class="key-hint">滑鼠左鍵 / 方向鍵</span></td><td>微調望遠鏡指向星空（附電機音效）</td><td>望遠鏡模式</td></tr>
+                        <tr><td><span class="key-hint">F</span></td><td>靠近小木屋時進入工作室（照片庫、燈箱查看與商店）</td><td>漫遊模式</td></tr>
+                        <tr><td><span class="key-hint">G</span></td><td>開啟「觀測圖鑑 & 任務劇情日誌」</td><td>全域</td></tr>
+                        <tr><td><span class="key-hint">滑鼠移動 / 方向鍵</span></td><td>水平 (方位角) 與仰角指向星空（附電機音效）</td><td>望遠鏡模式</td></tr>
                         <tr><td><span class="key-hint">滑鼠右鍵拖曳</span></td><td>0.25x 精細微調鎖定目標</td><td>望遠鏡模式</td></tr>
-                        <tr><td><span class="key-hint">滑鼠滾輪</span></td><td>縮放視野（Zoom In / Zoom Out）</td><td>望遠鏡模式</td></tr>
-                        <tr><td><span class="key-hint">Space (空白鍵)</span></td><td>拍攝照片 / 開始長曝光累積</td><td>望遠鏡模式</td></tr>
+                        <tr><td><span class="key-hint">滑鼠滾輪</span></td><td>光學變焦縮放（Zoom In / Zoom Out）</td><td>望遠鏡模式</td></tr>
+                        <tr><td><span class="key-hint">Space (空白鍵)</span></td><td>自由長曝光（點擊開始，再次點擊或按空白鍵完成）</td><td>望遠鏡模式</td></tr>
                         <tr><td><span class="key-hint">Esc</span></td><td>退出望遠鏡 / 退出工作室返回漫遊</td><td>全域</td></tr>
                         <tr><td><span class="key-hint">1</span> ~ <span class="key-hint">5</span> / <span class="key-hint">P</span></td><td>時間流速 (1x / 10x / 60x / 300x / 1000x / 暫停)</td><td>全域</td></tr>
                         <tr><td><span class="key-hint">R</span> 或 <span class="key-hint">T</span></td><td>開啟「時間控制與時空倒流中心」</td><td>全域</td></tr>
@@ -136,11 +138,12 @@ export class MenuSystem {
                 <p>人類肉眼在夜間感光能力有限，許多深空天體（如梅西耶星雲、暗星系旋臂）在即時目鏡中看起來只是微弱的灰白色霧狀塊。</p>
                 <div class="guide-step-card">
                     <strong>光子累積疊加機制：</strong>
-                    在望遠鏡中按下空白鍵開始 <strong>15s ~ 60s</strong> 長曝光時，光學感光元件會持續收集光子，原本暗淡的星雲會逐漸顯現出鮮豔的粉紅發射線（H-alpha）與藍色反射星雲色彩！
+                    在望遠鏡中按下空白鍵開始長曝光時，光學感光元件會持續收集光子，原本暗淡的星雲會逐漸顯現出鮮豔的粉紅發射線（H-alpha）與藍色反射星雲色彩！
                 </div>
                 <div class="guide-step-card">
-                    <strong>照片品質評級機制：</strong>
-                    照片會根據 <strong>曝光充足度 + 當前天氣（晴朗最優） + 地點光害等級 + 目標天體難度</strong> 自動評分（S / A / B / C / D 級）。高等級照片能賣出高達 $600 ~ $2,500 的天價！
+                    <strong>照片品質評級與重複拍攝懲罰：</strong>
+                    照片會根據 <strong>曝光充足度 + 當前天氣 + 地點光害 + 目標難度</strong> 自動評分（S / A / B / C / D 級）。<br>
+                    <strong>注意：</strong>同一個天體重複拍攝，市場收購價會隨次數遞減（第1張 100%、第2張 60%、第3張 25%、第4張起飽和 $0）。多探索不同天體才是發家致富之道！
                 </div>
             `;
         } else if (index === 3) {

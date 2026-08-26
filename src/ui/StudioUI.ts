@@ -76,7 +76,13 @@ export class StudioUI {
     }
 
     private renderGallery(state: any) {
-        const unsoldPhotos = (state.photos || []).filter((p: any) => !p.sold);
+        // Sort photos newest first
+        const allPhotos = [...(state.photos || [])].sort((a: any, b: any) => {
+            const tA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+            const tB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+            return tB - tA;
+        });
+        const unsoldPhotos = allPhotos.filter((p: any) => !p.sold);
         const totalValue = unsoldPhotos.reduce((sum: number, p: any) => sum + (p.sellPrice || p.price || 0), 0);
 
         const topBar = document.createElement('div');
@@ -106,33 +112,49 @@ export class StudioUI {
         const grid = document.createElement('div');
         grid.className = 'photo-grid';
 
-        (state.photos || []).forEach((photo: any) => {
+        allPhotos.forEach((photo: any, photoIndex: number) => {
             const card = document.createElement('div');
             card.className = `photo-card ${photo.sold ? 'sold' : ''}`;
+            card.style.cursor = 'pointer';
             
             const price = photo.sellPrice || photo.price || 0;
             const quality = photo.quality || 'C';
+            const repeatBadge = (photo.repeatPenaltyFactor !== undefined && photo.repeatPenaltyFactor < 1.0)
+                ? `<span class="repeat-badge" title="重複拍攝，市場價值降低">重複</span>`
+                : '';
 
             card.innerHTML = `
                 <img src="${photo.imageDataUrl}" alt="${photo.targetName}" />
                 <div class="photo-meta">
                     <span class="quality ${quality}">${quality}級</span>
+                    ${repeatBadge}
                     <div class="target">${photo.targetName}</div>
-                    <div class="price">${photo.sold ? '已售出' : `價值: $${price}`}</div>
+                    <div class="price">${photo.sold ? '已售出' : (price === 0 ? '市場飽和 $0' : `$${price}`)}</div>
+                    ${!photo.sold ? `<button class="photo-sell-btn" data-id="${photo.id}">出售</button>` : ''}
                 </div>
             `;
             
-            if (!photo.sold) {
-                card.onclick = () => {
+            // Click card body → open lightbox
+            card.onclick = (e) => {
+                const target = e.target as HTMLElement;
+                if (target.classList.contains('photo-sell-btn')) return; // handled below
+                document.dispatchEvent(new CustomEvent('open-lightbox', { detail: { photoId: photo.id } }));
+            };
+
+            // Sell button (separate from lightbox)
+            const sellBtn = card.querySelector('.photo-sell-btn') as HTMLButtonElement | null;
+            if (sellBtn) {
+                sellBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     state.sellPhoto(photo.id);
                     this.switchTab(0);
-                };
+                });
             }
             
             grid.appendChild(card);
         });
 
-        if ((state.photos || []).length === 0) {
+        if (allPhotos.length === 0) {
             const emptyMsg = document.createElement('p');
             emptyMsg.style.textAlign = 'center';
             emptyMsg.style.opacity = '0.5';

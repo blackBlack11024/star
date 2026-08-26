@@ -24,11 +24,15 @@ import { Studio } from './world/Studio';
 import { TelescopeOptics } from './telescope/TelescopeOptics';
 import { LongExposure } from './telescope/LongExposure';
 import { PostProcessing } from './telescope/PostProcessing';
+import { BinocularsMode } from './telescope/BinocularsMode';
 import { PhotoManager } from './game/PhotoManager';
+import { QuestManager } from './game/QuestManager';
 import { EconomySystem } from './game/EconomySystem';
 import { HUD } from './ui/HUD';
 import { TelescopeHUD } from './ui/TelescopeHUD';
 import { StudioUI } from './ui/StudioUI';
+import { CodexUI } from './ui/CodexUI';
+import { PhotoLightbox } from './ui/PhotoLightbox';
 import { MenuSystem } from './ui/MenuSystem';
 import { getTelescopeConfig } from './data/telescopes';
 
@@ -56,6 +60,7 @@ export class Game {
   private audioManager!: AudioManager;
 
   private playerController!: PlayerController;
+  private binocularsMode!: BinocularsMode;
   private terrain!: Terrain;
   private telescopeModel!: TelescopeModel;
   private studio!: Studio;
@@ -65,12 +70,15 @@ export class Game {
   private postProcessing!: PostProcessing;
 
   private photoManager!: PhotoManager;
+  private questManager!: QuestManager;
   private economySystem!: EconomySystem;
 
   // ---- UI ----
   private hud!: HUD;
   private telescopeHUD!: TelescopeHUD;
   private studioUI!: StudioUI;
+  private codexUI!: CodexUI;
+  private photoLightbox!: PhotoLightbox;
   private menuSystem!: MenuSystem;
 
   // ---- State ----
@@ -156,8 +164,9 @@ export class Game {
     this.studio = new Studio(this.scene);
 
     // ---- Controls ----
-    progress(0.65, '正在初始化控制器...');
+    progress(0.65, '正在初始化控制器與雙筒望遠鏡...');
     this.playerController = new PlayerController(this.camera, this.renderer.domElement, this.scene);
+    this.binocularsMode = new BinocularsMode(this.camera, this.renderer.domElement);
 
     // ---- Telescope optics ----
     progress(0.7, '正在校準望遠鏡光學...');
@@ -170,15 +179,18 @@ export class Game {
     this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
 
     // ---- Game systems ----
-    progress(0.8, '正在載入遊戲系統...');
+    progress(0.8, '正在載入遊戲與任務系統...');
     this.photoManager = new PhotoManager();
+    this.questManager = new QuestManager();
     this.economySystem = new EconomySystem();
 
     // ---- UI ----
-    progress(0.85, '正在建立介面...');
+    progress(0.85, '正在建立介面與圖鑑...');
     this.hud = new HUD();
     this.telescopeHUD = new TelescopeHUD();
     this.studioUI = new StudioUI();
+    this.codexUI = new CodexUI();
+    this.photoLightbox = new PhotoLightbox();
     this.menuSystem = new MenuSystem();
 
     // ---- Wire up interactions ----
@@ -321,9 +333,10 @@ export class Game {
       this.hud.hideInteractPrompt();
     }
 
-    // ---- UI & 3D Waypoints ----
+    // ---- UI & 3D Waypoints & Quest Tracker ----
     this.hud.update(state);
     this.hud.updateWaypoints(this.camera, this.telescopeModel.getPosition(), this.studio.getPosition());
+    this.hud.updateQuestTracker(this.questManager.getNextQuest());
   }
 
   /** Render the scene. */
@@ -360,6 +373,29 @@ export class Game {
       if (state.sfxVolume !== prevState.sfxVolume) {
         this.audioManager.setCategory('sfx', state.sfxVolume);
       }
+    });
+
+    // Quest completion event
+    document.addEventListener('quest-completed', (e: any) => {
+      const quest = e.detail.quest;
+      this.hud.showNotification(`任務完成：${quest.title}！獲得 $${quest.rewards.money || 0}`, 'success');
+      this.hud.updateQuestTracker(this.questManager.getNextQuest());
+    });
+
+    // Custom notification event
+    document.addEventListener('show-notification', (e: any) => {
+      this.hud.showNotification(e.detail.message, e.detail.type || 'info');
+    });
+
+    // Photo lightbox event
+    document.addEventListener('open-lightbox', (e: any) => {
+      const photos = [...(gameStore.getState().photos || [])].sort((a: any, b: any) => {
+        const tA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+        const tB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+        return tB - tA;
+      });
+      const idx = photos.findIndex((p: any) => p.id === e.detail.photoId);
+      this.photoLightbox.open(photos, Math.max(0, idx));
     });
 
     // Photo capture event
@@ -417,7 +453,6 @@ export class Game {
     const state = gameStore.getState();
 
     this.longExposure.finishExposure();
-    const dataUrl = this.longExposure.getResultAsDataUrl();
     state.stopExposure();
 
     // Determine target info
@@ -459,11 +494,14 @@ export class Game {
     this.telescopeModel.dispose();
     this.studio.dispose();
     this.playerController.dispose();
+    this.binocularsMode.dispose();
     this.longExposure.dispose();
     this.postProcessing.dispose();
     this.hud.dispose();
     this.telescopeHUD.dispose();
     this.studioUI.dispose();
+    this.codexUI.dispose();
+    this.photoLightbox.dispose();
     this.menuSystem.dispose();
     this.renderer.dispose();
   }

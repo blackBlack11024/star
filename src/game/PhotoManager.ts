@@ -2,6 +2,21 @@ import { gameStore } from './GameStore';
 import * as THREE from 'three';
 import { Photo, PhotoQuality, TargetType, WeatherState } from '../types';
 
+// Track how many times each target has been photographed this session
+const targetPhotoCounts: Record<string, number> = {};
+
+/**
+ * Repeat penalty: each subsequent photo of the same target reduces market value.
+ *  1st: 100%, 2nd: 60%, 3rd: 25%, 4th+: $0
+ */
+function getRepeatPenaltyFactor(targetId: string): number {
+    const count = targetPhotoCounts[targetId] || 0;
+    if (count === 0) return 1.0;
+    if (count === 1) return 0.6;
+    if (count === 2) return 0.25;
+    return 0.0; // market saturated
+}
+
 export class PhotoManager {
     private photoIdCounter = 0;
 
@@ -14,11 +29,19 @@ export class PhotoManager {
         renderer.render(scene, camera);
         const imageDataUrl = renderer.domElement.toDataURL('image/jpeg', 0.85);
 
+        // Identify the target ID (use DSO id if available, else use name)
+        const targetId = targetInfo?.id || targetInfo?.name || 'star_field';
+
+        // Calculate repeat penalty before incrementing count
+        const penaltyFactor = getRepeatPenaltyFactor(targetId);
+        targetPhotoCounts[targetId] = (targetPhotoCounts[targetId] || 0) + 1;
+
         const qualityScore = this.calculateQuality(targetInfo, state);
         const quality = this.getQualityGrade(qualityScore);
-        const price = this.calculatePrice(quality, targetInfo?.type || TargetType.StarField);
+        const basePrice = this.calculatePrice(quality, targetInfo?.type || TargetType.StarField);
+        const finalPrice = Math.floor(basePrice * penaltyFactor);
 
-        const photo: Photo = {
+        const photo: any = {
             id: `photo_${++this.photoIdCounter}_${Date.now()}`,
             imageDataUrl,
             targetName: targetInfo?.name || '未知星野',
@@ -29,13 +52,26 @@ export class PhotoManager {
             locationId: state.currentLocation?.id || 'hehuanshan',
             score: qualityScore,
             quality: quality as PhotoQuality,
-            sellPrice: price,
+            sellPrice: finalPrice,
             sold: false,
             timestamp: new Date(),
+            repeatPenaltyFactor: penaltyFactor,
         };
 
-        state.addPhoto(photo);
-        return photo;
+        state.addPhoto(photo as Photo);
+
+        // Show warning if repeat penalty applied
+        if (penaltyFactor < 1.0) {
+            const msg = finalPrice === 0
+                ? `市場飽和！${photo.targetName} 已無人願購買`
+                : `重複拍攝！價值降至 $${finalPrice}（原價 $${basePrice}）`;
+            document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: msg, type: 'warning' } }));
+        }
+
+        // Dispatch quest progress event
+        document.dispatchEvent(new CustomEvent('photo-captured', { detail: { photo, targetInfo } }));
+
+        return photo as Photo;
     }
 
     public calculateQuality(targetInfo: any, state: any): number {
@@ -126,4 +162,11 @@ export class PhotoManager {
             bestQuality
         };
     }
+
+    /** Reset repeat counts (e.g., after a new game session) */
+    public resetRepeatCounts() {
+        Object.keys(targetPhotoCounts).forEach(k => delete targetPhotoCounts[k]);
+    }
 }
+
+

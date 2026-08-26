@@ -35,8 +35,11 @@ export interface GameState {
   // ---- Telescope ----
   telescopeRa: number;
   telescopeDec: number;
+  telescopeAzimuth: number;
+  telescopeAltitude: number;
   currentFov: number;
   isExposing: boolean;
+  exposureElapsed: number;
   exposureProgress: number;
   exposureDuration: number;
 
@@ -87,13 +90,18 @@ export interface GameState {
   upgradeTelescope: (level: number) => boolean;
   buyAccessory: (accessoryId: string) => boolean;
   setTelescopePointing: (ra: number, dec: number) => void;
+  setTelescopeHorizontal: (azimuth: number, altitude: number) => void;
   setFov: (fov: number) => void;
-  startExposure: (duration: number) => void;
+  startExposure: (duration?: number) => void;
   stopExposure: () => void;
   updateExposureProgress: (progress: number) => void;
+  updateExposureElapsed: (seconds: number) => void;
   toggleConstellations: () => void;
   toggleStarNames: () => void;
   toggleGrid: () => void;
+  // ---- Quest & Codex ----
+  completedQuestIds: string[];
+  discoveredTargets: string[];
 }
 
 export const gameStore = createStore<GameState>()((set, get) => ({
@@ -121,10 +129,16 @@ export const gameStore = createStore<GameState>()((set, get) => ({
 
   telescopeRa: 0,
   telescopeDec: 45,
+  telescopeAzimuth: 180,
+  telescopeAltitude: 45,
   currentFov: 60,
   isExposing: false,
+  exposureElapsed: 0,
   exposureProgress: 0,
   exposureDuration: 30,
+
+  completedQuestIds: [],
+  discoveredTargets: [],
 
   timeReversalCostPerHour: 50,
 
@@ -249,10 +263,12 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   },
 
   setTelescopePointing: (ra, dec) => set({ telescopeRa: ra, telescopeDec: dec }),
+  setTelescopeHorizontal: (azimuth, altitude) => set({ telescopeAzimuth: azimuth, telescopeAltitude: altitude }),
   setFov: (fov) => set({ currentFov: fov }),
-  startExposure: (duration) => set({ isExposing: true, exposureDuration: duration, exposureProgress: 0 }),
-  stopExposure: () => set({ isExposing: false, exposureProgress: 0 }),
+  startExposure: (duration?) => set((s) => ({ isExposing: true, exposureDuration: duration ?? s.exposureDuration, exposureProgress: 0, exposureElapsed: 0 })),
+  stopExposure: () => set({ isExposing: false, exposureProgress: 0, exposureElapsed: 0 }),
   updateExposureProgress: (progress) => set({ exposureProgress: Math.min(1, progress) }),
+  updateExposureElapsed: (seconds) => set({ exposureElapsed: seconds }),
   toggleConstellations: () => set((s) => ({ showConstellations: !s.showConstellations })),
   toggleStarNames: () => set((s) => ({ showStarNames: !s.showStarNames })),
   toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),

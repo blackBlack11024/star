@@ -40,6 +40,27 @@ export class CelestialSphere {
         return new THREE.Vector3(x, y, z);
     }
 
+    public vectorToRaDec(worldVector: THREE.Vector3): { ra: number, dec: number } {
+        const localVec = worldVector.clone().normalize();
+        const invMatrix = this.group.matrixWorld.clone().invert();
+        localVec.applyMatrix4(invMatrix);
+
+        const dec = Math.asin(Math.max(-1, Math.min(1, localVec.y))) * 180 / Math.PI;
+        let ra = Math.atan2(localVec.z, localVec.x) * 12 / Math.PI;
+        if (ra < 0) ra += 24;
+        return { ra, dec };
+    }
+
+    public getHorizontalVector(azimuthDeg: number, altitudeDeg: number): THREE.Vector3 {
+        const azRad = azimuthDeg * Math.PI / 180;
+        const altRad = altitudeDeg * Math.PI / 180;
+        const cosAlt = Math.cos(altRad);
+        const x = cosAlt * Math.sin(azRad);
+        const y = Math.sin(altRad);
+        const z = -cosAlt * Math.cos(azRad);
+        return new THREE.Vector3(x, y, z);
+    }
+
     public raDecToScreenPosition(raHours: number, decDegrees: number, camera: THREE.Camera, width: number, height: number): THREE.Vector2 | null {
         const vec = this.getRaDecToVector(raHours, decDegrees);
         vec.applyMatrix4(this.group.matrixWorld);
