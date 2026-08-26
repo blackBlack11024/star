@@ -257,17 +257,27 @@ export class Game {
     // ---- Celestial sphere rotation ----
     this.celestialSphere.updateOrientation(loc.latitude, loc.longitude, gameTime);
 
-    // ---- Star rendering ----
-    this.starField.update(elapsedTime, state.currentFov, this.sunElevation);
-
-    // ---- Deep sky objects ----
+    // ---- Star rendering & Optics-dependent limiting magnitude ----
     const telescopeConfig = getTelescopeConfig(state.telescopeLevel);
     const isTelescope = state.gameMode === GameMode.Telescope;
     const currentCameraFov = isTelescope ? state.currentFov : this.camera.fov;
-    const effectiveLimitingMag = isTelescope 
-      ? telescopeConfig.limitingMagnitude 
-      : (currentCameraFov < 35.0 ? 8.5 : 5.5);
+    const lightPollution = loc.lightPollution || 0;
 
+    let effectiveLimitingMag = 6.4;
+    if (isTelescope) {
+      // Telescope Mode (Level 1: 10.0, Level 2: 12.0, Level 3: 13.5, Level 4: 14.5, Level 5: 16.0)
+      effectiveLimitingMag = telescopeConfig.limitingMagnitude - lightPollution * 1.2;
+    } else if (currentCameraFov < 35.0) {
+      // 8x42 Binoculars Mode (Hold Right Click)
+      effectiveLimitingMag = 9.5 - lightPollution * 1.5;
+    } else {
+      // Naked Eye Mode (Clear constellations & distinct Milky Way)
+      effectiveLimitingMag = Math.max(3.5, 6.4 - lightPollution * 2.2);
+    }
+
+    this.starField.update(elapsedTime, currentCameraFov, this.sunElevation, effectiveLimitingMag);
+
+    // ---- Deep sky objects ----
     this.deepSkyObjects.update(currentCameraFov, isTelescope, effectiveLimitingMag);
 
     // ---- Constellations ----

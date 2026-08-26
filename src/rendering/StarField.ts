@@ -39,7 +39,7 @@ export class StarField {
         }
 
         if (useFallback) {
-            starsData = [...BRIGHT_STARS, ...generateFillerStars(65000)].map(star => {
+            starsData = [...BRIGHT_STARS, ...generateFillerStars(120000)].map(star => {
                 const R = 1000;
                 const ra_rad = star.ra * Math.PI / 12;
                 const dec_rad = star.dec * Math.PI / 180;
@@ -90,6 +90,7 @@ export class StarField {
             uniform float uBaseSize;
             uniform float uCurrentFov;
             uniform float uMinFov;
+            uniform float uLimitingMagnitude;
             
             varying vec3 vColor;
             varying float vMagnitude;
@@ -106,21 +107,29 @@ export class StarField {
                 vec4 mvPosition = viewMatrix * worldPos;
                 gl_Position = projectionMatrix * mvPosition;
                 
+                // Optical Limiting Magnitude filter: stars beyond equipment limit shrink away
+                float magExtinction = smoothstep(uLimitingMagnitude + 0.6, uLimitingMagnitude - 0.8, aMagnitude);
+                if (magExtinction <= 0.001) {
+                    gl_PointSize = 0.0;
+                    return;
+                }
+                
                 float twinkle = 0.82 + 0.18 * sin(uTime * aTwinkleSpeed + position.x * 0.1);
                 vTwinkle = twinkle;
                 
                 // Magnitude-based size scaling (apparent magnitude scale)
-                // Mag -1 (Sirius) -> size ~ 8px, Mag 2 -> ~5px, Mag 6+ -> ~2.2px
-                float magFactor = clamp((8.5 - aMagnitude) / 7.5, 0.22, 1.6);
+                // Mag -1 (Sirius) -> size ~ 8.5px, Mag 2 -> ~5.5px, Mag 6 -> ~2.8px, Mag 12 -> ~1.5px
+                float magFactor = clamp((8.5 - aMagnitude) / 7.5, 0.2, 1.7);
                 float fovZoom = pow(clamp(60.0 / max(uCurrentFov, 0.4), 1.0, 50.0), 0.38);
                 
-                float ptSize = uBaseSize * magFactor * fovZoom * uPixelRatio * twinkle;
-                gl_PointSize = clamp(ptSize, 1.8, 22.0);
+                float ptSize = uBaseSize * magFactor * fovZoom * uPixelRatio * twinkle * magExtinction;
+                gl_PointSize = clamp(ptSize, 1.5, 24.0);
             }
         `;
 
         const fragmentShader = `
             uniform float uSunElevation;
+            uniform float uLimitingMagnitude;
             varying vec3 vColor;
             varying float vMagnitude;
             varying float vTwinkle;
@@ -131,6 +140,10 @@ export class StarField {
                 if (vWorldPosition.y < 0.0) discard;
                 float horizonFade = smoothstep(0.0, 15.0, vWorldPosition.y);
                 
+                // Optical equipment limiting magnitude threshold
+                if (vMagnitude > uLimitingMagnitude + 0.5) discard;
+                float magAlpha = smoothstep(uLimitingMagnitude + 0.5, uLimitingMagnitude - 0.8, vMagnitude);
+                
                 vec2 coord = gl_PointCoord * 2.0 - 1.0;
                 float dist = length(coord);
                 if (dist > 1.0) discard;
@@ -138,7 +151,7 @@ export class StarField {
                 // Gaussian Airy disk profile with crisp core and soft halo
                 float core = exp(-dist * dist * 3.0);
                 float halo = max(0.0, 1.0 - dist) * 0.35;
-                float alpha = (core + halo) * horizonFade;
+                float alpha = (core + halo) * horizonFade * magAlpha;
                 
                 // Daylight extinction based on sun elevation in degrees
                 float sunElevDeg = uSunElevation * 57.2957795;
@@ -161,7 +174,8 @@ export class StarField {
                 uBaseSize: { value: 5.2 },
                 uCurrentFov: { value: 60.0 },
                 uMinFov: { value: 0.2 },
-                uSunElevation: { value: -0.2 }
+                uSunElevation: { value: -0.2 },
+                uLimitingMagnitude: { value: 6.5 }
             },
             transparent: true,
             blending: THREE.AdditiveBlending,
@@ -172,11 +186,12 @@ export class StarField {
         this.group.add(this.points);
     }
 
-    public update(time: number, fov: number, sunElevation: number) {
+    public update(time: number, fov: number, sunElevation: number, limitingMagnitude: number = 6.5) {
         if (this.material) {
             this.material.uniforms.uTime.value = time;
             this.material.uniforms.uCurrentFov.value = fov;
             this.material.uniforms.uSunElevation.value = sunElevation;
+            this.material.uniforms.uLimitingMagnitude.value = limitingMagnitude;
         }
     }
 
