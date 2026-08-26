@@ -102,7 +102,73 @@ export interface GameState {
   // ---- Quest & Codex ----
   completedQuestIds: string[];
   discoveredTargets: string[];
+  resetSaveData: () => void;
 }
+
+const SAVE_KEY = 'stargazer_sim_save_v1';
+
+interface SavedState {
+  money: number;
+  telescopeLevel: number;
+  accessories: Accessory[];
+  photos: any[];
+  unlockedLocations: string[];
+  completedQuestIds: string[];
+  discoveredTargets: string[];
+  masterVolume?: number;
+  machineVolume?: number;
+  ambientVolume?: number;
+  weatherVolume?: number;
+  sfxVolume?: number;
+  isMuted?: boolean;
+}
+
+function loadSavedData(): Partial<SavedState> | null {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && Array.isArray(parsed.photos)) {
+      parsed.photos = parsed.photos.map((p: any) => ({
+        ...p,
+        timestamp: p.timestamp ? new Date(p.timestamp) : new Date(),
+      }));
+    }
+    return parsed;
+  } catch (e) {
+    console.warn('[Storage] Failed to load save data:', e);
+    return null;
+  }
+}
+
+let saveTimer: any = null;
+export function autoSaveState(state: GameState) {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      const dataToSave: SavedState = {
+        money: state.money,
+        telescopeLevel: state.telescopeLevel,
+        accessories: state.accessories,
+        photos: (state.photos || []).slice(0, 40), // save latest 40 photos to prevent localStorage quota issues
+        unlockedLocations: state.unlockedLocations,
+        completedQuestIds: state.completedQuestIds || [],
+        discoveredTargets: state.discoveredTargets || [],
+        masterVolume: state.masterVolume,
+        machineVolume: state.machineVolume,
+        ambientVolume: state.ambientVolume,
+        weatherVolume: state.weatherVolume,
+        sfxVolume: state.sfxVolume,
+        isMuted: state.isMuted,
+      };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
+    } catch (e) {
+      console.warn('[Storage] Auto-save error:', e);
+    }
+  }, 400);
+}
+
+const savedData = loadSavedData();
 
 export const gameStore = createStore<GameState>()((set, get) => ({
   // ---- Initial state (Default to clear stargazing night at 21:30) ----
@@ -115,12 +181,12 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   isTimePaused: false,
 
   currentLocation: LOCATIONS[0],
-  unlockedLocations: [LOCATIONS[0].id],
+  unlockedLocations: savedData?.unlockedLocations || [LOCATIONS[0].id],
 
-  money: 0,
-  telescopeLevel: 1,
-  accessories: JSON.parse(JSON.stringify(ACCESSORIES)),
-  photos: [],
+  money: savedData?.money ?? 0,
+  telescopeLevel: savedData?.telescopeLevel ?? 1,
+  accessories: savedData?.accessories || JSON.parse(JSON.stringify(ACCESSORIES)),
+  photos: (savedData?.photos as Photo[]) || [],
 
   gameMode: GameMode.Walk,
 
@@ -137,18 +203,18 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   exposureProgress: 0,
   exposureDuration: 30,
 
-  completedQuestIds: [],
-  discoveredTargets: [],
+  completedQuestIds: savedData?.completedQuestIds || [],
+  discoveredTargets: savedData?.discoveredTargets || [],
 
   timeReversalCostPerHour: 50,
 
   // ---- Audio initial state ----
-  masterVolume: 0.7,
-  machineVolume: 0.7,
-  ambientVolume: 0.8,
-  weatherVolume: 0.8,
-  sfxVolume: 0.8,
-  isMuted: false,
+  masterVolume: savedData?.masterVolume ?? 0.7,
+  machineVolume: savedData?.machineVolume ?? 0.7,
+  ambientVolume: savedData?.ambientVolume ?? 0.8,
+  weatherVolume: savedData?.weatherVolume ?? 0.8,
+  sfxVolume: savedData?.sfxVolume ?? 0.8,
+  isMuted: savedData?.isMuted ?? false,
 
   showConstellations: true,
   showStarNames: true,
@@ -272,4 +338,18 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   toggleConstellations: () => set((s) => ({ showConstellations: !s.showConstellations })),
   toggleStarNames: () => set((s) => ({ showStarNames: !s.showStarNames })),
   toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
+
+  resetSaveData: () => {
+    try {
+      localStorage.removeItem(SAVE_KEY);
+      location.reload();
+    } catch (e) {
+      console.warn('Failed to clear save data:', e);
+    }
+  },
 }));
+
+// Automatically persist changes to localStorage
+gameStore.subscribe((state) => {
+  autoSaveState(state);
+});

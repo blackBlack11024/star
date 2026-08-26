@@ -57,8 +57,26 @@ export class PlayerController {
     // Prevent browser context menu on right click
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
+    const isAnyModalActive = () => {
+      const codex = document.querySelector('.codex-panel') as HTMLElement | null;
+      const lightbox = document.querySelector('.lightbox-overlay') as HTMLElement | null;
+      const guide = document.querySelector('.guide-modal') as HTMLElement | null;
+      const location = document.querySelector('.location-modal') as HTMLElement | null;
+      const timeRev = document.querySelector('.time-reversal-panel') as HTMLElement | null;
+      const audio = document.querySelector('.audio-modal') as HTMLElement | null;
+      return (
+        (codex && codex.style.display !== 'none') ||
+        (lightbox && lightbox.style.display !== 'none') ||
+        (guide && guide.style.display !== 'none') ||
+        (location && location.style.display !== 'none') ||
+        (timeRev && timeRev.style.display !== 'none') ||
+        (audio && audio.style.display !== 'none')
+      );
+    };
+
     // Click to lock pointer in walk or telescope mode (left or right click)
     this.canvas.addEventListener('mousedown', () => {
+      if (isAnyModalActive()) return;
       const mode = gameStore.getState().gameMode;
       if ((mode === GameMode.Walk || mode === GameMode.Telescope) && !this.controls.isLocked) {
         this.controls.lock();

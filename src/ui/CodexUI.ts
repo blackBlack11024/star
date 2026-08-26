@@ -10,7 +10,7 @@ export class CodexUI {
     private unsubscribe: () => void;
 
     constructor() {
-        const overlay = document.getElementById('ui-overlay')!;
+        const overlay = document.getElementById('ui-overlay') || document.body;
         this.container = document.createElement('div');
         this.container.className = 'codex-panel';
         this.container.style.display = 'none';
@@ -20,22 +20,46 @@ export class CodexUI {
             if (this.isVisible) this.render();
         });
 
+        // Toggle on G key or Escape to close
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'KeyG') {
+            if (e.code === 'KeyG' || e.key.toLowerCase() === 'g') {
                 const mode = gameStore.getState().gameMode;
-                if (mode === GameMode.Walk || mode === GameMode.Studio) this.toggle();
+                if (mode === GameMode.Walk || mode === GameMode.Studio || this.isVisible) {
+                    this.toggle();
+                }
+            } else if (e.code === 'Escape' && this.isVisible) {
+                this.hide();
+                e.stopPropagation();
             }
         });
     }
 
     public toggle() {
-        this.isVisible = !this.isVisible;
-        this.container.style.display = this.isVisible ? 'flex' : 'none';
-        if (this.isVisible) this.render();
+        if (this.isVisible) {
+            this.hide();
+        } else {
+            this.show();
+        }
     }
 
-    public show() { this.isVisible = true; this.container.style.display = 'flex'; this.render(); }
-    public hide() { this.isVisible = false; this.container.style.display = 'none'; }
+    public show() {
+        this.isVisible = true;
+        this.container.style.display = 'flex';
+        // Release pointer lock so cursor is visible and interactive
+        if (document.pointerLockElement) {
+            document.exitPointerLock();
+        }
+        this.render();
+    }
+
+    public hide() {
+        this.isVisible = false;
+        this.container.style.display = 'none';
+    }
+
+    public get visible() {
+        return this.isVisible;
+    }
 
     private render() {
         const state = gameStore.getState() as any;
@@ -47,26 +71,46 @@ export class CodexUI {
         this.container.innerHTML = `
         <div class="codex-header">
             <h2>觀測圖鑑 & 任務日誌</h2>
-            <button class="close-btn" id="codex-close">&times;</button>
+            <button class="close-btn" id="codex-close-btn" title="關閉圖鑑 [ESC]">&times;</button>
         </div>
         <div class="codex-tabs">
-            <button class="codex-tab ${this.currentTab === 0 ? 'active' : ''}" data-tab="0">深空天體 (${capturedTargets.size}/${DEEP_SKY_OBJECTS.length})</button>
-            <button class="codex-tab ${this.currentTab === 1 ? 'active' : ''}" data-tab="1">任務進度 (${completedQuestIds.length}/${QUESTS.length})</button>
+            <button class="codex-tab ${this.currentTab === 0 ? 'active' : ''}" id="codex-tab-0">深空天體 (${capturedTargets.size}/${DEEP_SKY_OBJECTS.length})</button>
+            <button class="codex-tab ${this.currentTab === 1 ? 'active' : ''}" id="codex-tab-1">主線任務 (${completedQuestIds.length}/${QUESTS.length})</button>
         </div>
         <div class="codex-body ${this.currentTab === 1 ? 'quest-mode' : ''}" id="codex-body"></div>
         `;
 
-        this.container.querySelector('#codex-close')?.addEventListener('click', () => this.hide());
-        this.container.querySelectorAll('.codex-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.currentTab = parseInt((btn as HTMLElement).dataset.tab || '0');
+        const closeBtn = this.container.querySelector('#codex-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.hide();
+            });
+        }
+
+        const tab0 = this.container.querySelector('#codex-tab-0');
+        if (tab0) {
+            tab0.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.currentTab = 0;
                 this.render();
             });
-        });
+        }
+
+        const tab1 = this.container.querySelector('#codex-tab-1');
+        if (tab1) {
+            tab1.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.currentTab = 1;
+                this.render();
+            });
+        }
 
         const body = this.container.querySelector('#codex-body') as HTMLElement;
-        if (this.currentTab === 0) this.renderDSOGrid(body, capturedTargets, photos);
-        else this.renderQuestLog(body, completedQuestIds);
+        if (body) {
+            if (this.currentTab === 0) this.renderDSOGrid(body, capturedTargets, photos);
+            else this.renderQuestLog(body, completedQuestIds);
+        }
     }
 
     private renderDSOGrid(body: HTMLElement, capturedTargets: Set<string>, photos: any[]) {
@@ -78,7 +122,7 @@ export class CodexUI {
             const captured = capturedTargets.has(dso.commonName) || capturedTargets.has(dso.name);
             const bestPhoto = photos
                 .filter((p: any) => p.targetName === dso.commonName || p.targetName === dso.name)
-                .sort((a: any, b: any) => b.score - a.score)[0];
+                .sort((a: any, b: any) => (b.score || 0) - (a.score || 0))[0];
 
             const card = document.createElement('div');
             card.className = `codex-dso-card ${captured ? 'captured' : 'locked'}`;
@@ -92,7 +136,9 @@ export class CodexUI {
             `;
             if (captured && bestPhoto) {
                 card.style.cursor = 'pointer';
-                card.onclick = () => {
+                card.title = '點擊查看高解析照片';
+                card.onclick = (e) => {
+                    e.stopPropagation();
                     document.dispatchEvent(new CustomEvent('open-lightbox', { detail: { photoId: bestPhoto.id } }));
                 };
             }
@@ -126,3 +172,4 @@ export class CodexUI {
         this.container.remove();
     }
 }
+

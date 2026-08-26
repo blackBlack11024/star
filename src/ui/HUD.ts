@@ -122,6 +122,14 @@ export class HUD {
         this.audioDisplay.innerHTML = `<span>音量</span> <span>70%</span>`;
         this.audioDisplay.onclick = () => this.toggleAudioModal();
 
+        const codexBtn = document.createElement('div');
+        codexBtn.className = 'guide-badge';
+        codexBtn.innerHTML = `<span>圖鑑</span>`;
+        codexBtn.title = '開啟觀測圖鑑與任務日誌 [G]';
+        codexBtn.onclick = () => {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', code: 'KeyG' }));
+        };
+
         const guideBtn = document.createElement('div');
         guideBtn.className = 'guide-badge';
         guideBtn.innerHTML = `<span>說明</span>`;
@@ -133,6 +141,7 @@ export class HUD {
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
         topRight.appendChild(this.audioDisplay);
+        topRight.appendChild(codexBtn);
         topRight.appendChild(guideBtn);
 
         // 3. Audio Settings Mixer Modal
@@ -413,16 +422,21 @@ export class HUD {
             tracker = document.createElement('div');
             tracker.id = 'quest-tracker-hud';
             tracker.className = 'quest-tracker-hud';
+            tracker.style.cursor = 'pointer';
+            tracker.title = '點擊開啟觀測圖鑑與任務日誌 [G]';
+            tracker.onclick = () => {
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g', code: 'KeyG' }));
+            };
             document.getElementById('ui-overlay')?.appendChild(tracker);
         }
         tracker.style.display = 'block';
         tracker.innerHTML = `
-            <div class="qt-title">目前任務</div>
+            <div class="qt-title">目前任務 (點擊查看)</div>
             <div class="qt-quest">${activeQuest.title}</div>
             <div class="qt-objectives">
                 ${activeQuest.objectives.slice(0, 2).map(o => `<div class="qt-obj">\u25cb ${o.description}</div>`).join('')}
             </div>
-            <div class="qt-hint">G 開啟圖鑑</div>
+            <div class="qt-hint">點擊此處或按 G 開啟圖鑑</div>
         `;
     }
 
