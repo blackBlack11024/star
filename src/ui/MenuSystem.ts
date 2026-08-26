@@ -36,6 +36,7 @@ export class MenuSystem {
     private createGuideModal(): HTMLElement {
         const modal = document.createElement('div');
         modal.className = 'guide-modal';
+        modal.style.display = 'none';
 
         const header = document.createElement('div');
         header.className = 'guide-header';

@@ -57,33 +57,41 @@ export class PlayerController {
     // Prevent browser context menu on right click
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    const isAnyModalActive = () => {
-      const codex = document.querySelector('.codex-panel') as HTMLElement | null;
-      const lightbox = document.querySelector('.lightbox-overlay') as HTMLElement | null;
-      const guide = document.querySelector('.guide-modal') as HTMLElement | null;
-      const location = document.querySelector('.location-modal') as HTMLElement | null;
-      const timeRev = document.querySelector('.time-reversal-panel') as HTMLElement | null;
-      const audio = document.querySelector('.audio-modal') as HTMLElement | null;
-      const story = document.querySelector('.story-modal') as HTMLElement | null;
-      return (
-        (codex && codex.style.display !== 'none') ||
-        (lightbox && lightbox.style.display !== 'none') ||
-        (guide && guide.style.display !== 'none') ||
-        (location && location.style.display !== 'none') ||
-        (timeRev && timeRev.style.display !== 'none') ||
-        (audio && audio.style.display !== 'none') ||
-        (story && story.style.display !== 'none')
-      );
+    const isAnyModalActive = (): boolean => {
+      const modalSelectors = [
+        '.codex-panel',
+        '.lightbox-overlay',
+        '.guide-modal',
+        '.location-modal',
+        '.time-reversal-panel',
+        '.audio-modal',
+        '.story-modal'
+      ];
+      for (const sel of modalSelectors) {
+        const el = document.querySelector(sel) as HTMLElement | null;
+        if (el && el.style.display !== 'none' && getComputedStyle(el).display !== 'none') {
+          return true;
+        }
+      }
+      return false;
     };
 
-    // Click to lock pointer in walk or telescope mode (left or right click)
-    this.canvas.addEventListener('mousedown', () => {
+    // Click to lock pointer in walk or telescope mode (left click)
+    const handleViewportLock = (e: MouseEvent) => {
+      if (e.button !== 0) return; // Only left click locks pointer
       if (isAnyModalActive()) return;
+      const target = e.target as HTMLElement;
+      if (target && target.closest('.hud-panel, .studio-panel, button, input, select, .guide-badge, .money-badge, .weather-badge, .audio-badge')) {
+        return;
+      }
       const mode = gameStore.getState().gameMode;
       if ((mode === GameMode.Walk || mode === GameMode.Telescope) && !this.controls.isLocked) {
         this.controls.lock();
       }
-    });
+    };
+
+    this.canvas.addEventListener('mousedown', handleViewportLock);
+    window.addEventListener('click', handleViewportLock);
 
     this.unsubscribe = gameStore.subscribe((state, prevState) => {
       if (state.gameMode !== prevState.gameMode) {

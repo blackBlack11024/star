@@ -202,6 +202,7 @@ export class HUD {
     private createAudioModal(): HTMLElement {
         const modal = document.createElement('div');
         modal.className = 'audio-modal';
+        modal.style.display = 'none';
 
         const header = document.createElement('div');
         header.className = 'audio-modal-header';
