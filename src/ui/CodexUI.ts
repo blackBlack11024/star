@@ -4,10 +4,46 @@ import { QUESTS } from '../data/quests';
 import { GameMode } from '../types';
 import { calculateTargetVisibility } from '../astronomy/AstroTimeCalc';
 
+export interface SolarSystemTarget {
+    id: string;
+    name: string;
+    commonName: string;
+    type: string;
+    desc: string;
+    magnitude: number;
+}
+
+export const SOLAR_SYSTEM_TARGETS: SolarSystemTarget[] = [
+    { id: 'moon', name: 'Moon', commonName: '月球', type: '天然衛星', desc: '地球唯一的天然衛星，表面覆蓋大量環形山與月海暗斑。', magnitude: -12.5 },
+    { id: 'saturn', name: 'Saturn', commonName: '土星', type: '氣態巨行星', desc: '擁有太陽系中最壯觀耀眼的光環系統與卡西尼環縫。', magnitude: 0.5 },
+    { id: 'jupiter', name: 'Jupiter', commonName: '木星', type: '氣態巨行星', desc: '太陽系最大行星，表面有清晰的雲帶、大紅斑與四顆伽利略衛星。', magnitude: -2.6 },
+    { id: 'mars', name: 'Mars', commonName: '火星', type: '類地行星', desc: '紅色荒漠行星，兩極擁有由乾冰與水冰組成的白色極冠。', magnitude: -1.5 },
+    { id: 'venus', name: 'Venus', commonName: '金星', type: '類地行星', desc: '夜空中最明亮的行星（啟明星/長庚星），擁有顯著的相位盈虧。', magnitude: -4.3 },
+    { id: 'mercury', name: 'Mercury', commonName: '水星', type: '類地行星', desc: '最接近太陽的行星，運行速度極快，僅在清晨或黃昏短暫可見。', magnitude: -0.4 },
+    { id: 'uranus', name: 'Uranus', commonName: '天王星', type: '冰巨行星', desc: '淡藍綠色的遙遠冰巨星，自轉軸極度傾斜。', magnitude: 5.7 },
+    { id: 'neptune', name: 'Neptune', commonName: '海王星', type: '冰巨行星', desc: '深藍色的太陽系最外側大行星，擁有強烈的風暴系統。', magnitude: 7.8 },
+];
+
+/** Smart fuzzy matching between captured photo names and catalog entries */
+function getMatchingPhotos(target: { id?: string; name: string; commonName?: string }, photos: any[]): any[] {
+    const n = (target.name || '').toLowerCase();
+    const cn = (target.commonName || '').toLowerCase();
+    const id = (target.id || '').toLowerCase();
+
+    return photos.filter((p: any) => {
+        const tn = (p.targetName || '').toLowerCase();
+        if (!tn) return false;
+        if (id && tn.includes(id)) return true;
+        if (cn && tn.includes(cn)) return true;
+        if (n && tn.includes(n)) return true;
+        return false;
+    }).sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
+}
+
 export class CodexUI {
     private container: HTMLElement;
     private isVisible = false;
-    private currentTab = 0;
+    private currentTab = 0; // 0: Deep Sky, 1: Solar System, 2: Quests
     private onPhotoCapturedHandler: () => void;
     private onQuestCompletedHandler: () => void;
 
@@ -17,7 +53,7 @@ export class CodexUI {
         this.container.style.display = 'none';
         document.body.appendChild(this.container);
 
-        // Only re-render when a photo is taken or a quest is completed (NOT on every frame!)
+        // Re-render when photo is captured or quest completed
         this.onPhotoCapturedHandler = () => {
             if (this.isVisible) this.render();
         };
@@ -73,7 +109,9 @@ export class CodexUI {
         const photos = state.photos || [];
         const completedQuestIds: string[] = state.completedQuestIds || [];
 
-        const capturedTargets = new Set<string>(photos.map((p: any) => (p.targetName || '') as string));
+        // Count unlocked items
+        const unlockedDSOCount = DEEP_SKY_OBJECTS.filter(d => getMatchingPhotos(d, photos).length > 0).length;
+        const unlockedPlanetCount = SOLAR_SYSTEM_TARGETS.filter(p => getMatchingPhotos(p, photos).length > 0).length;
 
         this.container.innerHTML = `
         <div class="codex-header">
@@ -81,10 +119,11 @@ export class CodexUI {
             <button class="close-btn" id="codex-close-btn" title="關閉圖鑑 [ESC]">&times;</button>
         </div>
         <div class="codex-tabs">
-            <button class="codex-tab ${this.currentTab === 0 ? 'active' : ''}" id="codex-tab-0">深空天體 (${capturedTargets.size}/${DEEP_SKY_OBJECTS.length})</button>
-            <button class="codex-tab ${this.currentTab === 1 ? 'active' : ''}" id="codex-tab-1">主線任務 (${completedQuestIds.length}/${QUESTS.length})</button>
+            <button class="codex-tab ${this.currentTab === 0 ? 'active' : ''}" id="codex-tab-0">深空天體 (${unlockedDSOCount}/${DEEP_SKY_OBJECTS.length})</button>
+            <button class="codex-tab ${this.currentTab === 1 ? 'active' : ''}" id="codex-tab-1">太陽系行星 (${unlockedPlanetCount}/${SOLAR_SYSTEM_TARGETS.length})</button>
+            <button class="codex-tab ${this.currentTab === 2 ? 'active' : ''}" id="codex-tab-2">主線任務 (${completedQuestIds.length}/${QUESTS.length})</button>
         </div>
-        <div class="codex-body ${this.currentTab === 1 ? 'quest-mode' : ''}" id="codex-body"></div>
+        <div class="codex-body ${this.currentTab === 2 ? 'quest-mode' : ''}" id="codex-body"></div>
         `;
 
         const closeBtn = this.container.querySelector('#codex-close-btn') as HTMLElement | null;
@@ -113,24 +152,33 @@ export class CodexUI {
             };
         }
 
+        const tab2 = this.container.querySelector('#codex-tab-2') as HTMLElement | null;
+        if (tab2) {
+            tab2.onclick = (e: MouseEvent) => {
+                e.stopPropagation();
+                this.currentTab = 2;
+                this.render();
+            };
+        }
+
         const body = this.container.querySelector('#codex-body') as HTMLElement;
         if (body) {
-            if (this.currentTab === 0) this.renderDSOGrid(body, capturedTargets, photos, state);
+            if (this.currentTab === 0) this.renderDSOGrid(body, photos, state);
+            else if (this.currentTab === 1) this.renderPlanetsGrid(body, photos);
             else this.renderQuestLog(body, completedQuestIds);
         }
     }
 
-    private renderDSOGrid(body: HTMLElement, capturedTargets: Set<string>, photos: any[], state: any) {
+    private renderDSOGrid(body: HTMLElement, photos: any[], state: any) {
         body.innerHTML = '';
         const typeLabels: Record<string, string> = {
             'galaxy': '星系', 'nebula': '星雲', 'cluster': '星團', 'planetary_nebula': '行星狀星雲'
         };
 
         for (const dso of DEEP_SKY_OBJECTS) {
-            const captured = capturedTargets.has(dso.commonName) || capturedTargets.has(dso.name);
-            const bestPhoto = photos
-                .filter((p: any) => p.targetName === dso.commonName || p.targetName === dso.name)
-                .sort((a: any, b: any) => (b.score || 0) - (a.score || 0))[0];
+            const matches = getMatchingPhotos(dso, photos);
+            const captured = matches.length > 0;
+            const bestPhoto = matches[0];
 
             const vis = calculateTargetVisibility(dso, state.currentLocation.latitude, state.currentLocation.longitude, state.currentTime);
 
@@ -143,6 +191,36 @@ export class CodexUI {
                     <div class="codex-dso-meta">${typeLabels[dso.type] || dso.type} &bull; 視星等 ${dso.magnitude}</div>
                     <div style="font-size:11px; color:#94a3b8; margin: 2px 0;">最佳時段: ${vis.bestTimeStr}</div>
                     ${captured ? `<div class="codex-dso-grade quality ${bestPhoto?.quality}">最高評級: ${bestPhoto?.quality}級 (${bestPhoto?.score}分)</div>` : '<div class="codex-dso-lock-icon">未觀測解鎖</div>'}
+                </div>
+            `;
+            if (captured && bestPhoto) {
+                card.style.cursor = 'pointer';
+                card.title = '點擊查看高解析照片';
+                card.onclick = (e) => {
+                    e.stopPropagation();
+                    document.dispatchEvent(new CustomEvent('open-lightbox', { detail: { photoId: bestPhoto.id } }));
+                };
+            }
+            body.appendChild(card);
+        }
+    }
+
+    private renderPlanetsGrid(body: HTMLElement, photos: any[]) {
+        body.innerHTML = '';
+        for (const p of SOLAR_SYSTEM_TARGETS) {
+            const matches = getMatchingPhotos(p, photos);
+            const captured = matches.length > 0;
+            const bestPhoto = matches[0];
+
+            const card = document.createElement('div');
+            card.className = `codex-dso-card ${captured ? 'captured' : 'locked'}`;
+            card.innerHTML = `
+                ${captured && bestPhoto ? `<img src="${bestPhoto.imageDataUrl}" alt="${p.commonName}" class="codex-thumb"/>` : `<div class="codex-thumb-lock">${p.commonName}</div>`}
+                <div class="codex-dso-info">
+                    <div class="codex-dso-name">${p.commonName} (${p.name})</div>
+                    <div class="codex-dso-meta">${p.type} &bull; 視星等 ${p.magnitude}</div>
+                    <div style="font-size:11px; color:#94a3b8; margin: 2px 0;">${p.desc}</div>
+                    ${captured ? `<div class="codex-dso-grade quality ${bestPhoto?.quality}">最高評級: ${bestPhoto?.quality}級 (${bestPhoto?.score}分)</div>` : '<div class="codex-dso-lock-icon">未拍攝收錄</div>'}
                 </div>
             `;
             if (captured && bestPhoto) {
@@ -211,4 +289,3 @@ export class CodexUI {
         this.container.remove();
     }
 }
-

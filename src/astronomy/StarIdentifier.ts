@@ -109,8 +109,8 @@ export class StarIdentifier {
     if (objects.length === 0) return null;
     objects.sort((a, b) => a.angularDistance - b.angularDistance);
 
-    // Clean and precise identification: only triggers when crosshair directly aims at the target
-    const maxCenterDist = Math.min(2.2, Math.max(0.4, fovDegrees * 0.06));
+    // Forgiving identification: recognized as long as object is comfortably inside eyepiece field
+    const maxCenterDist = Math.max(1.8, Math.min(8.0, fovDegrees * 0.45));
     if (objects[0].angularDistance <= maxCenterDist) {
       return objects[0];
     }
