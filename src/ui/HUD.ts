@@ -418,7 +418,7 @@ export class HUD {
     }
 
     /** Update the quest tracker widget on the HUD. */
-    public updateQuestTracker(activeQuest: { title: string; objectives: { description: string }[] } | null) {
+    public updateQuestTracker(activeQuest: any) {
         let tracker = document.getElementById('quest-tracker-hud');
         if (!activeQuest) {
             if (tracker) tracker.style.display = 'none';
@@ -437,12 +437,18 @@ export class HUD {
         }
         tracker.style.display = 'block';
         tracker.innerHTML = `
-            <div class="qt-title">目前任務 (點擊查看)</div>
-            <div class="qt-quest">${activeQuest.title}</div>
-            <div class="qt-objectives">
-                ${activeQuest.objectives.slice(0, 2).map(o => `<div class="qt-obj">\u25cb ${o.description}</div>`).join('')}
+            <div class="qt-header">
+                <span class="qt-avatar">${activeQuest.character?.avatarIcon || '🌌'}</span>
+                <div>
+                    <div class="qt-title">${activeQuest.character?.name || '任務導師'} · 主線任務</div>
+                    <div class="qt-quest">${activeQuest.title}</div>
+                </div>
             </div>
-            <div class="qt-hint">點擊此處或按 G 開啟圖鑑</div>
+            <div class="qt-objectives">
+                ${(activeQuest.objectives || []).slice(0, 2).map((o: any) => `<div class="qt-obj">○ ${o.description}</div>`).join('')}
+            </div>
+            ${activeQuest.starHoppingTip ? `<div class="qt-tip"><span class="qt-tip-tag">尋星指引</span> ${activeQuest.starHoppingTip}</div>` : ''}
+            <div class="qt-hint">按 G 開啟完整圖鑑 · 按 C 開啟星座連線</div>
         `;
     }
 

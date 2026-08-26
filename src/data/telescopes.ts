@@ -125,7 +125,16 @@ export const ACCESSORIES: Accessory[] = [
     effects: { exposureGain: 2.0, noiseReduction: 0.7 },
     owned: false,
   },
-  // Mount
+  // Mount & Finder
+  {
+    id: 'finder_red_dot',
+    name: '紅點尋星導航儀',
+    type: 'mount',
+    description: '在望遠鏡目鏡頂部投射即時電子導航箭頭與距離角度，指引鏡筒快速對準深空天體。',
+    price: 300,
+    effects: { finderNav: 1 },
+    owned: false,
+  },
   {
     id: 'mount_eq',
     name: '赤道儀升級',
@@ -137,11 +146,11 @@ export const ACCESSORIES: Accessory[] = [
   },
   {
     id: 'mount_goto',
-    name: 'GoTo 自動導星系統',
+    name: 'GoTo 電子自動尋星系統',
     type: 'mount',
-    description: '自動搜尋並追蹤目標天體。',
-    price: 1500,
-    effects: { trackingAccuracyBonus: 0.5, autoFind: 1 },
+    description: '高精度自動天體跟蹤與電子尋星羅盤，大幅提升目標定位精確度與曝光穩定度。',
+    price: 1200,
+    effects: { trackingAccuracyBonus: 0.5, finderNav: 1, autoFind: 1 },
     owned: false,
   },
 ];

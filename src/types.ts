@@ -96,6 +96,7 @@ export interface DeepSkyObjectData {
   sizeArcmin: number;
   difficulty: number;
   basePrice: number;
+  starHoppingGuide?: string; // Step-by-step observation and star-hopping guide
 }
 
 export interface BrightStar {
