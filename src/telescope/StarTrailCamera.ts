@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { gameStore } from '../game/GameStore';
-import { GameMode, Photo, PhotoQuality, TargetType } from '../types';
+import { GameMode, Photo, PhotoQuality, TargetType, WeatherState } from '../types';
 
 export const StarTrailShader = {
   uniforms: {
@@ -20,18 +20,52 @@ export const StarTrailShader = {
     uniform sampler2D tDiffuse;
     uniform sampler2D tAccum;
     uniform float uActive;
+    varying vec2 vUv;
+
+    void main() {
+      if (uActive < 0.5) {
+        gl_FragColor = texture2D(tDiffuse, vUv);
+        return;
+      }
+      // When Star Trail Camera is active, display the clean accumulated texture
+      gl_FragColor = texture2D(tAccum, vUv);
+    }
+  `
+};
+
+const rawBlendShader = {
+  uniforms: {
+    tCurrent: { value: null },
+    tAccum: { value: null },
+    uFirstFrame: { value: 1.0 },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = vec4(position.xy, 0.0, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tCurrent;
+    uniform sampler2D tAccum;
     uniform float uFirstFrame;
     varying vec2 vUv;
 
     void main() {
-      vec4 curr = texture2D(tDiffuse, vUv);
-      if (uActive < 0.5 || uFirstFrame > 0.5) {
+      vec4 curr = texture2D(tCurrent, vUv);
+      if (uFirstFrame > 0.5) {
         gl_FragColor = curr;
         return;
       }
       vec4 acc = texture2D(tAccum, vUv);
-      // Max-Hold: preserves pure dark night sky, traces bright star arcs
-      gl_FragColor = max(curr, acc);
+
+      // Pure Max-Hold starlight accumulation:
+      // Preserves pure dark night sky, traces crisp luminous star arcs without blowout
+      vec3 maxColor = max(curr.rgb, acc.rgb);
+      maxColor = clamp(maxColor, 0.0, 1.0);
+
+      gl_FragColor = vec4(maxColor, 1.0);
     }
   `
 };
@@ -45,10 +79,10 @@ export class StarTrailCamera {
   private accumTargetB: THREE.WebGLRenderTarget;
   private bufferIdx = 0;
 
-  private copyScene: THREE.Scene;
-  private copyCamera: THREE.OrthographicCamera;
-  private copyMaterial: THREE.MeshBasicMaterial;
-  private copyQuad: THREE.Mesh;
+  private blendScene: THREE.Scene;
+  private blendCamera: THREE.OrthographicCamera;
+  private blendMaterial: THREE.ShaderMaterial;
+  private blendQuad: THREE.Mesh;
 
   private isExposing = false;
   private isFirstFrame = true;
@@ -81,11 +115,21 @@ export class StarTrailCamera {
     this.accumTargetA = new THREE.WebGLRenderTarget(width, height, rtOptions);
     this.accumTargetB = new THREE.WebGLRenderTarget(width, height, rtOptions);
 
-    this.copyScene = new THREE.Scene();
-    this.copyCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    this.copyMaterial = new THREE.MeshBasicMaterial({ depthTest: false, depthWrite: false });
-    this.copyQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.copyMaterial);
-    this.copyScene.add(this.copyQuad);
+    this.blendScene = new THREE.Scene();
+    this.blendCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    this.blendMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        tCurrent: { value: null },
+        tAccum: { value: null },
+        uFirstFrame: { value: 1.0 },
+      },
+      vertexShader: rawBlendShader.vertexShader,
+      fragmentShader: rawBlendShader.fragmentShader,
+      depthTest: false,
+      depthWrite: false,
+    });
+    this.blendQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.blendMaterial);
+    this.blendScene.add(this.blendQuad);
 
     this.createViewfinderUI();
   }
@@ -143,10 +187,19 @@ export class StarTrailCamera {
     return this.isExposing;
   }
 
+  private lastSunElevation = -0.5;
+
   public onKeyDown(key: 'T' | 'R') {
     if (!this.isEquipped()) return;
     const state = gameStore.getState();
     if (state.gameMode !== GameMode.Walk) return;
+
+    if (this.lastSunElevation > 0.05) {
+      document.dispatchEvent(new CustomEvent('show-notification', {
+        detail: { message: '日間陽光強烈，星軌相機僅限夜間觀星（按 B 鍵可跳轉至夜間時段）', type: 'info' }
+      }));
+      return;
+    }
 
     if (key === 'T') this.isHoldingT = true;
     if (key === 'R') this.isHoldingR = true;
@@ -186,8 +239,18 @@ export class StarTrailCamera {
     gameStore.getState().setTimeScale(this.currentTimeScale);
   }
 
-  public update(deltaTime: number) {
+  public update(deltaTime: number, sunElevation: number = -0.5) {
+    this.lastSunElevation = sunElevation;
     if (!this.isExposing) return;
+
+    // In astrophotography, star trail exposures stop before morning daylight floods the sky
+    if (sunElevation > -0.05) {
+      document.dispatchEvent(new CustomEvent('show-notification', {
+        detail: { message: '黎明晨光破曉，星軌相機已自動為您保存夜空星軌作品！', type: 'info' }
+      }));
+      this.finishExposure();
+      return;
+    }
 
     this.sampleCount++;
 
@@ -214,29 +277,25 @@ export class StarTrailCamera {
     }
   }
 
-  public beforeRenderPass(starTrailPass: any) {
-    if (!starTrailPass) return;
+  public accumulateRawFrame(renderer: THREE.WebGLRenderer, rawTexture: THREE.Texture): THREE.Texture {
+    if (!this.isExposing) return rawTexture;
+
     const currentAccum = this.bufferIdx === 0 ? this.accumTargetA : this.accumTargetB;
-
-    starTrailPass.uniforms.uActive.value = this.isExposing ? 1.0 : 0.0;
-    starTrailPass.uniforms.uFirstFrame.value = this.isFirstFrame ? 1.0 : 0.0;
-    starTrailPass.uniforms.tAccum.value = currentAccum.texture;
-  }
-
-  public afterRenderPass(composerTexture: THREE.Texture) {
-    if (!this.isExposing) return;
-
     const nextAccum = this.bufferIdx === 0 ? this.accumTargetB : this.accumTargetA;
-    this.copyMaterial.map = composerTexture;
-    this.copyMaterial.needsUpdate = true;
 
-    const prevTarget = this.renderer.getRenderTarget();
-    this.renderer.setRenderTarget(nextAccum);
-    this.renderer.render(this.copyScene, this.copyCamera);
-    this.renderer.setRenderTarget(prevTarget);
+    this.blendMaterial.uniforms.tCurrent.value = rawTexture;
+    this.blendMaterial.uniforms.tAccum.value = currentAccum.texture;
+    this.blendMaterial.uniforms.uFirstFrame.value = this.isFirstFrame ? 1.0 : 0.0;
+
+    const prevTarget = renderer.getRenderTarget();
+    renderer.setRenderTarget(nextAccum);
+    renderer.render(this.blendScene, this.blendCamera);
+    renderer.setRenderTarget(prevTarget);
 
     this.bufferIdx = 1 - this.bufferIdx;
     this.isFirstFrame = false;
+
+    return nextAccum.texture;
   }
 
   private finishExposure() {
@@ -279,20 +338,59 @@ export class StarTrailCamera {
       const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
       const locName = state.currentLocation?.name || '合歡山';
       const elapsed = (performance.now() - this.startTime) / 1000;
+      const weather = state.weather;
+
+      // Weather-dependent scoring: clouds scatter light causing severe overexposure
+      let score = 96;
+      let quality: PhotoQuality = PhotoQuality.S;
+      let sellPrice = 2500;
+      let weatherNote = '';
+      let weatherTip = '晴朗澄澈無瑕';
+
+      if (weather === WeatherState.PartlyCloudy) {
+        score = 66;
+        quality = PhotoQuality.B;
+        sellPrice = 850;
+        weatherNote = '（雲隙光斑干擾）';
+        weatherTip = '部分多雲浮雲散射，評級與售價降低';
+      } else if (weather === WeatherState.Cloudy) {
+        score = 42;
+        quality = PhotoQuality.C;
+        sellPrice = 380;
+        weatherNote = '（雲層過曝嚴重）';
+        weatherTip = '多雲天候導致光跡過曝泛白，售價相應折減';
+      } else if (weather === WeatherState.Rainy) {
+        score = 18;
+        quality = PhotoQuality.D;
+        sellPrice = 90;
+        weatherNote = '（雨霧過曝遮蔽）';
+        weatherTip = '雨夜能見度極低，星軌嚴重受損';
+      }
+
+      // If exposure was too short (< 2.0s), star trails haven't formed full arcs
+      if (elapsed < 2.0) {
+        score = Math.max(15, Math.round(score * 0.55));
+        if (quality === PhotoQuality.S) quality = PhotoQuality.B;
+        sellPrice = Math.max(100, Math.round(sellPrice * 0.5));
+      }
+
+      const targetName = weather === WeatherState.Clear
+        ? `${locName} · 璀璨同心圓星軌光跡`
+        : `${locName} · 同心圓星軌光跡 ${weatherNote}`;
 
       const photo: Photo = {
         id: `photo_startrail_${Date.now()}`,
         imageDataUrl: dataUrl,
         timestamp: new Date(),
         locationId: state.currentLocation?.id || 'hehuanshan',
-        targetName: `${locName} · 璀璨同心圓星軌光跡`,
+        targetName,
         targetType: TargetType.SpecialEvent,
         exposureSeconds: parseFloat(elapsed.toFixed(1)),
         telescopeLevel: state.telescopeLevel || 1,
-        weatherCondition: state.weather,
-        quality: PhotoQuality.S,
-        score: 96,
-        sellPrice: 2400,
+        weatherCondition: weather,
+        quality,
+        score,
+        sellPrice,
         sold: false,
         frameType: 'light',
         hasMotionBlur: false,
@@ -304,8 +402,8 @@ export class StarTrailCamera {
       document.dispatchEvent(
         new CustomEvent('show-notification', {
           detail: {
-            message: `星軌攝影完成！已自動存入照片庫 (S級「${photo.targetName}」· 售價 $${photo.sellPrice})`,
-            type: 'success',
+            message: `星軌攝影完成！已自動存入照片庫（${quality}級 · ${weatherTip} · 售價 $${photo.sellPrice}）`,
+            type: quality === PhotoQuality.S ? 'success' : 'info',
           },
         })
       );
@@ -336,7 +434,7 @@ export class StarTrailCamera {
     if (this.overlay) this.overlay.remove();
     this.accumTargetA.dispose();
     this.accumTargetB.dispose();
-    this.copyQuad.geometry.dispose();
-    this.copyMaterial.dispose();
+    this.blendQuad.geometry.dispose();
+    this.blendMaterial.dispose();
   }
 }

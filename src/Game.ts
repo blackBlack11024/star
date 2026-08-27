@@ -289,7 +289,7 @@ export class Game {
     const state = gameStore.getState();
 
     // ---- Star Trail Camera ----
-    this.starTrailCamera.update(deltaTime);
+    this.starTrailCamera.update(deltaTime, this.sunElevation);
 
     // ---- Time ----
     this.timeManager.update(deltaTime);
@@ -333,14 +333,20 @@ export class Game {
     const planets = this.planetarySystem.getPlanets();
     state.setPlanets(planets);
 
-    // ---- Constellations ----
+    // ---- Constellations & Laser Pointer ----
     this.constellations.update(this.sunElevation);
-    if (!state.showConstellations || state.gameMode === GameMode.Studio) {
+    const isStarTrailExposing = Boolean(this.starTrailCamera && this.starTrailCamera.active);
+    if (!state.showConstellations || state.gameMode === GameMode.Studio || isStarTrailExposing) {
       this.constellations.setVisible(false);
+    } else {
+      this.constellations.setVisible(true);
+    }
+    if (isStarTrailExposing) {
+      this.laserPointer?.setVisibleForPhoto(false);
     }
 
     // ---- Cloud layer ----
-    this.cloudLayer.update(deltaTime, cloudCoverage, new THREE.Vector2(1, 0.5));
+    this.cloudLayer.update(deltaTime, cloudCoverage, new THREE.Vector2(1, 0.5), this.sunElevation);
 
     // ---- Rain ----
     const isRaining = state.weather === WeatherState.Rainy;

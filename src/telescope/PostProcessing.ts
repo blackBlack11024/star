@@ -64,6 +64,11 @@ const ChromaticAberrationShader = {
 import { StarTrailShader, StarTrailCamera } from './StarTrailCamera';
 
 export class PostProcessing {
+  private renderer: THREE.WebGLRenderer;
+  private scene: THREE.Scene;
+  private camera: THREE.PerspectiveCamera;
+  private rawTarget: THREE.WebGLRenderTarget;
+
   private composer: EffectComposer;
   private renderPass: RenderPass;
   private starTrailPass: ShaderPass;
@@ -72,6 +77,17 @@ export class PostProcessing {
   private caPass: ShaderPass;
 
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera) {
+    this.renderer = renderer;
+    this.scene = scene;
+    this.camera = camera;
+
+    this.rawTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+      type: THREE.UnsignedByteType,
+      format: THREE.RGBAFormat,
+      magFilter: THREE.LinearFilter,
+      minFilter: THREE.LinearFilter,
+    });
+
     this.composer = new EffectComposer(renderer);
     
     this.renderPass = new RenderPass(scene, camera);
@@ -111,9 +127,28 @@ export class PostProcessing {
 
   public render(starTrailCamera?: StarTrailCamera) {
     if (starTrailCamera && starTrailCamera.active) {
-      starTrailCamera.beforeRenderPass(this.starTrailPass);
+      // 1. Render pristine raw 3D scene (no post-processing)
+      this.renderer.setRenderTarget(this.rawTarget);
+      this.renderer.render(this.scene, this.camera);
+      this.renderer.setRenderTarget(null);
+
+      // 2. Accumulate raw frame with Max-Hold (NO bloom feedback loop!)
+      const accumTexture = starTrailCamera.accumulateRawFrame(this.renderer, this.rawTarget.texture);
+
+      // 3. Provide clean accumulated frame to starTrailPass
+      this.starTrailPass.uniforms.uActive.value = 1.0;
+      this.starTrailPass.uniforms.tAccum.value = accumTexture;
+
+      // 4. Moderate bloom for star trail: subtle, clean, razor-sharp starlight
+      const prevStrength = this.bloomPass.strength;
+      const prevRadius = this.bloomPass.radius;
+      this.bloomPass.strength = 0.18;
+      this.bloomPass.radius = 0.15;
+
       this.composer.render();
-      starTrailCamera.afterRenderPass(this.composer.readBuffer.texture);
+
+      this.bloomPass.strength = prevStrength;
+      this.bloomPass.radius = prevRadius;
     } else {
       this.starTrailPass.uniforms.uActive.value = 0.0;
       this.composer.render();
@@ -121,11 +156,13 @@ export class PostProcessing {
   }
 
   public resize(width: number, height: number) {
+    this.rawTarget.setSize(width, height);
     this.composer.setSize(width, height);
     this.bloomPass.setSize(Math.floor(width / 2), Math.floor(height / 2));
   }
 
   public dispose() {
+    this.rawTarget.dispose();
     this.composer.passes.forEach((p: any) => p.dispose?.());
   }
 }

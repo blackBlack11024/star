@@ -12,6 +12,7 @@ const cloudFragmentShader = `
 uniform float time;
 uniform float coverage;
 uniform vec2 windDir;
+uniform float uSunElevation;
 varying vec2 vUv;
 
 // Simple 2D noise function
@@ -63,7 +64,15 @@ void main() {
     float edge = length(vUv - 0.5) * 2.0;
     float alpha = density * smoothstep(1.0, 0.5, edge) * coverage * 0.8;
     
-    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+    // Physically authentic night vs day cloud illumination:
+    // Day: soft white (0.9, 0.92, 0.96)
+    // Night: dark charcoal/navy silhouettes (0.015, 0.02, 0.035) that softly occlude starlight without emitting light!
+    float dayFactor = smoothstep(-0.15, 0.05, uSunElevation);
+    vec3 nightColor = vec3(0.015, 0.02, 0.035);
+    vec3 dayColor = vec3(0.9, 0.92, 0.96);
+    vec3 cloudColor = mix(nightColor, dayColor, dayFactor);
+
+    gl_FragColor = vec4(cloudColor, alpha * (0.3 + 0.7 * dayFactor));
 }
 `;
 
@@ -82,7 +91,8 @@ export class CloudLayer {
             uniforms: {
                 time: { value: 0 },
                 coverage: { value: 0 },
-                windDir: { value: new THREE.Vector2(1, 0.5).normalize() }
+                windDir: { value: new THREE.Vector2(1, 0.5).normalize() },
+                uSunElevation: { value: -0.5 }
             },
             transparent: true,
             depthWrite: false,
@@ -98,9 +108,10 @@ export class CloudLayer {
         this.scene.add(this.mesh);
     }
 
-    public update(deltaTime: number, cloudCoverage: number, windDirection: THREE.Vector2) {
+    public update(deltaTime: number, cloudCoverage: number, windDirection: THREE.Vector2, sunElevation: number = -0.5) {
         this.time += deltaTime;
         this.material.uniforms.time.value = this.time;
+        this.material.uniforms.uSunElevation.value = sunElevation;
         
         // Smoothly interpolate coverage
         const currentCoverage = this.material.uniforms.coverage.value;
