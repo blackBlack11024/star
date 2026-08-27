@@ -3,6 +3,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { gameStore } from '../game/GameStore';
 import { GameMode } from '../types';
 import { TelescopeOptics } from '../telescope/TelescopeOptics';
+import { CelestialSphere } from '../astronomy/CelestialSphere';
 
 /**
  * Handles all player input and camera control across game modes.
@@ -13,6 +14,7 @@ export class PlayerController {
   private scene: THREE.Scene;
   private controls: PointerLockControls;
   private optics?: TelescopeOptics;
+  private celestialSphere?: CelestialSphere;
 
   private moveForward = false;
   private moveBackward = false;
@@ -277,20 +279,56 @@ export class PlayerController {
     if (state.isTelescopeLocked) return;
 
     const fovFactor = state.currentFov / 60;
-    const delta = 0.5 * fovFactor;
-    let ra = state.telescopeRa;
-    let dec = state.telescopeDec;
+    const step = 0.02 * fovFactor;
 
-    if (key === 'ArrowUp') dec += delta;
-    if (key === 'ArrowDown') dec -= delta;
-    if (key === 'ArrowLeft') ra -= delta / 15; // RA is in hours
-    if (key === 'ArrowRight') ra += delta / 15;
+    let deltaYaw = 0;
+    let deltaPitch = 0;
 
-    dec = Math.max(-89.5, Math.min(89.5, dec));
-    if (ra < 0) ra += 24;
-    if (ra >= 24) ra -= 24;
+    if (key === 'ArrowUp') deltaPitch += step;
+    if (key === 'ArrowDown') deltaPitch -= step;
+    if (key === 'ArrowLeft') deltaYaw += step;
+    if (key === 'ArrowRight') deltaYaw -= step;
 
-    state.setTelescopePointing(ra, dec);
+    this.slewTelescopeByDelta(deltaYaw, deltaPitch);
+    document.dispatchEvent(new CustomEvent('telescope-slew'));
+  }
+
+  private slewTelescopeByDelta(deltaYaw: number, deltaPitch: number) {
+    const state = gameStore.getState();
+    if (state.isTelescopeLocked || !this.celestialSphere) return;
+
+    let w = this.celestialSphere.getRaDecToVector(state.telescopeRa, state.telescopeDec);
+    w.applyMatrix4(this.celestialSphere.group.matrixWorld).normalize();
+
+    // 1. Pitch up/down along camera's right horizontal axis
+    if (Math.abs(deltaPitch) > 0.00001) {
+      let right = new THREE.Vector3().crossVectors(w, new THREE.Vector3(0, 1, 0)).normalize();
+      if (right.lengthSq() < 0.001) right.set(1, 0, 0);
+
+      const qPitch = new THREE.Quaternion().setFromAxisAngle(right, deltaPitch);
+      w.applyQuaternion(qPitch);
+    }
+
+    // 2. Yaw left/right around world vertical axis (pan across azimuth)
+    if (Math.abs(deltaYaw) > 0.00001) {
+      const qYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaYaw);
+      w.applyQuaternion(qYaw);
+    }
+
+    // 3. Horizon safety clamp (never point below +2° above horizon, never past zenith 89.5°)
+    const currentAltRad = Math.asin(Math.max(-1, Math.min(1, w.y)));
+    const clampedAltRad = Math.max(0.035, Math.min(Math.PI / 2 - 0.01, currentAltRad));
+    const cosAlt = Math.cos(clampedAltRad);
+    const horizLen = Math.sqrt(w.x * w.x + w.z * w.z);
+    if (horizLen > 0.0001) {
+      w.x = (w.x / horizLen) * cosAlt;
+      w.z = (w.z / horizLen) * cosAlt;
+    }
+    w.y = Math.sin(clampedAltRad);
+    w.normalize();
+
+    const coords = this.celestialSphere.vectorToRaDec(w);
+    state.setTelescopePointing(coords.ra, coords.dec);
   }
 
   private onKeyUp(event: KeyboardEvent) {
@@ -330,18 +368,12 @@ export class PlayerController {
         // Right-click: Micro precision slew (0.25x); Normal: 1.0x
         const speedMultiplier = event.buttons === 2 ? 0.25 : 1.0;
         
-        let ra = state.telescopeRa;
-        let dec = state.telescopeDec;
+        // Natural camera look: move mouse up -> look up toward sky; move mouse right -> pan right
+        const deltaYaw = -event.movementX * 0.0012 * fovFactor * speedMultiplier;
+        const deltaPitch = -event.movementY * 0.0012 * fovFactor * speedMultiplier;
 
-        // Natural camera look: move mouse up -> look up (increase dec)
-        ra -= event.movementX * 0.0018 * fovFactor * speedMultiplier;
-        dec -= event.movementY * 0.025 * fovFactor * speedMultiplier;
+        this.slewTelescopeByDelta(deltaYaw, deltaPitch);
 
-        dec = Math.max(-89.5, Math.min(89.5, dec));
-        if (ra < 0) ra += 24;
-        if (ra >= 24) ra -= 24;
-
-        state.setTelescopePointing(ra, dec);
         if (Math.abs(event.movementX) > 2 || Math.abs(event.movementY) > 2) {
           document.dispatchEvent(new CustomEvent('telescope-slew'));
         }
@@ -351,6 +383,10 @@ export class PlayerController {
 
   public setOptics(optics: TelescopeOptics) {
     this.optics = optics;
+  }
+
+  public setCelestialSphere(celestialSphere: CelestialSphere) {
+    this.celestialSphere = celestialSphere;
   }
 
   private onWheel(event: WheelEvent) {

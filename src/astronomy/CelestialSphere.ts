@@ -28,19 +28,16 @@ export class CelestialSphere {
         const lstRad = lst_adj * Math.PI / 12;
         const latRad = latitude * Math.PI / 180;
         
-        const cLat = Math.cos(latRad), sLat = Math.sin(latRad);
-        const cLst = Math.cos(lstRad), sLst = Math.sin(lstRad);
+        // Pure rotation matrix in SO(3) with determinant +1:
+        // 1. Diurnal rotation around celestial polar axis (Y) by (LST - 6h)
+        // 2. Latitude tilt around X towards North (-Z) by -(90° - lat)
+        const rotX = -(Math.PI / 2 - latRad);
+        const rotY = lstRad - Math.PI / 2;
 
-        // Analytical transformation matrix from celestial coordinates (RA, Dec)
-        // to Three.js horizontal world coordinates (X=East, Y=Zenith, -Z=North, +Z=South):
-        // 1. Earth diurnal rotation about celestial polar axis (Y) by LST
-        // 2. Observer latitude tilt (altitude of NCP = latitude, towards North -Z)
-        this.group.matrix.set(
-          -sLst,         0,       cLst,         0,
-           cLat * cLst,  sLat,    cLat * sLst,  0,
-           sLat * cLst, -cLat,    sLat * sLst,  0,
-           0,            0,       0,            1
-        );
+        const mX = new THREE.Matrix4().makeRotationX(rotX);
+        const mY = new THREE.Matrix4().makeRotationY(rotY);
+
+        this.group.matrix.multiplyMatrices(mX, mY);
         this.group.matrixAutoUpdate = false;
         this.group.updateMatrixWorld(true);
     }

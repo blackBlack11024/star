@@ -213,6 +213,7 @@ export class Game {
     progress(0.7, '正在校準望遠鏡光學...');
     this.telescopeOptics = new TelescopeOptics();
     this.playerController.setOptics(this.telescopeOptics);
+    this.playerController.setCelestialSphere(this.celestialSphere);
     this.longExposure = new LongExposure(
       this.renderer,
       window.innerWidth,
@@ -409,11 +410,9 @@ export class Game {
       let wForward = uForward.clone().transformDirection(cMatrix).normalize();
 
       // Horizon safety clamp: Never allow telescope optical axis to point underground
-      if (wForward.y < 0.05) {
-        wForward.y = 0.05;
+      if (wForward.y < 0.035) {
+        wForward.y = 0.035;
         wForward.normalize();
-        const safeCoords = this.celestialSphere.vectorToRaDec(wForward);
-        state.setTelescopePointing(safeCoords.ra, safeCoords.dec);
       }
 
       const wRight = uRight.clone().transformDirection(cMatrix).normalize();
