@@ -71,7 +71,7 @@ export class PlayerController {
       if (this.isAltHeld) return; // While holding Alt, clicks are for UI interaction
       if (this.isAnyModalActive()) return;
       const target = e.target as HTMLElement;
-      if (target && target.closest('.hud-panel, .studio-panel, button, input, select, .guide-badge, .money-badge, .weather-badge, .audio-badge, .story-box, .codex-panel, .lightbox-content')) {
+      if (target && target.closest('.hud-panel, .studio-panel, button, input, select, .guide-badge, .money-badge, .weather-badge, .audio-badge, .story-box, .codex-panel, .finder-panel, .lightbox-content')) {
         return;
       }
       const mode = gameStore.getState().gameMode;
@@ -92,8 +92,10 @@ export class PlayerController {
 
   private isAnyModalActive(): boolean {
     const modalSelectors = [
+      '.finder-panel',
       '.codex-panel',
       '.lightbox-overlay',
+      '#codex-ref-modal',
       '.guide-modal',
       '.location-modal',
       '.time-reversal-panel',
@@ -133,8 +135,23 @@ export class PlayerController {
   }
 
   private onKeyDown(event: KeyboardEvent) {
+    // If typing in input/textarea, do NOT trigger any game controls
+    const activeTag = (document.activeElement?.tagName || '').toLowerCase();
+    if (activeTag === 'input' || activeTag === 'textarea') {
+      if (event.code === 'Escape') {
+        (document.activeElement as HTMLElement).blur();
+      }
+      return;
+    }
+
     const state = gameStore.getState();
     const mode = state.gameMode;
+
+    // In Telescope mode, pressing F toggles the FinderUI
+    if (mode === GameMode.Telescope && (event.code === 'KeyF' || event.key.toLowerCase() === 'f')) {
+      document.dispatchEvent(new CustomEvent('toggle-finder-ui'));
+      return;
+    }
 
     // Alt key: Hold Alt to free mouse cursor for UI interaction
     if (event.key === 'Alt' || event.code === 'AltLeft' || event.code === 'AltRight') {
@@ -157,6 +174,11 @@ export class PlayerController {
       }
     }
 
+    // If any modal (Finder, Codex, Lightbox, etc.) is active, ignore all other game/telescope shortcuts!
+    if (this.isAnyModalActive()) {
+      return;
+    }
+
     if (mode === GameMode.Walk) {
       switch (event.code) {
         case 'KeyW': this.moveForward = true; break;
@@ -177,9 +199,6 @@ export class PlayerController {
         case 'Space':
         case 'KeyE':
           document.dispatchEvent(new CustomEvent('capture-photo'));
-          return;
-        case 'KeyF':
-          document.dispatchEvent(new CustomEvent('toggle-finder-ui'));
           return;
         case 'Digit1':
           state.setFrameType('light');
@@ -272,6 +291,7 @@ export class PlayerController {
   }
 
   private onMouseMove(event: MouseEvent) {
+    if (this.isAnyModalActive()) return;
     const mode = gameStore.getState().gameMode;
     if (mode === GameMode.Telescope) {
       // Slew if pointer is locked or user is dragging mouse
@@ -305,6 +325,7 @@ export class PlayerController {
   }
 
   private onWheel(event: WheelEvent) {
+    if (this.isAnyModalActive()) return;
     const state = gameStore.getState();
     if (state.gameMode === GameMode.Telescope) {
       event.preventDefault();

@@ -31,15 +31,15 @@ export class FinderUI {
         this.container.style.display = 'none';
         document.body.appendChild(this.container);
 
-        // Keydown listener for 'KeyF' inside telescope mode
+        // Prevent any mouse/wheel events inside finder panel from leaking to telescope
+        this.container.addEventListener('wheel', (e) => e.stopPropagation(), { passive: false });
+        this.container.addEventListener('mousedown', (e) => e.stopPropagation());
+        this.container.addEventListener('mouseup', (e) => e.stopPropagation());
+        this.container.addEventListener('click', (e) => e.stopPropagation());
+
+        // Close on Escape if visible
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'KeyF' || e.key.toLowerCase() === 'f') {
-                const mode = gameStore.getState().gameMode;
-                if (mode === GameMode.Telescope) {
-                    this.toggle();
-                    e.stopPropagation();
-                }
-            } else if (e.code === 'Escape' && this.isVisible) {
+            if (e.code === 'Escape' && this.isVisible) {
                 this.hide();
                 e.stopPropagation();
             }
