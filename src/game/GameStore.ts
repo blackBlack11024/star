@@ -22,8 +22,11 @@ export interface GameState {
   // ---- Player ----
   money: number;
   telescopeLevel: number;
+  unlockedTelescopeLevels: number[];
   accessories: Accessory[];
   photos: Photo[];
+  equipTelescope: (level: number) => boolean;
+  toggleEquipAccessory: (accessoryId: string) => void;
 
   // ---- Mode ----
   gameMode: GameMode;
@@ -117,6 +120,7 @@ const SAVE_KEY = 'stargazer_sim_save_v1';
 interface SavedState {
   money: number;
   telescopeLevel: number;
+  unlockedTelescopeLevels?: number[];
   accessories: Accessory[];
   photos: any[];
   unlockedLocations: string[];
@@ -159,6 +163,7 @@ export function autoSaveState(state: GameState) {
       const dataToSave: SavedState = {
         money: state.money,
         telescopeLevel: state.telescopeLevel,
+        unlockedTelescopeLevels: state.unlockedTelescopeLevels,
         accessories: state.accessories,
         photos: (state.photos || []).slice(0, 40), // save latest 40 photos to prevent localStorage quota issues
         unlockedLocations: state.unlockedLocations,
@@ -194,7 +199,11 @@ export const gameStore = createStore<GameState>()((set, get) => ({
 
   money: savedData?.money ?? 0,
   telescopeLevel: savedData?.telescopeLevel ?? 1,
-  accessories: savedData?.accessories || JSON.parse(JSON.stringify(ACCESSORIES)),
+  unlockedTelescopeLevels: savedData?.unlockedTelescopeLevels ?? Array.from(new Set([1, savedData?.telescopeLevel ?? 1])),
+  accessories: (savedData?.accessories || JSON.parse(JSON.stringify(ACCESSORIES))).map((a: Accessory) => ({
+    ...a,
+    equipped: a.equipped !== undefined ? a.equipped : a.owned
+  })),
   photos: (savedData?.photos as Photo[]) || [],
 
   gameMode: GameMode.Walk,
@@ -340,8 +349,20 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   upgradeTelescope: (level) => {
     const s = get();
     const config = TELESCOPE_CONFIGS.find((t) => t.level === level);
-    if (!config || s.money < config.price || s.telescopeLevel >= level) return false;
-    set({ money: s.money - config.price, telescopeLevel: level });
+    if (!config || s.money < config.price || (s.unlockedTelescopeLevels || []).includes(level)) return false;
+    set({
+      money: s.money - config.price,
+      telescopeLevel: level,
+      unlockedTelescopeLevels: Array.from(new Set([...(s.unlockedTelescopeLevels || [1]), level])),
+    });
+    return true;
+  },
+
+  equipTelescope: (level) => {
+    const s = get();
+    const isOwned = (s.unlockedTelescopeLevels || []).includes(level) || s.telescopeLevel >= level;
+    if (!isOwned) return false;
+    set({ telescopeLevel: level });
     return true;
   },
 
@@ -352,9 +373,21 @@ export const gameStore = createStore<GameState>()((set, get) => ({
     const acc = s.accessories[accIdx];
     if (acc.owned || s.money < acc.price) return false;
     const updated = [...s.accessories];
-    updated[accIdx] = { ...acc, owned: true };
+    updated[accIdx] = { ...acc, owned: true, equipped: true };
     set({ money: s.money - acc.price, accessories: updated });
     return true;
+  },
+
+  toggleEquipAccessory: (accessoryId) => {
+    const s = get();
+    const accIdx = s.accessories.findIndex((a) => a.id === accessoryId);
+    if (accIdx === -1) return;
+    const acc = s.accessories[accIdx];
+    if (!acc.owned) return;
+    const updated = [...s.accessories];
+    const currentlyEquipped = acc.equipped !== false;
+    updated[accIdx] = { ...acc, equipped: !currentlyEquipped };
+    set({ accessories: updated });
   },
 
   setTelescopePointing: (ra, dec) => set({ telescopeRa: ra, telescopeDec: dec }),

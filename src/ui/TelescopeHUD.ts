@@ -16,7 +16,6 @@ export class TelescopeHUD {
     private calibrationBanner: HTMLElement;
     private eyepiecePhysicalMask: HTMLElement;
     private currentIdentifiedTarget: any = null;
-    private accessoriesBar: HTMLElement;
     private unsubscribe: () => void;
     private idleTimer: number | null = null;
 
@@ -116,16 +115,11 @@ export class TelescopeHUD {
         this.exposureProgress.className = 'exposure-progress';
         this.exposureBar.appendChild(this.exposureProgress);
 
-        this.accessoriesBar = document.createElement('div');
-        this.accessoriesBar.className = 'hud-accessories-bar';
-        this.accessoriesBar.style.display = 'none';
-
         const hints = document.createElement('div');
         hints.className = 'keyboard-hints';
         hints.textContent = '空白鍵 曝光 · 1-4 場次 · V 循環 · 滾輪 變焦 · ESC 退出';
 
         this.infoPanel.appendChild(readouts);
-        this.infoPanel.appendChild(this.accessoriesBar);
         this.infoPanel.appendChild(controlsRow);
         this.infoPanel.appendChild(this.exposureBar);
         this.infoPanel.appendChild(hints);
@@ -192,16 +186,6 @@ export class TelescopeHUD {
         this.raDecDisplay.textContent = `RA: ${ra.toFixed(2)}h | Dec: ${dec.toFixed(2)}°`;
 
         const state = gameStore.getState() as any;
-
-        // ---- Active Accessories Loadout Display ----
-        const ownedAccessories = (state.accessories || []).filter((a: any) => a.owned);
-        if (ownedAccessories.length > 0) {
-            this.accessoriesBar.innerHTML = `<span class="acc-label">加裝光學配件:</span> ${ownedAccessories.map((a: any) => `<span class="acc-tag">${a.name}</span>`).join('')}`;
-            this.accessoriesBar.style.display = 'flex';
-        } else {
-            this.accessoriesBar.style.display = 'none';
-        }
-
 
         // Update active frame type button & calibration banner
         const activeFrame = state.currentFrameType || 'light';

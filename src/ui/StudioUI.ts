@@ -234,7 +234,7 @@ export class StudioUI {
 
         TELESCOPE_CONFIGS.forEach((config) => {
             const isCurrent = state.telescopeLevel === config.level;
-            const isOwned = state.telescopeLevel >= config.level;
+            const isOwned = (state.unlockedTelescopeLevels || []).includes(config.level) || state.telescopeLevel >= config.level;
 
             const item = document.createElement('div');
             item.className = `shop-item ${isCurrent ? 'current' : ''}`;
@@ -257,20 +257,36 @@ export class StudioUI {
             if (isCurrent) {
                 const badge = document.createElement('div');
                 badge.className = 'owned-badge';
+                badge.style.background = 'rgba(56, 189, 248, 0.2)';
+                badge.style.color = '#38bdf8';
+                badge.style.border = '1px solid rgba(56, 189, 248, 0.5)';
                 badge.textContent = '使用中';
                 item.appendChild(badge);
             } else if (isOwned) {
-                const badge = document.createElement('div');
-                badge.className = 'owned-badge';
-                badge.textContent = '已擁有';
-                item.appendChild(badge);
+                const btn = document.createElement('button');
+                btn.className = 'buy-btn';
+                btn.style.background = 'rgba(34, 197, 94, 0.15)';
+                btn.style.color = '#4ade80';
+                btn.style.border = '1px solid rgba(34, 197, 94, 0.4)';
+                btn.textContent = '裝備';
+                btn.onclick = () => {
+                    state.equipTelescope(config.level);
+                    document.dispatchEvent(new CustomEvent('show-notification', {
+                        detail: { message: `已裝備「${config.name}」`, type: 'success' }
+                    }));
+                    this.switchTab(1);
+                };
+                item.appendChild(btn);
             } else {
                 const btn = document.createElement('button');
                 btn.className = 'buy-btn';
                 btn.textContent = `購買 ($${config.price})`;
-                btn.disabled = state.money < config.price || config.level !== state.telescopeLevel + 1;
+                btn.disabled = state.money < config.price;
                 btn.onclick = () => {
                     if (state.upgradeTelescope(config.level)) {
+                        document.dispatchEvent(new CustomEvent('show-notification', {
+                            detail: { message: `已購買「${config.name}」並已裝備`, type: 'success' }
+                        }));
                         this.switchTab(1);
                     }
                 };
@@ -307,10 +323,41 @@ export class StudioUI {
             item.appendChild(details);
 
             if (acc.owned) {
+                const isEquipped = acc.equipped !== false;
+                const rightBox = document.createElement('div');
+                rightBox.style.display = 'flex';
+                rightBox.style.alignItems = 'center';
+                rightBox.style.gap = '8px';
+
                 const badge = document.createElement('div');
                 badge.className = 'owned-badge';
-                badge.textContent = '已擁有';
-                item.appendChild(badge);
+                if (isEquipped) {
+                    badge.style.background = 'rgba(34, 197, 94, 0.15)';
+                    badge.style.color = '#4ade80';
+                    badge.style.border = '1px solid rgba(34, 197, 94, 0.4)';
+                    badge.textContent = '已裝備';
+                } else {
+                    badge.style.background = 'rgba(148, 163, 184, 0.15)';
+                    badge.style.color = '#94a3b8';
+                    badge.style.border = '1px solid rgba(148, 163, 184, 0.3)';
+                    badge.textContent = '未裝備';
+                }
+
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'buy-btn';
+                toggleBtn.style.padding = '4px 12px';
+                toggleBtn.textContent = isEquipped ? '卸下' : '裝上';
+                toggleBtn.onclick = () => {
+                    state.toggleEquipAccessory(acc.id);
+                    document.dispatchEvent(new CustomEvent('show-notification', {
+                        detail: { message: `已${isEquipped ? '卸下' : '裝上'}「${acc.name}」`, type: 'info' }
+                    }));
+                    this.switchTab(2);
+                };
+
+                rightBox.appendChild(badge);
+                rightBox.appendChild(toggleBtn);
+                item.appendChild(rightBox);
             } else {
                 const btn = document.createElement('button');
                 btn.className = 'buy-btn';
@@ -318,6 +365,9 @@ export class StudioUI {
                 btn.disabled = state.money < acc.price;
                 btn.onclick = () => {
                     if (state.buyAccessory(acc.id)) {
+                        document.dispatchEvent(new CustomEvent('show-notification', {
+                            detail: { message: `已購買「${acc.name}」並已裝上`, type: 'success' }
+                        }));
                         this.switchTab(2);
                     }
                 };

@@ -1,4 +1,5 @@
 import { QUESTS, Quest, QuestObjective } from '../data/quests';
+import { DEEP_SKY_OBJECTS } from '../data/deepSkyObjects';
 import { gameStore } from './GameStore';
 
 export class QuestManager {
@@ -6,6 +7,23 @@ export class QuestManager {
         document.addEventListener('photo-captured', (e: any) => {
             this.onPhotoCaptured(e.detail);
         });
+
+        // Check if any existing photos in album satisfy active or unlocked quests on startup
+        setTimeout(() => this.checkAllQuests(), 300);
+    }
+
+    public checkAllQuests() {
+        const state = gameStore.getState();
+        const completedIds: string[] = state.completedQuestIds || [];
+
+        for (const quest of QUESTS) {
+            if (completedIds.includes(quest.id)) continue;
+            if (quest.prerequisiteQuestId && !completedIds.includes(quest.prerequisiteQuestId)) continue;
+
+            if (this.checkQuestCompletion(quest)) {
+                this.completeQuest(quest);
+            }
+        }
     }
 
     private onPhotoCaptured(detail: { photo: any; targetInfo: any }) {
@@ -22,7 +40,11 @@ export class QuestManager {
         }
     }
 
-    private checkQuestCompletion(quest: Quest, detail: { photo: any; targetInfo: any }): boolean {
+    public isObjectiveCompleted(obj: QuestObjective, photos: any[]): boolean {
+        return this.isObjectiveMet(obj, photos);
+    }
+
+    private checkQuestCompletion(quest: Quest, detail?: { photo: any; targetInfo: any }): boolean {
         const state = gameStore.getState();
         const photos = state.photos || [];
 
@@ -31,28 +53,45 @@ export class QuestManager {
         });
     }
 
-    private isObjectiveMet(obj: QuestObjective, photos: any[], latest: { photo: any; targetInfo: any }): boolean {
-        const ph = latest.photo;
-        const ti = latest.targetInfo;
+    private isObjectiveMet(obj: QuestObjective, photos: any[], latest?: { photo: any; targetInfo: any }): boolean {
+        const allPhotos = latest?.photo ? [...photos, latest.photo] : photos;
 
         switch (obj.type) {
             case 'capture_any':
-                return true;
+                return allPhotos.length > 0;
 
             case 'capture_target': {
-                const targetName = ti?.name || ti?.commonName || ph?.targetName || '';
-                const targetId = ti?.id || '';
-                const matchId = targetId === obj.targetId || targetName.includes(obj.targetId || '___');
-                if (!matchId) return false;
-                if (obj.minQuality) {
-                    const grades = ['D', 'C', 'B', 'A', 'S', 'SSS'];
-                    return grades.indexOf(ph.quality) >= grades.indexOf(obj.minQuality);
+                const targetId = (obj.targetId || '').toLowerCase();
+                const dso = DEEP_SKY_OBJECTS.find(d => d.id.toLowerCase() === targetId || d.name.toLowerCase() === targetId);
+
+                const matchPhoto = (ph: any, ti?: any) => {
+                    if (!ph) return false;
+                    const targetName = (ti?.name || ti?.commonName || ph?.targetName || '').toLowerCase();
+                    const tid = (ti?.id || '').toLowerCase();
+
+                    let matched = tid === targetId || targetName.includes(targetId);
+                    if (!matched && dso) {
+                        matched = targetName.includes(dso.commonName.toLowerCase()) || targetName.includes(dso.name.toLowerCase());
+                    }
+                    if (!matched) return false;
+
+                    if (obj.minQuality) {
+                        const grades = ['D', 'C', 'B', 'A', 'S', 'SSS'];
+                        return grades.indexOf(ph.quality) >= grades.indexOf(obj.minQuality);
+                    }
+                    return true;
+                };
+
+                // Check latest capture
+                if (latest && matchPhoto(latest.photo, latest.targetInfo)) {
+                    return true;
                 }
-                return true;
+
+                // Check entire album history
+                return allPhotos.some(p => matchPhoto(p));
             }
 
             case 'capture_count': {
-                const allPhotos = latest.photo ? [...photos, latest.photo] : photos;
                 const unique = new Set<string>();
                 for (const p of allPhotos) {
                     if (!obj.targetType || p.targetType === obj.targetType) {
@@ -64,7 +103,7 @@ export class QuestManager {
 
             case 'quality_min': {
                 const grades = ['D', 'C', 'B', 'A', 'S', 'SSS'];
-                return grades.indexOf(ph.quality) >= grades.indexOf(obj.minQuality || 'A');
+                return allPhotos.some((p: any) => grades.indexOf(p.quality) >= grades.indexOf(obj.minQuality || 'A'));
             }
         }
         return false;

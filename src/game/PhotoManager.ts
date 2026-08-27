@@ -86,9 +86,9 @@ export class PhotoManager {
         const penaltyFactor = getRepeatPenaltyFactor(targetId);
         targetPhotoCounts[targetId] = (targetPhotoCounts[targetId] || 0) + 1;
 
-        // Evaluate owned accessories
+        // Evaluate owned and equipped accessories
         const accessories = state.accessories || [];
-        const hasAcc = (id: string) => accessories.some((a: any) => a.id === id && a.owned);
+        const hasAcc = (id: string) => accessories.some((a: any) => a.id === id && a.owned && a.equipped !== false);
 
         const usedEquipmentTags: string[] = [];
         let accessoryScoreBonus = 0;

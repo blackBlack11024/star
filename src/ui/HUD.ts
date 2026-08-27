@@ -511,12 +511,38 @@ export class HUD {
             document.getElementById('ui-overlay')?.appendChild(tracker);
         }
 
+        const photos = state.photos || [];
+        const isObjMet = (obj: any) => {
+            if (obj.type === 'capture_target') {
+                const targetId = (obj.targetId || '').toLowerCase();
+                const dso = DEEP_SKY_OBJECTS.find(d => d.id.toLowerCase() === targetId || d.name.toLowerCase() === targetId);
+                return photos.some((p: any) => {
+                    const tn = (p.targetName || '').toLowerCase();
+                    let matched = tn.includes(targetId);
+                    if (!matched && dso) {
+                        matched = tn.includes(dso.commonName.toLowerCase()) || tn.includes(dso.name.toLowerCase());
+                    }
+                    if (!matched) return false;
+                    if (obj.minQuality) {
+                        const grades = ['D', 'C', 'B', 'A', 'S', 'SSS'];
+                        return grades.indexOf(p.quality) >= grades.indexOf(obj.minQuality);
+                    }
+                    return true;
+                });
+            } else if (obj.type === 'quality_min') {
+                const grades = ['D', 'C', 'B', 'A', 'S', 'SSS'];
+                return photos.some((p: any) => grades.indexOf(p.quality) >= grades.indexOf(obj.minQuality || 'A'));
+            } else if (obj.type === 'capture_any') {
+                return photos.length > 0;
+            }
+            return false;
+        };
+
         let timeAdvice = '';
-        const targetObj = activeQuest.objectives?.find((o: any) => o.targetId);
+        const targetObj = (activeQuest.objectives || []).find((o: any) => o.targetId && !isObjMet(o)) || (activeQuest.objectives || []).find((o: any) => o.targetId);
         if (targetObj?.targetId) {
             const dso = DEEP_SKY_OBJECTS.find(d => d.id === targetObj.targetId || d.name === targetObj.targetId);
             if (dso) {
-                const state = gameStore.getState();
                 const vis = calculateTargetVisibility(dso, state.currentLocation.latitude, state.currentLocation.longitude, state.currentTime);
                 if (vis.isCurrentlyVisible) {
                     timeAdvice = `<div class="qt-time-badge visible">目前可見 · 仰角 ${Math.round(vis.currentAltitude)}°</div>`;
@@ -528,7 +554,7 @@ export class HUD {
             }
         }
 
-        const cacheKey = `${activeQuest.id}_${activeQuest.title}_${timeAdvice}_${(activeQuest.objectives || []).map((o: any) => o.description).join('')}`;
+        const cacheKey = `${activeQuest.id}_${activeQuest.title}_${timeAdvice}_${(activeQuest.objectives || []).map((o: any) => o.description + isObjMet(o)).join('')}`;
         if (this.lastQuestTrackerKey === cacheKey) {
             return;
         }
@@ -551,7 +577,10 @@ export class HUD {
                 </div>
             </div>
             <div class="qt-objectives">
-                ${(activeQuest.objectives || []).slice(0, 2).map((o: any) => `<div class="qt-obj">· ${o.description}</div>`).join('')}
+                ${(activeQuest.objectives || []).map((o: any) => {
+                    const done = isObjMet(o);
+                    return `<div class="qt-obj" style="${done ? 'color:#34d399;font-weight:600;' : 'color:#cbd5e1;'}">${done ? '[已拍] ' : '· '}${o.description}</div>`;
+                }).join('')}
             </div>
             ${timeAdvice}
             <div class="qt-hint">點擊重播角色對話</div>

@@ -70,6 +70,7 @@ export interface Accessory {
   price: number;
   effects: Record<string, number>;
   owned: boolean;
+  equipped?: boolean;
 }
 
 export interface Photo {

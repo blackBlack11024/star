@@ -42,18 +42,18 @@ export class TelescopeOptics {
     const accs = state.accessories || [];
     this.accessories = accs;
 
-    const isOwned = (id: string) => accs.some((a) => a.id === id && a.owned);
+    const isEquipped = (id: string) => accs.some((a) => a.id === id && a.owned && a.equipped !== false);
 
-    this.hasBarlow = isOwned('eyepiece_barlow');
-    this.hasWideEyepiece = isOwned('eyepiece_wide');
-    this.hasHAlpha = isOwned('filter_halpha');
-    this.hasOIII = isOwned('filter_oiii');
-    this.hasLightPollutionFilter = isOwned('filter_light_pollution');
-    this.hasCooledCamera = isOwned('camera_cooled');
-    this.hasCmosCamera = isOwned('camera_cmos');
-    this.hasEqMount = isOwned('mount_eq');
-    this.hasGoTo = isOwned('mount_goto');
-    this.hasRedDotFinder = isOwned('finder_red_dot');
+    this.hasBarlow = isEquipped('eyepiece_barlow');
+    this.hasWideEyepiece = isEquipped('eyepiece_wide');
+    this.hasHAlpha = isEquipped('filter_halpha');
+    this.hasOIII = isEquipped('filter_oiii');
+    this.hasLightPollutionFilter = isEquipped('filter_light_pollution');
+    this.hasCooledCamera = isEquipped('camera_cooled');
+    this.hasCmosCamera = isEquipped('camera_cmos');
+    this.hasEqMount = isEquipped('mount_eq');
+    this.hasGoTo = isEquipped('mount_goto');
+    this.hasRedDotFinder = isEquipped('finder_red_dot');
 
     // 1. FOV calculations
     let minF = this.config.minFov;
@@ -121,11 +121,11 @@ export class TelescopeOptics {
   public getLightPollutionReduction(): number { return this.lightPollutionReduction; }
 
   public getInstalledAccessories(): Accessory[] {
-    return (this.accessories || []).filter(a => a.owned);
+    return (this.accessories || []).filter(a => a.owned && a.equipped !== false);
   }
 
   public hasAccessory(id: string): boolean {
-    return (this.accessories || []).some(a => a.id === id && a.owned);
+    return (this.accessories || []).some(a => a.id === id && a.owned && a.equipped !== false);
   }
 
   public dispose() {
