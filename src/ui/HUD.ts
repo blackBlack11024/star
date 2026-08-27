@@ -460,6 +460,12 @@ export class HUD {
         this.timeButtons.forEach((btn, idx) => {
             btn.classList.toggle('active', scales[idx] === currentScale);
         });
+
+        // Hide quest tracker when inside Studio or Telescope mode to prevent UI blockage
+        const tracker = document.getElementById('quest-tracker-hud');
+        if (tracker && state.gameMode !== GameMode.Walk) {
+            tracker.style.display = 'none';
+        }
     }
 
     public showInteractPrompt(text: string) {
@@ -490,7 +496,8 @@ export class HUD {
     /** Update the quest tracker widget on the HUD. */
     public updateQuestTracker(activeQuest: any) {
         let tracker = document.getElementById('quest-tracker-hud');
-        if (!activeQuest) {
+        const state = gameStore.getState();
+        if (!activeQuest || state.gameMode !== GameMode.Walk) {
             if (tracker) tracker.style.display = 'none';
             this.lastQuestTrackerKey = '';
             return;

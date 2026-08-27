@@ -42,7 +42,7 @@ export class LongExposure {
     this.height = height;
     
     const rtOptions = {
-      type: THREE.HalfFloatType,
+      type: THREE.UnsignedByteType,
       format: THREE.RGBAFormat,
       magFilter: THREE.LinearFilter,
       minFilter: THREE.LinearFilter,
@@ -267,7 +267,7 @@ export class LongExposure {
     // -------------------------------------------------------------
     // Case 4: Light Frame (亮場 - 真實光子累積 + 晃動拖尾殘影)
     // -------------------------------------------------------------
-    const buffer = new Uint16Array(this.width * this.height * 4);
+    const buffer = new Uint8Array(this.width * this.height * 4);
     this.renderer.readRenderTargetPixels(finalTarget, 0, 0, this.width, this.height, buffer);
     
     const tempCanvas = document.createElement('canvas');
@@ -276,9 +276,6 @@ export class LongExposure {
     const tempCtx = tempCanvas.getContext('2d')!;
     const imgData = tempCtx.createImageData(this.width, this.height);
     
-    // Astronomical Photon Accumulation & Non-linear Asinh Stretch Curve:
-    // Keeps velvety black night sky background while stars and nebulae shine crisply
-    const exposureFactor = Math.min(1.35, Math.log10(elapsed + 1.0) * 0.4 + 0.75);
     const hasMotionBlur = this.totalDrift > 0.25;
     
     for (let y = 0; y < this.height; y++) {
@@ -286,51 +283,23 @@ export class LongExposure {
         const srcIdx = (y * this.width + x) * 4;
         const dstIdx = ((this.height - 1 - y) * this.width + x) * 4;
         
-        let r = THREE.DataUtils.fromHalfFloat(buffer[srcIdx]);
-        let g = THREE.DataUtils.fromHalfFloat(buffer[srcIdx + 1]);
-        let b = THREE.DataUtils.fromHalfFloat(buffer[srcIdx + 2]);
-        
-        // Photon scale
-        r *= exposureFactor;
-        g *= exposureFactor;
-        b *= exposureFactor;
-        
-        // Non-linear Asinh tone mapping for deep sky astrophotography
-        // Preserves bright pinpoint stars and star streaks while naturally revealing faint nebulae
-        const asinhStretch = (val: number) => {
-          const stretch = Math.asinh(val * 2.5) / Math.asinh(2.5);
-          return Math.min(1.0, Math.max(0.0, stretch));
-        };
-        
-        let finalR = asinhStretch(r) * 255;
-        let finalG = asinhStretch(g) * 255;
-        let finalB = asinhStretch(b) * 255;
-        
-        // If exposure was very short (< 3s), add slight sensor shot noise
-        if (elapsed < 3.0 && finalR < 35 && finalG < 35 && finalB < 35) {
-          const noise = (Math.random() - 0.5) * 5 * (3.0 - elapsed);
-          finalR = Math.max(0, finalR + noise);
-          finalG = Math.max(0, finalG + noise);
-          finalB = Math.max(0, finalB + noise);
-        }
-        
-        imgData.data[dstIdx] = finalR;
-        imgData.data[dstIdx + 1] = finalG;
-        imgData.data[dstIdx + 2] = finalB;
+        imgData.data[dstIdx] = buffer[srcIdx];
+        imgData.data[dstIdx + 1] = buffer[srcIdx + 1];
+        imgData.data[dstIdx + 2] = buffer[srcIdx + 2];
         imgData.data[dstIdx + 3] = 255;
       }
     }
     
     tempCtx.putImageData(imgData, 0, 0);
     
-    // Draw directly onto result canvas (natural star streaks already recorded without blowout)
+    // Draw directly onto result canvas
     ctx.drawImage(tempCanvas, 0, 0, outW, outH);
     
     return {
       elapsedSeconds: elapsed,
       totalDrift: this.totalDrift,
       hasMotionBlur,
-      dataUrl: this.resultCanvas.toDataURL('image/jpeg', 0.90),
+      dataUrl: this.resultCanvas.toDataURL('image/jpeg', 0.92),
     };
   }
 
