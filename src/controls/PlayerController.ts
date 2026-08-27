@@ -400,17 +400,11 @@ export class PlayerController {
       if (this.controls.isLocked) {
         this.controls.unlock();
       }
-      document.dispatchEvent(new CustomEvent('show-notification', {
-        detail: { message: '已開啟 532nm 綠光指星筆 · 視角已固定，可移動滑鼠自由指星', type: 'success' }
-      }));
     } else {
       // Re-lock pointer for normal head look
       if (!this.controls.isLocked && state.gameMode === GameMode.Walk) {
         this.controls.lock();
       }
-      document.dispatchEvent(new CustomEvent('show-notification', {
-        detail: { message: '已關閉指星筆', type: 'info' }
-      }));
     }
   }
 

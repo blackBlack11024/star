@@ -118,6 +118,28 @@ export class DSOTextureFactory {
                 this.drawGlobular(ctx, '#f8fafc', 250, 1.1);
                 break;
 
+            // ==========================================
+            // SOUTHERN HEMISPHERE DEEP SKY OBJECTS
+            // ==========================================
+            case 'LMC':
+                this.drawLMC(ctx);
+                break;
+            case 'SMC':
+                this.drawSMC(ctx);
+                break;
+            case 'NGC3372':
+                this.drawNGC3372Carina(ctx);
+                break;
+            case 'NGC5139':
+                this.drawGlobular(ctx, '#fffbeb', 320, 1.5); // Omega Centauri
+                break;
+            case 'NGC4755':
+                this.drawNGC4755JewelBox(ctx);
+                break;
+            case 'NGC104':
+                this.drawGlobular(ctx, '#fef3c7', 280, 1.3); // 47 Tucanae
+                break;
+
             default:
                 if (type === 'galaxy') this.drawGenericGalaxy(ctx);
                 else if (type === 'planetary_nebula') this.drawM57Ring(ctx);
@@ -1136,6 +1158,246 @@ export class DSOTextureFactory {
             ctx.arc(x, y, 0.6 + Math.random() * 1.8, 0, Math.PI * 2);
             ctx.fill();
         }
+    }
+
+    // =============================================================
+    // Southern Hemisphere Specialties Procedural Fallbacks
+    // =============================================================
+
+    /** LMC: Large Magellanic Cloud (Off-center barred irregular galaxy with 30 Doradus Tarantula Nebula) */
+    private static drawLMC(ctx: CanvasRenderingContext2D) {
+        const cx = 256, cy = 256;
+        ctx.save();
+
+        // 1. Broad irregular diffuse halo
+        const halo = ctx.createRadialGradient(cx, cy, 30, cx, cy, 230);
+        halo.addColorStop(0, 'rgba(235, 240, 255, 0.45)');
+        halo.addColorStop(0.35, 'rgba(180, 210, 255, 0.25)');
+        halo.addColorStop(0.7, 'rgba(120, 160, 230, 0.08)');
+        halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 230, 170, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Dense central bar (tilted)
+        ctx.save();
+        ctx.translate(cx - 20, cy + 10);
+        ctx.rotate(-0.45);
+        const barGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 120);
+        barGrad.addColorStop(0, 'rgba(255, 248, 225, 0.75)');
+        barGrad.addColorStop(0.5, 'rgba(210, 230, 255, 0.4)');
+        barGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = barGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 120, 45, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // 3. Tarantula Nebula (30 Doradus) glowing pink emission region at northeast corner
+        const taranX = cx + 85, taranY = cy - 60;
+        const taranGrad = ctx.createRadialGradient(taranX, taranY, 2, taranX, taranY, 48);
+        taranGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        taranGrad.addColorStop(0.25, 'rgba(255, 100, 140, 0.8)');
+        taranGrad.addColorStop(0.65, 'rgba(230, 50, 90, 0.35)');
+        taranGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = taranGrad;
+        ctx.beginPath();
+        ctx.arc(taranX, taranY, 48, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. Blue supergiant star clouds & cluster knots
+        for (let i = 0; i < 400; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.pow(Math.random(), 0.6) * 190;
+            const sx = cx + Math.cos(angle) * dist * 1.2;
+            const sy = cy + Math.sin(angle) * dist * 0.9;
+            const r = Math.random() * 1.8 + 0.4;
+            const alpha = Math.random() * 0.7 + 0.3;
+            const isBlue = Math.random() > 0.3;
+            ctx.fillStyle = isBlue ? `rgba(180, 220, 255, ${alpha})` : `rgba(255, 230, 180, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(sx, sy, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    /** SMC: Small Magellanic Cloud (Elongated wing dwarf galaxy) */
+    private static drawSMC(ctx: CanvasRenderingContext2D) {
+        const cx = 256, cy = 256;
+        ctx.save();
+
+        // Elongated irregular shape
+        ctx.translate(cx, cy);
+        ctx.rotate(0.7);
+
+        const halo = ctx.createRadialGradient(0, 0, 20, 0, 0, 190);
+        halo.addColorStop(0, 'rgba(240, 245, 255, 0.55)');
+        halo.addColorStop(0.4, 'rgba(190, 220, 255, 0.28)');
+        halo.addColorStop(0.8, 'rgba(130, 170, 240, 0.08)');
+        halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 190, 95, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Dense bar core
+        const core = ctx.createRadialGradient(-20, 0, 5, -20, 0, 80);
+        core.addColorStop(0, 'rgba(255, 250, 235, 0.85)');
+        core.addColorStop(0.5, 'rgba(210, 230, 255, 0.4)');
+        core.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = core;
+        ctx.beginPath();
+        ctx.ellipse(-20, 0, 80, 35, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // NGC 346 emission knot
+        const knotGrad = ctx.createRadialGradient(55, -25, 2, 55, -25, 28);
+        knotGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+        knotGrad.addColorStop(0.3, 'rgba(255, 120, 160, 0.65)');
+        knotGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = knotGrad;
+        ctx.beginPath();
+        ctx.arc(55, -25, 28, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Star field
+        for (let i = 0; i < 300; i++) {
+            const rx = (Math.random() - 0.5) * 320;
+            const ry = (Math.random() - 0.5) * 150;
+            ctx.fillStyle = `rgba(200, 230, 255, ${Math.random() * 0.6 + 0.3})`;
+            ctx.beginPath();
+            ctx.arc(rx, ry, Math.random() * 1.5 + 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    /** NGC 3372: Carina Nebula (Giant emission complex with Eta Carinae & Keyhole) */
+    private static drawNGC3372Carina(ctx: CanvasRenderingContext2D) {
+        const cx = 256, cy = 256;
+        ctx.save();
+
+        // 1. Vast glowing ionized gas lobes (H-Alpha crimson & O-III cyan)
+        const lobe1 = ctx.createRadialGradient(cx - 30, cy - 20, 10, cx - 30, cy - 20, 220);
+        lobe1.addColorStop(0, 'rgba(255, 60, 90, 0.55)');
+        lobe1.addColorStop(0.4, 'rgba(220, 30, 80, 0.35)');
+        lobe1.addColorStop(0.7, 'rgba(140, 20, 60, 0.12)');
+        lobe1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = lobe1;
+        ctx.beginPath();
+        ctx.arc(cx - 30, cy - 20, 220, 0, Math.PI * 2);
+        ctx.fill();
+
+        const lobe2 = ctx.createRadialGradient(cx + 40, cy + 30, 10, cx + 40, cy + 30, 190);
+        lobe2.addColorStop(0, 'rgba(80, 220, 230, 0.45)');
+        lobe2.addColorStop(0.35, 'rgba(40, 160, 200, 0.25)');
+        lobe2.addColorStop(0.8, 'rgba(20, 80, 140, 0.06)');
+        lobe2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = lobe2;
+        ctx.beginPath();
+        ctx.arc(cx + 40, cy + 30, 190, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. V-shaped Keyhole dark dust lane silhouette
+        ctx.fillStyle = 'rgba(8, 5, 12, 0.85)';
+        ctx.beginPath();
+        ctx.moveTo(cx - 15, cy - 60);
+        ctx.bezierCurveTo(cx - 40, cy - 10, cx - 35, cy + 40, cx - 5, cy + 65);
+        ctx.bezierCurveTo(cx + 10, cy + 45, cx + 25, cy + 10, cx + 15, cy - 60);
+        ctx.closePath();
+        ctx.fill();
+
+        // 3. Radiant Homunculus Nebula & Eta Carinae hypergiant at center
+        const eta = ctx.createRadialGradient(cx, cy, 0, cx, cy, 25);
+        eta.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+        eta.addColorStop(0.2, 'rgba(255, 200, 100, 0.9)');
+        eta.addColorStop(0.55, 'rgba(240, 120, 40, 0.7)');
+        eta.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = eta;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 25, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Embedded stars
+        for (let i = 0; i < 200; i++) {
+            const x = Math.random() * 512;
+            const y = Math.random() * 512;
+            const d = Math.hypot(x - cx, y - cy);
+            if (d < 220) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.7 + 0.3})`;
+                ctx.beginPath();
+                ctx.arc(x, y, Math.random() * 1.5 + 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        ctx.restore();
+    }
+
+    /** NGC 4755: Jewel Box Cluster (Vivid sapphire stars framing central ruby supergiant Kappa Crucis) */
+    private static drawNGC4755JewelBox(ctx: CanvasRenderingContext2D) {
+        const cx = 256, cy = 256;
+        ctx.save();
+
+        // Subtle background cluster glow
+        const glow = ctx.createRadialGradient(cx, cy, 10, cx, cy, 140);
+        glow.addColorStop(0, 'rgba(200, 220, 255, 0.3)');
+        glow.addColorStop(0.7, 'rgba(100, 150, 255, 0.06)');
+        glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 140, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Central Ruby Supergiant (Kappa Crucis) - Distinct fiery orange-red
+        const ruby = ctx.createRadialGradient(cx, cy - 10, 0, cx, cy - 10, 22);
+        ruby.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+        ruby.addColorStop(0.25, 'rgba(255, 100, 60, 0.95)');
+        ruby.addColorStop(0.65, 'rgba(230, 40, 20, 0.5)');
+        ruby.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = ruby;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 10, 22, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Brilliant sapphire blue member stars forming the "A" asterism
+        const sapphireStars = [
+            { x: cx - 45, y: cy + 30, r: 16 },
+            { x: cx + 45, y: cy + 35, r: 15 },
+            { x: cx - 25, y: cy - 40, r: 14 },
+            { x: cx + 30, y: cy - 45, r: 14 },
+            { x: cx, y: cy + 50, r: 13 },
+            { x: cx - 60, y: cy - 10, r: 12 },
+            { x: cx + 65, y: cy - 5, r: 12 },
+        ];
+
+        for (const s of sapphireStars) {
+            const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+            grad.addColorStop(0.3, 'rgba(140, 200, 255, 0.9)');
+            grad.addColorStop(0.7, 'rgba(60, 140, 255, 0.4)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Faint cluster background stars
+        for (let i = 0; i < 90; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const dist = Math.pow(Math.random(), 0.7) * 110;
+            ctx.fillStyle = `rgba(220, 240, 255, ${Math.random() * 0.7 + 0.3})`;
+            ctx.beginPath();
+            ctx.arc(cx + Math.cos(ang) * dist, cy + Math.sin(ang) * dist, Math.random() * 1.5 + 0.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
     }
 
     // Generic Galaxy Fallback

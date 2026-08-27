@@ -140,5 +140,13 @@ export const DEEP_SKY_OBJECTS: DeepSkyObjectData[] = [
   {
     id: 'NGC5139', name: 'NGC 5139', commonName: '半人馬座 Omega 球狀星團', ra: 13.447, dec: -47.478, magnitude: 3.9, type: 'cluster', sizeArcmin: 36, difficulty: 1, basePrice: 300,
     starHoppingGuide: '全天最明亮、質量最大的巨型球狀星團，包含上百萬顆恆星，肉眼看去如同一顆朦朧的 4 等星。'
+  },
+  {
+    id: 'NGC4755', name: 'NGC 4755', commonName: '珠寶盒星團 Jewel Box Cluster', ra: 12.895, dec: -60.337, magnitude: 4.2, type: 'cluster', sizeArcmin: 10, difficulty: 1, basePrice: 280,
+    starHoppingGuide: '南半球最瑰麗的疏散星團！位於南十字座「十字架三（Mimosa）」東南方僅 1 度處，中心一顆紅超巨星被多顆藍白色寶石星環繞。'
+  },
+  {
+    id: 'NGC104', name: 'NGC 104', commonName: '杜鵑座 47 球狀星團 47 Tucanae', ra: 0.402, dec: -72.081, magnitude: 4.0, type: 'cluster', sizeArcmin: 50, difficulty: 1, basePrice: 310,
+    starHoppingGuide: '全天第二大、最密集的球狀星團！緊鄰小麥哲倫星系（SMC），肉眼清晰可見如一顆明亮的朦朧星體。'
   }
 ];
