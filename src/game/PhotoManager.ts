@@ -80,9 +80,13 @@ export class PhotoManager {
         const penaltyFactor = getRepeatPenaltyFactor(targetId);
         targetPhotoCounts[targetId] = (targetPhotoCounts[targetId] || 0) + 1;
 
+        const isUnknownSky = !targetInfo || !targetInfo.name || targetInfo.name.includes('未知');
         const qualityScore = this.calculateQuality(targetInfo, state, expSec, hasMotionBlur, driftAmount);
         const quality = this.getQualityGrade(qualityScore);
-        const basePrice = this.calculatePrice(quality, targetInfo?.type || TargetType.StarField);
+        let basePrice = this.calculatePrice(quality, targetInfo?.type || TargetType.StarField);
+        if (isUnknownSky) {
+            basePrice = Math.max(5, Math.min(25, Math.floor(basePrice * 0.25)));
+        }
         const finalPrice = Math.floor(basePrice * penaltyFactor);
 
         const photo: Photo = {
@@ -182,6 +186,12 @@ export class PhotoManager {
         // Light pollution penalty (0 = dark, 1 = heavy)
         const lp = state.currentLocation?.lightPollution ?? 0.05;
         score -= lp * 20;
+
+        // If empty unknown sky background with no identified celestial targets
+        const isUnknownSky = !targetInfo || !targetInfo.name || targetInfo.name.includes('未知');
+        if (isUnknownSky) {
+            score = Math.min(38, Math.round(score * 0.5));
+        }
 
         return Math.max(10, Math.min(100, Math.round(score)));
     }

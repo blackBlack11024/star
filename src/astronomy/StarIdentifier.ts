@@ -31,12 +31,12 @@ export class StarIdentifier {
     return Math.acos(Math.max(-1, Math.min(1, cosAngle))) * 180 / Math.PI;
   }
 
-  /** Check if a given RA/Dec position is above the local observer horizon (world Y >= 40). */
+  /** Check if a given RA/Dec position is above the local observer horizon (world Y >= 5). */
   private isAboveHorizon(ra: number, dec: number, celestialSphere?: CelestialSphere): boolean {
     if (!celestialSphere) return true;
     const vec = celestialSphere.getRaDecToVector(ra, dec);
     vec.applyMatrix4(celestialSphere.group.matrixWorld);
-    return vec.y >= 40.0; // Above ground terrain / mountains (radius 1000)
+    return vec.y >= 5.0; // Above ground terrain / horizon (radius 1000)
   }
 
   /** Find all named objects within the telescope's field of view above the horizon. */
@@ -121,7 +121,7 @@ export class StarIdentifier {
     });
 
     // Forgiving identification: recognized as long as object is comfortably inside eyepiece field
-    const maxCenterDist = Math.max(1.8, Math.min(8.0, fovDegrees * 0.45));
+    const maxCenterDist = Math.max(2.5, fovDegrees * 0.48);
     if (objects[0].angularDistance <= maxCenterDist) {
       return objects[0];
     }

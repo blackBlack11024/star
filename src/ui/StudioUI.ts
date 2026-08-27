@@ -577,21 +577,48 @@ export class StudioUI {
             const isFullCalib = darkChk.checked && flatChk.checked && biasChk.checked;
             const count = currentLights.length;
             const avgScore = currentLights.reduce((acc, p) => acc + p.score, 0) / count;
-            
-            let masterScore = Math.min(100, Math.round(avgScore + Math.min(28, count * 4.5) + (isFullCalib ? 16 : 6)));
-            let masterQuality: PhotoQuality = PhotoQuality.S;
-            if (isFullCalib && count >= 3 && masterScore >= 95) masterQuality = PhotoQuality.SSS;
-            else if (masterScore >= 88) masterQuality = PhotoQuality.S;
-            else masterQuality = PhotoQuality.A;
+            const avgOriginalPrice = currentLights.reduce((acc, p) => acc + (p.sellPrice || 0), 0) / count;
+            const isUnknownTarget = selectedTarget.includes('未知') || selectedTarget === '未知星野';
+            const targetType = currentLights[0].targetType || TargetType.StarField;
 
-            const basePrices: Record<string, number> = {
-                [TargetType.StarField]: 350,
-                [TargetType.Planet]: 1200,
-                [TargetType.Messier]: 2800,
-                [TargetType.SpecialEvent]: 5500
-            };
-            const targetType = currentLights[0].targetType || TargetType.Messier;
-            const masterPrice = Math.floor((basePrices[targetType] || 2500) * (masterQuality === PhotoQuality.SSS ? 1.5 : 1.0));
+            let masterScore: number;
+            let masterQuality: PhotoQuality;
+            let masterPrice: number;
+
+            if (isUnknownTarget) {
+                // If it's unknown star field / empty sky:
+                // Stacking reduces background noise, but cannot invent celestial objects!
+                masterScore = Math.min(50, Math.round(avgScore + Math.min(10, count * 2)));
+                masterQuality = masterScore >= 45 ? PhotoQuality.B : PhotoQuality.C;
+                // Price scales mildly with input prices (e.g. 5x $8 -> ~$15-$20)
+                masterPrice = Math.max(10, Math.min(35, Math.floor(avgOriginalPrice * (1.2 + count * 0.1))));
+            } else {
+                // Real Celestial Target (Messier, Planets, Bright Named Stars)
+                // Stacking improves SNR and dynamic range based on original photos
+                const calibBonus = (darkChk.checked ? 4 : 0) + (flatChk.checked ? 4 : 0) + (biasChk.checked ? 4 : 0);
+                const countBonus = Math.min(18, count * 2.5);
+                masterScore = Math.min(100, Math.round(avgScore + countBonus + calibBonus));
+
+                if (isFullCalib && count >= 3 && masterScore >= 95) masterQuality = PhotoQuality.SSS;
+                else if (masterScore >= 88) masterQuality = PhotoQuality.S;
+                else if (masterScore >= 70) masterQuality = PhotoQuality.A;
+                else masterQuality = PhotoQuality.B;
+
+                // Price is strictly based on original photos' actual market values!
+                const stackMultiplier = 1.2 + Math.min(0.8, count * 0.15) + (isFullCalib ? 0.6 : 0.2);
+                masterPrice = Math.floor(avgOriginalPrice * stackMultiplier);
+
+                // Caps based on target type
+                const priceCaps: Record<string, number> = {
+                    [TargetType.StarField]: 150,
+                    [TargetType.Planet]: 800,
+                    [TargetType.Messier]: 2200,
+                    [TargetType.SpecialEvent]: 4000
+                };
+                const cap = priceCaps[targetType] || 1500;
+                masterPrice = Math.min(cap, Math.max(15, masterPrice));
+            }
+
             const totalExp = currentLights.reduce((acc, p) => acc + p.exposureSeconds, 0);
 
             lastStackedResult = {
@@ -637,12 +664,15 @@ export class StudioUI {
 
             // Report
             resultReport.innerHTML = `
-                <div style="font-size:15px;font-weight:700;color:#38bdf8;margin-bottom:6px;">
-                    🎉 疊圖校準成功！${masterQuality === PhotoQuality.SSS ? '★ SSS級 天文台典藏神作' : 'S級 大師作品'}
+                <div style="font-size:15px;font-weight:700;color:${isUnknownTarget ? '#94a3b8' : '#38bdf8'};margin-bottom:6px;">
+                    ${isUnknownTarget ? '⚠️ 未知空白星野疊圖完成' : (masterQuality === PhotoQuality.SSS ? '🎉 ★ SSS級 天文台典藏神作！' : '🎉 S級 大師作品！')}
                 </div>
                 <div style="font-size:12px;color:#cbd5e1;line-height:1.5;">
-                    疊加素材: ${count} 張亮場（總曝光 ${totalExp.toFixed(1)}s） · 校準: ${isFullCalib ? '完整四場校準 (Dark+Flat+Bias)' : '部分校準'}<br/>
-                    評分躍升: <strong>${avgScore.toFixed(0)}分 ➔ ${masterScore}分</strong> · 評估價值: <strong style="color:#fbbf24;">$${masterPrice}</strong>
+                    ${isUnknownTarget 
+                        ? `空白星野缺乏顯著深空天體，疊圖已消除底噪，但市場收購價較低。建議瞄準梅西耶星雲或太陽系行星拍攝！<br/>` 
+                        : `疊加素材: ${count} 張亮場（總曝光 ${totalExp.toFixed(1)}s） · 校準: ${isFullCalib ? '完整四場校準 (Dark+Flat+Bias)' : '部分校準'}<br/>`
+                    }
+                    評分變更: <strong>${avgScore.toFixed(0)}分 ➔ ${masterScore}分</strong> · 評估價值: <strong style="color:#fbbf24;">$${masterPrice}</strong>
                 </div>
             `;
             resultActions.style.display = 'block';

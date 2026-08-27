@@ -17,6 +17,7 @@ export class TelescopeHUD {
     private toggleExposureBtn: HTMLButtonElement;
     private frameTypeButtons: Map<string, HTMLButtonElement> = new Map();
     private calibrationBanner: HTMLElement;
+    private currentIdentifiedTarget: any = null;
     private unsubscribe: () => void;
     private idleTimer: number | null = null;
 
@@ -163,6 +164,7 @@ export class TelescopeHUD {
     }
 
     public update(identifiedTarget: any, isExposing: boolean, elapsedSeconds: number, _sampleCount: number, fov: number, zoom: number, ra: number, dec: number) {
+        this.currentIdentifiedTarget = identifiedTarget;
         if (identifiedTarget) {
             this.starIdentifier.innerHTML = `
                 <strong>${identifiedTarget.name}</strong><br/>
@@ -288,6 +290,10 @@ export class TelescopeHUD {
     public hide() {
         this.container.style.display = 'none';
         if (this.idleTimer) clearTimeout(this.idleTimer);
+    }
+
+    public getCurrentIdentifiedTarget(): any {
+        return this.currentIdentifiedTarget;
     }
 
     public dispose() {

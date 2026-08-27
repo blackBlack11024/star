@@ -91,6 +91,7 @@ export class Game {
   private animationFrameId = 0;
   private savedWalkPos = new THREE.Vector3(0, 1.7, 0);
   private savedWalkRot = new THREE.Euler();
+  private lastIdentifiedTarget: any = null;
 
   constructor() {
     const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -330,6 +331,7 @@ export class Game {
       const identified = this.starIdentifier.identify(
         state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere, planets
       );
+      this.lastIdentifiedTarget = identified;
 
       // Long exposure accumulation
       if (state.isExposing) {
@@ -460,8 +462,10 @@ export class Game {
         state.startExposure();
         this.audioManager.playShutter();
       } else {
-        const identified = this.starIdentifier.identify(
-          state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere,
+        const planets = this.planetarySystem.getPlanets();
+        const hudTarget = this.telescopeHUD.getCurrentIdentifiedTarget();
+        const identified = hudTarget || this.lastIdentifiedTarget || this.starIdentifier.identify(
+          state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere, planets
         );
         this.finishExposure(identified);
       }
