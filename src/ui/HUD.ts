@@ -181,11 +181,25 @@ export class HUD {
             window.dispatchEvent(new KeyboardEvent('keydown', { key: 'h' }));
         };
 
+        const verBadge = document.createElement('div');
+        verBadge.className = 'version-badge';
+        verBadge.style.fontSize = '11px';
+        verBadge.style.color = '#38bdf8';
+        verBadge.style.opacity = '0.85';
+        verBadge.style.fontWeight = '700';
+        verBadge.style.padding = '4px 8px';
+        verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
+        verBadge.style.borderRadius = '6px';
+        verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
+        verBadge.textContent = 'v1.4';
+        verBadge.title = '觀星模擬器 v1.4 (疊圖工坊 & 四大校準場)';
+
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
         topRight.appendChild(volumeBar);
         topRight.appendChild(codexBtn);
         topRight.appendChild(guideBtn);
+        topRight.appendChild(verBadge);
 
         // 3. Audio Settings Mixer Modal
         this.audioModal = this.createAudioModal();
