@@ -442,7 +442,12 @@ export class CodexUI {
 
     private renderQuestLog(body: HTMLElement, completedQuestIds: string[]) {
         body.innerHTML = '';
-        for (const quest of QUESTS) {
+        
+        const mainQuests = QUESTS.filter(q => !q.isHidden);
+        const hiddenQuests = QUESTS.filter(q => q.isHidden);
+
+        // 1. Main Quests Section
+        for (const quest of mainQuests) {
             const done = completedQuestIds.includes(quest.id);
             const prereqDone = !quest.prerequisiteQuestId || completedQuestIds.includes(quest.prerequisiteQuestId);
             const available = prereqDone && !done;
@@ -470,7 +475,7 @@ export class CodexUI {
                     </div>
                 ` : ''}
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;">
-                    <div class="quest-reward">獎勵: ${quest.rewards.money ? `$${quest.rewards.money}` : ''}${quest.rewards.unlockLocation ? ` · 解鎖新地點` : ''}</div>
+                    <div class="quest-reward">獎勵: ${quest.rewards.money ? `$${quest.rewards.money}` : ''}${quest.rewards.unlockLocation ? ` · 解鎖新地點` : ''}${quest.rewards.unlockAccessory ? ` · 解鎖專用器材` : ''}</div>
                     ${done || available ? `<button class="quest-replay-btn" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:4px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:all 0.2s;">重播對話</button>` : ''}
                 </div>
             `;
@@ -481,6 +486,65 @@ export class CodexUI {
                     e.stopPropagation();
                     this.hide();
                     document.dispatchEvent(new CustomEvent('play-story-dialogue', { detail: { quest, mode: done ? 'complete' : 'intro' } }));
+                };
+            }
+
+            body.appendChild(card);
+        }
+
+        // 2. Hidden Quests Section Header
+        const hiddenHeader = document.createElement('div');
+        hiddenHeader.style.cssText = 'grid-column: 1 / -1; margin: 20px 0 10px 0; padding-bottom: 8px; border-bottom: 1px solid rgba(168, 85, 247, 0.3); font-size: 15px; font-weight: 700; color: #c084fc; display: flex; align-items: center; justify-content: space-between;';
+        const completedHiddenCount = hiddenQuests.filter(q => completedQuestIds.includes(q.id)).length;
+        hiddenHeader.innerHTML = `<span>神秘隱藏任務 (${completedHiddenCount}/${hiddenQuests.length})</span><span style="font-size: 12px; font-weight: normal; color: #94a3b8;">在夜空中探索捕捉罕見的天文奇觀</span>`;
+        body.appendChild(hiddenHeader);
+
+        // 3. Hidden Quests Cards
+        for (const quest of hiddenQuests) {
+            const done = completedQuestIds.includes(quest.id);
+            const card = document.createElement('div');
+            card.className = `codex-quest-card ${done ? 'done' : 'locked'}`;
+            if (done) {
+                card.style.borderColor = 'rgba(168, 85, 247, 0.6)';
+                card.style.background = 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(88, 28, 135, 0.25) 100%)';
+            } else {
+                card.style.borderColor = 'rgba(168, 85, 247, 0.2)';
+                card.style.borderStyle = 'dashed';
+            }
+
+            const char = quest.character;
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                    <div>
+                        <div class="quest-status" style="color:${done ? '#c084fc' : '#a855f7'};">${done ? '已達成隱藏成就' : '神秘未觸發'}</div>
+                        <div class="quest-chapter" style="color:${done ? '#e2e8f0' : '#94a3b8'};">${done ? `【隱藏】${quest.title}` : '【隱藏】神秘宇宙奇遇'}</div>
+                    </div>
+                    ${done ? `
+                        <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:16px;">
+                            <span style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;">${char.avatarIcon}</span>
+                            <span style="font-size:12px; color:${char.color}; font-weight:600;">${char.name}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="quest-story" style="color:${done ? '#cbd5e1' : '#64748b'};">${done ? quest.storySummary : '在夜空中靜候罕見的天象，捕捉特殊的過境天體或瞬態光芒以解鎖本成就。'}</div>
+                ${done ? `
+                    <div class="quest-objectives">
+                        <div style="font-size:11px; color:#64748b; margin-bottom:4px;">隱藏目標：</div>
+                        ${quest.objectives.map(o => `<div class="quest-obj done">完成 · ${o.description}</div>`).join('')}
+                    </div>
+                ` : ''}
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;">
+                    <div class="quest-reward" style="color:#c084fc;">獎勵: ${quest.rewards.money ? `$${quest.rewards.money}` : ''}${quest.rewards.unlockAccessory ? ' · 解鎖專用器材' : ''}</div>
+                    ${done ? `<button class="quest-replay-btn" style="background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3); color:#c084fc; padding:4px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:all 0.2s;">重播對話</button>` : ''}
+                </div>
+            `;
+
+            const replayBtn = card.querySelector('.quest-replay-btn') as HTMLButtonElement | null;
+            if (replayBtn && done) {
+                replayBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    this.hide();
+                    document.dispatchEvent(new CustomEvent('play-story-dialogue', { detail: { quest, mode: 'complete' } }));
                 };
             }
 

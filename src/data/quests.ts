@@ -30,6 +30,7 @@ export interface Quest {
   objectives: QuestObjective[];
   rewards: { money?: number; unlockLocation?: string; unlockAccessory?: string; telescopeDiscount?: number };
   prerequisiteQuestId?: string;
+  isHidden?: boolean;
 }
 
 export const CHARACTERS: Record<string, QuestCharacter> = {
@@ -285,8 +286,37 @@ export const QUESTS: Quest[] = [
   },
 
   // =========================================================================
-  // CHAPTER 5: 掠過天際的人造奇蹟 (The Space Station Intercept)
+  // CHAPTER 5: 太陽系大滿貫與導引光柱 (The Grand Solar Tour)
   // =========================================================================
+  {
+    id: 'ch5_all_planets',
+    chapter: 5,
+    title: '太陽系大巡遊：全行星收集大滿貫',
+    character: CHARACTERS.director,
+    introDialogue: [
+      '張弘道館長在阿塔卡馬沙漠的天文台連線中說道：',
+      '「朋友，你已經拍下了近處的木星、土星與火星。現在，是時候向太陽系全境發起終極挑戰了！」',
+      '「從最靠近太陽、緊隨暮光的敏捷水星，到夜空中最璀璨的耀眼金星，再一路向外探訪遙遠邊疆的冰巨星——天王星與海王星！」',
+      '「收集全部七顆行星（水星、金星、火星、木星、土星、天王星、海王星）的珍貴肖像，完成天文攝影界的行星大滿貫！」'
+    ],
+    completeDialogue: [
+      '張館長在通訊中讚賞鼓掌：「不可思議的壯舉！從內側岩質行星到外側冰巨星，太陽系全家福已被你完整珍藏！」',
+      '「國家天文台特批發放兩千元專項巡天基金，向你的耐心與天文技藝致敬！」'
+    ],
+    storySummary: '完成太陽系大巡航，成功拍得水星、金星、火星、木星、土星、天王星與海王星，達成全行星大滿貫。',
+    starHoppingTip: '【張館長傳授】：金星在黃昏或清晨極為耀眼；水星緊隨太陽起落；天王星與海王星視星等較暗，可使用尋星盤（按 F 鍵）快速導航定位！',
+    objectives: [
+      { type: 'capture_target', targetId: '水星', description: '拍攝「水星 Mercury」' },
+      { type: 'capture_target', targetId: '金星', description: '拍攝「金星 Venus」' },
+      { type: 'capture_target', targetId: '火星', description: '拍攝「火星 Mars」' },
+      { type: 'capture_target', targetId: '木星', description: '拍攝「木星 Jupiter」' },
+      { type: 'capture_target', targetId: '土星', description: '拍攝「土星 Saturn」' },
+      { type: 'capture_target', targetId: '天王星', description: '拍攝「天王星 Uranus」' },
+      { type: 'capture_target', targetId: '海王星', description: '拍攝「海王星 Neptune」' },
+    ],
+    rewards: { money: 2000 },
+    prerequisiteQuestId: 'ch4_saturn_mars',
+  },
   {
     id: 'ch5_mount_laser',
     chapter: 5,
@@ -294,12 +324,12 @@ export const QUESTS: Quest[] = [
     character: CHARACTERS.director,
     introDialogue: [
       '張弘道教授在阿塔卡馬沙漠的連線通訊中說道：',
-      '「阿塔卡馬的星空澄澈得像黑絲絨一般。但要在茫茫天幕中快速鎖定高速移動的目標，單靠肉眼是不夠的。」',
+      '「阿塔卡馬的星空澄澈得像黑絲絨一般。但要在茫茫天幕中快速定位深空天體，單靠肉眼是不夠的。」',
       '「你知道指星筆不僅可以拿在手裡嗎？在望遠鏡模式下按下 X 鍵（或點擊操作列按鈕），可以將指星筆固定在鏡筒上！」',
       '「固定後，鏡筒會向深空射出一道筆直的綠色光柱。在室外視角也能清晰看見望遠鏡正指向何方。先在望遠鏡上試著安裝一次吧！」'
     ],
     completeDialogue: [
-      '張教授讚許地說：「很好！光軸完全平行！這道貫穿夜空的綠色光柱將成為我們捕捉下一個極速目標的致勝關鍵！」'
+      '張教授讚許地說：「很好！光軸完全平行！這道貫穿夜空的綠色光柱將成為我們鎖定南天瑰寶的致勝關鍵！」'
     ],
     storySummary: '掌握望遠鏡鏡筒架設指星筆的技巧，綠色引導光柱成功貫穿夜空。',
     starHoppingTip: '【張館長傳授】：按 E 進入望遠鏡視角，按 X（或點擊操作列的「指星筆」按鈕）即可安裝至鏡筒，再次按 X 可取下回手中。',
@@ -307,57 +337,12 @@ export const QUESTS: Quest[] = [
       { type: 'mount_laser', description: '在望遠鏡視角按 X（或點擊面板）將指星筆安裝至鏡筒' },
     ],
     rewards: { money: 500 },
-    prerequisiteQuestId: 'ch4_saturn_mars',
-  },
-  {
-    id: 'ch5_iss_intercept',
-    chapter: 5,
-    title: '天際快客：國際太空站過境特寫',
-    character: CHARACTERS.alan,
-    introDialogue: [
-      '【通訊廣播】艾倫研究員：「國際太空站（ISS）是以 93 分鐘環繞地球一圈，但只有在【傍晚日落後】（約 19:20 或 20:53）以及【清晨黎明前】（約 04:45），太空站高空受陽光直射反射、地面處於黑夜時，肉眼才可見！」',
-      '「午夜時它會穿入地影而隱形。記得利用時間控制鍵（按 1-5 或 R 鍵倒流/快轉）調整至黃昏或清晨過境窗口！」',
-      '「【過境特徵】：它比全天任何恆星都要明亮（-3.5等），像一顆無聲滑行的鑽石星點，橫跨天際僅有 3-4 分鐘！」',
-      '「【操作要領】：利用鏡筒上的指星筆光柱快速追焦，切換至高放大倍率，在它掠過天頂的瞬間抓拍！若能在望遠鏡中解析出太陽能電池翼與實驗艙，這將是史詩級的作品！」'
-    ],
-    completeDialogue: [
-      '艾倫激動地在通訊頻道中高呼：「解析出來了！命運號實驗艙、中央桁架、八片巨大的金色太陽翼完全可辨！」',
-      '「這是民間天文攝影的天花板之作！國家天文台特批贈送你一台天文級製冷 CCD 相機，向你的追焦技術致敬！」'
-    ],
-    storySummary: '在阿塔卡馬荒漠成功追焦高速掠過天頂的國際太空站（ISS），清晰拍得太陽翼結構，獲贈製冷 CCD。',
-    starHoppingTip: '【艾倫傳授】：國際太空站僅在傍晚 (19:20、20:53) 或清晨 (04:45) 可見。可按 R 或快捷鍵快轉至該時段，抬頭迅速對準軌跡拍攝！',
-    objectives: [
-      { type: 'capture_target', targetId: '國際太空站 ISS', description: '在太空站過境時精確追焦並拍下照片' },
-    ],
-    rewards: { money: 1200, unlockAccessory: 'camera_cooled' },
-    prerequisiteQuestId: 'ch5_mount_laser',
+    prerequisiteQuestId: 'ch5_all_planets',
   },
 
   // =========================================================================
-  // CHAPTER 6: 草地上的流星雨與南天終局 (Meteors and the Southern Crown)
+  // CHAPTER 6: 南天終局 (The Southern Crown)
   // =========================================================================
-  {
-    id: 'ch6_stargazing_lie_down',
-    chapter: 6,
-    title: '回歸初心：草地仰望英仙座流星雨',
-    character: CHARACTERS.sophie,
-    introDialogue: [
-      '【特刊邀約】蘇菲主編：「親愛的朋友，我們已經追逐了太多精密的深空數據。今晚，讓我們放下繁雜的長焦器材吧。」',
-      '「今晚是年度流星雨極大期，阿塔卡馬的天頂將有數十顆流星劃破長空。」',
-      '「【平躺操作】：走到空曠草地上，按下 Z 鍵平躺下來。視角將自然抬升仰望天頂，視野擴展到整片宇宙。靜靜欣賞流星，並用廣角鏡頭拍下一張帶有流星光軌的照片吧！」'
-    ],
-    completeDialogue: [
-      '蘇菲主編感性地回覆：「那道綠色的鎂元素光軌劃過銀河中心，靜謐而震撼。這才是人類仰望星空最初的心跳。」'
-    ],
-    storySummary: '按 Z 平躺於阿塔卡馬草地仰望天頂，捕捉劃過天際的流星光軌，重溫觀星的純粹感動。',
-    starHoppingTip: '【蘇菲傳授】：在室外按 Z 鍵即可平躺於草地仰望天頂，按空白鍵或 Z 鍵可隨時起身。深夜時分流星出現頻率最高！',
-    objectives: [
-      { type: 'lie_down', description: '在室外按 Z 平躺在草地上仰望天頂' },
-      { type: 'capture_meteor', description: '捕捉到一張伴隨流星光軌的夜空照片' },
-    ],
-    rewards: { money: 1000 },
-    prerequisiteQuestId: 'ch5_iss_intercept',
-  },
   {
     id: 'ch6_southern_wonders',
     chapter: 6,
@@ -380,6 +365,52 @@ export const QUESTS: Quest[] = [
       { type: 'capture_target', targetId: 'NGC3372', description: '拍攝南天「NGC 3372 船底座大星雲（海山二）」' },
     ],
     rewards: { money: 3000, unlockAccessory: 'camera_startrail' },
-    prerequisiteQuestId: 'ch6_stargazing_lie_down',
+    prerequisiteQuestId: 'ch5_mount_laser',
+  },
+
+  // =========================================================================
+  // HIDDEN QUESTS: 隱藏任務與神秘奇遇
+  // =========================================================================
+  {
+    id: 'hidden_iss',
+    chapter: 99,
+    isHidden: true,
+    title: '天際快客：國際太空站過境特寫',
+    character: CHARACTERS.alan,
+    introDialogue: [
+      '【神秘通訊】艾倫研究員：「國際太空站（ISS）是以 93 分鐘環繞地球一圈，只有在【傍晚日落後】（約 19:20 或 20:53）以及【清晨黎明前】（約 04:45），太空站高空受陽光直射反射、地面處於黑夜時，肉眼才可見！」',
+      '「午夜時它會穿入地影而隱形。利用時間面板調整至黃昏或清晨過境窗口！」',
+      '「它比全天任何恆星都要明亮（-3.5等），像一顆無聲滑行的鑽石星點，橫跨天際僅有 3-4 分鐘！在它掠過天頂的瞬間抓拍！」'
+    ],
+    completeDialogue: [
+      '艾倫激動地在通訊頻道中高呼：「解析出來了！命運號實驗艙、中央桁架、八片巨大的金色太陽翼完全可辨！」',
+      '「恭喜達成隱藏成就！國家天文台特批贈送你一台天文級製冷 CCD 相機，向你的極限追焦技術致敬！」'
+    ],
+    storySummary: '成功追焦高速掠過天頂的國際太空站（ISS），清晰拍得太陽翼結構，達成隱藏成就並獲贈製冷 CCD。',
+    starHoppingTip: '【艾倫傳授】：國際太空站僅在傍晚 (19:20、20:53) 或清晨 (04:45) 可見。可按快捷鍵快轉至該時段，抬頭迅速對準軌跡拍攝！',
+    objectives: [
+      { type: 'capture_target', targetId: '國際太空站 ISS', description: '在太空站過境時精確追焦並拍下照片' },
+    ],
+    rewards: { money: 1500, unlockAccessory: 'camera_cooled' },
+  },
+  {
+    id: 'hidden_meteor',
+    chapter: 99,
+    isHidden: true,
+    title: '許願之光：夜空中的流星光軌',
+    character: CHARACTERS.sophie,
+    introDialogue: [
+      '【特刊邀約】蘇菲主編：「當一顆流星劃破天際，只要你的鏡頭正在曝光，就能將這千分之一秒的宇宙奇蹟永遠定格。」',
+      '「走到空曠草地上按 Z 鍵平躺下來，或使用望遠鏡長曝光，捕捉劃過天際的流星光軌吧！」'
+    ],
+    completeDialogue: [
+      '蘇菲主編感性地回覆：「那道美麗的綠色光軌劃過繁星，靜謐而震撼。恭喜你捕捉到了宇宙的許願之光，達成隱藏成就！」'
+    ],
+    storySummary: '夜間觀星時成功將劃破長空的耀眼流星光軌定格於相片中，達成隱藏成就。',
+    starHoppingTip: '【蘇菲傳授】：深夜時分在室外保持長曝光，流星隨機劃破天際時即可捕捉入鏡。',
+    objectives: [
+      { type: 'capture_meteor', description: '拍下一張伴隨流星光軌劃過的夜空照片' },
+    ],
+    rewards: { money: 1200 },
   },
 ];

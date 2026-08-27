@@ -188,6 +188,7 @@ export class QuestManager {
         const state = gameStore.getState();
         const completedIds: string[] = state.completedQuestIds || [];
         return QUESTS.filter(q => {
+            if (q.isHidden) return false;
             if (completedIds.includes(q.id)) return false;
             if (q.prerequisiteQuestId && !completedIds.includes(q.prerequisiteQuestId)) return false;
             return true;
