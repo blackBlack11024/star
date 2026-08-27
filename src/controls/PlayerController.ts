@@ -31,7 +31,6 @@ export class PlayerController {
   private walkSpeed = 5.0;
 
   private unsubscribe: () => void;
-  private crosshair: HTMLElement;
   private lieDownHint: HTMLElement;
   private telescopeModeOrigin = new THREE.Vector3();
 
@@ -45,11 +44,6 @@ export class PlayerController {
     this.controls = new PointerLockControls(this.camera, document.body);
     this.scene.add(this.controls.getObject());
     this.controls.getObject().position.y = this.playerHeight;
-
-    // UI Crosshair
-    this.crosshair = document.createElement('div');
-    this.crosshair.className = 'crosshair';
-    document.getElementById('ui-overlay')?.appendChild(this.crosshair);
 
     // Lie Down Hint
     this.lieDownHint = document.createElement('div');
@@ -124,14 +118,12 @@ export class PlayerController {
 
   private handleModeChange(newMode: GameMode, oldMode: GameMode) {
     if (newMode === GameMode.Walk) {
-      this.crosshair.style.display = 'block';
       if (oldMode === GameMode.Telescope) {
         this.camera.position.copy(this.telescopeModeOrigin);
-        this.camera.fov = 60;
+        this.camera.fov = this.isLyingDown ? 98 : 60;
         this.camera.updateProjectionMatrix();
       }
     } else if (newMode === GameMode.Telescope) {
-      this.crosshair.style.display = 'none';
       this.telescopeModeOrigin.copy(this.camera.position);
       // Auto-lock pointer to hide cursor and enable direct mouse look in telescope view
       setTimeout(() => {
@@ -140,7 +132,6 @@ export class PlayerController {
         }
       }, 50);
     } else if (newMode === GameMode.Studio) {
-      this.crosshair.style.display = 'none';
       this.controls.unlock();
     }
   }
@@ -371,7 +362,6 @@ export class PlayerController {
     gameStore.getState().setLyingDown(this.isLyingDown);
 
     if (this.isLyingDown) {
-      this.crosshair.style.display = 'none';
       this.lieDownHint.style.display = 'block';
       // Smoothly tilt camera up towards zenith (82 degrees = 1.43 rad)
       const euler = new THREE.Euler(0, 0, 0, 'YXZ');
@@ -384,7 +374,6 @@ export class PlayerController {
         detail: { message: '已平躺於草地，仰望天頂浩瀚星空', type: 'info' }
       }));
     } else {
-      this.crosshair.style.display = 'block';
       this.lieDownHint.style.display = 'none';
       const euler = new THREE.Euler(0, 0, 0, 'YXZ');
       euler.setFromQuaternion(this.camera.quaternion);
@@ -480,7 +469,6 @@ export class PlayerController {
     document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('wheel', this.onWheel);
     this.controls.disconnect();
-    this.crosshair.remove();
     this.lieDownHint.remove();
   }
 }

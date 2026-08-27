@@ -15,7 +15,6 @@ export class HUD {
     private quickMuteBtn!: HTMLElement;
     private locationDisplay: HTMLElement;
     private promptDisplay: HTMLElement;
-    private crosshair: HTMLElement;
     private telescopeMarker: HTMLElement;
     private studioMarker: HTMLElement;
     private starTargetBadge: HTMLElement;
@@ -191,8 +190,8 @@ export class HUD {
         verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
-        verBadge.textContent = 'v1.6.0';
-        verBadge.title = 'v1.6.0';
+        verBadge.textContent = 'v1.6.1';
+        verBadge.title = 'v1.6.1';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
@@ -230,11 +229,7 @@ export class HUD {
         this.promptDisplay.className = 'interact-prompt';
         this.promptDisplay.innerHTML = `<span>按 [E] 使用望遠鏡</span>`;
 
-        // 7. Crosshair
-        this.crosshair = document.createElement('div');
-        this.crosshair.className = 'crosshair';
-
-        // 8. 3D Waypoint Markers
+        // 3D Waypoint Markers
         this.telescopeMarker = document.createElement('div');
         this.telescopeMarker.className = 'waypoint-marker telescope';
         this.telescopeMarker.innerHTML = `<span>望遠鏡</span><span class="key-hint">E</span><span class="dist" style="opacity:0.6"></span>`;
@@ -243,7 +238,7 @@ export class HUD {
         this.studioMarker.className = 'waypoint-marker studio';
         this.studioMarker.innerHTML = `<span>工作室</span><span class="key-hint">F</span><span class="dist" style="opacity:0.6"></span>`;
 
-        // 9. Looking Star Identifier Badge (Walk / Binoculars mode)
+        // Looking Star Identifier Badge (Walk / Binoculars mode)
         this.starTargetBadge = document.createElement('div');
         this.starTargetBadge.className = 'hud-star-target-badge';
         this.starTargetBadge.style.display = 'none';
@@ -254,7 +249,6 @@ export class HUD {
         this.container.appendChild(bottomLeft);
         this.container.appendChild(bottomRight);
         this.container.appendChild(this.promptDisplay);
-        this.container.appendChild(this.crosshair);
         this.container.appendChild(this.telescopeMarker);
         this.container.appendChild(this.studioMarker);
         this.container.appendChild(this.starTargetBadge);
@@ -399,8 +393,6 @@ export class HUD {
         } else {
             this.container.style.display = 'block';
         }
-
-        this.crosshair.style.display = state.gameMode === GameMode.Walk ? 'block' : 'none';
 
         if (state.currentTime) {
             this.timeDisplay.innerHTML = `<span style="font-size:11px;color:#94a3b8;margin-right:6px">${this.formatDate(state.currentTime)}</span>${this.formatTime(state.currentTime)}`;

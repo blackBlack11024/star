@@ -13,10 +13,15 @@ export class BinocularsMode {
     private targetFov = 60;
     private readonly BINO_FOV = 10.0;
     private readonly DEFAULT_FOV = 60.0;
+    private readonly WIDE_FOV = 98.0;
 
     constructor(camera: THREE.PerspectiveCamera, _canvas: HTMLCanvasElement) {
         this.camera = camera;
         this.setupEvents();
+    }
+
+    private getBaseWalkFov(): number {
+        return gameStore.getState().isLyingDown ? this.WIDE_FOV : this.DEFAULT_FOV;
     }
 
     private setupEvents(): void {
@@ -35,19 +40,20 @@ export class BinocularsMode {
             if (e.button === 2) {
                 if (this.isHoldingRightClick) {
                     this.isHoldingRightClick = false;
-                    this.targetFov = this.DEFAULT_FOV;
+                    this.targetFov = this.getBaseWalkFov();
                 }
             }
         });
 
-        // Reset FOV immediately if switching away from Walk mode
+        // Reset or adjust FOV when switching mode or lying down
         gameStore.subscribe((state, prev) => {
-            if (state.gameMode !== prev.gameMode) {
-                this.isHoldingRightClick = false;
-                this.targetFov = this.DEFAULT_FOV;
-                if (state.gameMode === GameMode.Walk) {
-                    this.camera.fov = this.DEFAULT_FOV;
-                    this.camera.updateProjectionMatrix();
+            if (state.gameMode !== prev.gameMode || state.isLyingDown !== prev.isLyingDown) {
+                if (!this.isHoldingRightClick) {
+                    this.targetFov = this.getBaseWalkFov();
+                    if (state.gameMode === GameMode.Walk && prev.gameMode !== GameMode.Walk) {
+                        this.camera.fov = this.targetFov;
+                        this.camera.updateProjectionMatrix();
+                    }
                 }
             }
         });
@@ -58,9 +64,14 @@ export class BinocularsMode {
         const mode = gameStore.getState().gameMode;
         if (mode !== GameMode.Walk) return;
 
+        if (!this.isHoldingRightClick) {
+            this.targetFov = this.getBaseWalkFov();
+        }
+
         if (Math.abs(this.camera.fov - this.targetFov) > 0.05) {
-            // Smooth zoom lerp
-            this.camera.fov += (this.targetFov - this.camera.fov) * Math.min(1.0, deltaTime * 14);
+            // Smooth zoom lerp: fast for binoculars, gentle and cinematic for lying down
+            const speed = this.isHoldingRightClick ? 14.0 : 5.5;
+            this.camera.fov += (this.targetFov - this.camera.fov) * Math.min(1.0, deltaTime * speed);
             this.camera.updateProjectionMatrix();
         } else if (this.camera.fov !== this.targetFov) {
             this.camera.fov = this.targetFov;

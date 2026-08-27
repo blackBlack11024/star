@@ -635,8 +635,8 @@ export class Game {
       this.camera.position.copy(this.savedWalkPos);
       this.camera.rotation.copy(this.savedWalkRot);
 
-      // Restore camera FOV to 60 for Walk mode
-      this.camera.fov = 60;
+      // Restore camera FOV for Walk mode (98° wide-angle if lying down, else 60°)
+      this.camera.fov = gameStore.getState().isLyingDown ? 98 : 60;
       this.camera.updateProjectionMatrix();
 
       // Keep telescope's saved magnification in store and savedTelescopeFov (do NOT call setFov(60))

@@ -125,6 +125,8 @@ export class LaserPointer {
     gameStore.subscribe((state) => {
       this.isPointerActive = state.isLaserPointerActive;
       this.isMounted = state.isLaserPointerMounted;
+      const shouldHideCursor = state.isLaserPointerActive && !state.isLaserPointerMounted && state.gameMode !== GameMode.Studio;
+      document.body.classList.toggle('laser-active', shouldHideCursor);
     });
   }
 
@@ -256,6 +258,7 @@ export class LaserPointer {
   }
 
   public dispose() {
+    document.body.classList.remove('laser-active');
     this.handheldBeamLine.geometry.dispose();
     this.mountedBeamLine.geometry.dispose();
     this.targetDotSprite.geometry.dispose();
