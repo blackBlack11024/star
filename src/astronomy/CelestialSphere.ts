@@ -28,17 +28,9 @@ export class CelestialSphere {
         const lstRad = lst_adj * Math.PI / 12;
         const latRad = latitude * Math.PI / 180;
         
-        // Pure rotation matrix in SO(3) with determinant +1:
-        // 1. Diurnal rotation around celestial polar axis (Y) by (LST - 6h)
-        // 2. Latitude tilt around X towards North (-Z) by -(90° - lat)
-        const rotX = -(Math.PI / 2 - latRad);
-        const rotY = lstRad - Math.PI / 2;
-
-        const mX = new THREE.Matrix4().makeRotationX(rotX);
-        const mY = new THREE.Matrix4().makeRotationY(rotY);
-
-        this.group.matrix.multiplyMatrices(mX, mY);
-        this.group.matrixAutoUpdate = false;
+        this.group.rotation.set(0, 0, 0);
+        this.group.setRotationFromEuler(new THREE.Euler((Math.PI / 2) - latRad, 0, -lstRad, 'ZXY'));
+        this.group.matrixAutoUpdate = true;
         this.group.updateMatrixWorld(true);
     }
 
