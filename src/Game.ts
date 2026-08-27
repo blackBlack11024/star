@@ -443,11 +443,13 @@ export class Game {
 
     // Photo lightbox event
     document.addEventListener('open-lightbox', (e: any) => {
-      const photos = [...(gameStore.getState().photos || [])].sort((a: any, b: any) => {
-        const tA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
-        const tB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
-        return tB - tA;
-      });
+      const photos = [...(gameStore.getState().photos || [])]
+        .filter((p: any) => !p.frameType || p.frameType === 'light')
+        .sort((a: any, b: any) => {
+          const tA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+          const tB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+          return tB - tA;
+        });
       const idx = photos.findIndex((p: any) => p.id === e.detail.photoId);
       this.photoLightbox.open(photos, Math.max(0, idx));
     });

@@ -2660,6 +2660,64 @@ html, body {
   font-weight: 900;
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
 }
+.slider-side-tag {
+  position: absolute;
+  top: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+.slider-side-tag.tag-left {
+  left: 12px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  color: #fca5a5;
+}
+.slider-side-tag.tag-right {
+  right: 12px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  color: #7dd3fc;
+}
+.vp-mode-buttons {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.vp-mode-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.vp-mode-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.vp-mode-btn.active {
+  background: #0284c7;
+  color: #fff;
+}
+.stack-light-item.active-preview {
+  border-color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.12) !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
 
 /* Progress Panel */
 .stacking-progress-panel {

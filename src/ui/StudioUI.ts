@@ -77,13 +77,15 @@ export class StudioUI {
     }
 
     private renderGallery(state: any) {
-        // Sort photos newest first
-        const allPhotos = [...(state.photos || [])].sort((a: any, b: any) => {
-            const tA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
-            const tB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
-            return tB - tA;
-        });
-        const unsoldPhotos = allPhotos.filter((p: any) => !p.sold && (!p.frameType || p.frameType === 'light'));
+        // Filter out calibration frames: Photo gallery is strictly for celestial sky targets
+        const celestialPhotos = [...(state.photos || [])]
+            .filter((p: any) => !p.frameType || p.frameType === 'light')
+            .sort((a: any, b: any) => {
+                const tA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+                const tB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+                return tB - tA;
+            });
+        const unsoldPhotos = celestialPhotos.filter((p: any) => !p.sold);
         const totalValue = unsoldPhotos.reduce((sum: number, p: any) => sum + (p.sellPrice || p.price || 0), 0);
 
         const topBar = document.createElement('div');
@@ -109,13 +111,13 @@ export class StudioUI {
         topBar.appendChild(sellAllBtn);
         this.contentArea.appendChild(topBar);
 
-        if (allPhotos.length === 0) {
+        if (celestialPhotos.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'empty-state';
             empty.innerHTML = `
                 <div style="font-size:32px;margin-bottom:8px">📷</div>
-                <div style="font-size:16px;color:#94a3b8">尚無照片</div>
-                <div style="font-size:13px;color:#64748b;margin-top:4px">使用望遠鏡（按 E）對準星空，按下空白鍵即可開始長曝光拍攝。</div>
+                <div style="font-size:16px;color:#94a3b8">尚無天體照片</div>
+                <div style="font-size:13px;color:#64748b;margin-top:4px">使用望遠鏡（按 E）對準星空，按下空白鍵即可開始長曝光拍攝。（暗場／平場／偏壓校準檔案存放於疊圖工坊）</div>
             `;
             this.contentArea.appendChild(empty);
             return;
@@ -124,18 +126,16 @@ export class StudioUI {
         const grid = document.createElement('div');
         grid.className = 'photo-grid';
 
-        allPhotos.forEach((photo: any) => {
-            const isCalib = photo.frameType && photo.frameType !== 'light';
+        celestialPhotos.forEach((photo: any) => {
             const card = document.createElement('div');
-            card.className = `photo-card ${photo.sold ? 'sold' : ''} ${isCalib ? 'calib-card' : ''}`;
+            card.className = `photo-card ${photo.sold ? 'sold' : ''}`;
             
             const thumb = document.createElement('img');
             thumb.className = 'photo-thumb';
             thumb.src = photo.imageDataUrl;
             thumb.alt = photo.targetName;
             thumb.onclick = () => {
-                const photos = (gameStore.getState().photos as Photo[]) || [];
-                const idx = photos.findIndex(p => p.id === photo.id);
+                const idx = celestialPhotos.findIndex(p => p.id === photo.id);
                 document.dispatchEvent(new CustomEvent('open-lightbox', { detail: { photoId: photo.id, index: idx } }));
             };
 
@@ -159,13 +159,6 @@ export class StudioUI {
                 blurBadge.textContent = `晃動殘影`;
                 title.appendChild(blurBadge);
             }
-            if (isCalib) {
-                const calBadge = document.createElement('span');
-                calBadge.className = 'calib-tag';
-                calBadge.textContent = photo.frameType === 'dark' ? '暗場' : photo.frameType === 'flat' ? '平場' : '偏壓';
-                title.appendChild(calBadge);
-            }
-
             const meta = document.createElement('div');
             meta.className = 'photo-meta';
             meta.innerHTML = `
@@ -178,26 +171,40 @@ export class StudioUI {
 
             const price = document.createElement('div');
             price.className = 'photo-price';
-            
-            if (isCalib) {
-                price.innerHTML = `<span style="font-size:11px;color:#94a3b8;font-weight:600;">🛠️ 疊圖校準數據 (專用資產)</span>`;
-                footer.appendChild(price);
-            } else {
-                price.textContent = photo.sold ? '已出售' : `$${photo.sellPrice || photo.price || 0}`;
-                footer.appendChild(price);
+            price.textContent = photo.sold ? '已出售' : `$${photo.sellPrice || photo.price || 0}`;
+            footer.appendChild(price);
 
-                if (!photo.sold) {
-                    const sellBtn = document.createElement('button');
-                    sellBtn.className = 'photo-sell-btn';
-                    sellBtn.textContent = '出售';
-                    sellBtn.onclick = () => {
-                        const earned = state.sellPhoto(photo.id);
-                        document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已售出照片，獲得 $${earned}`, type: 'success' } }));
-                        this.renderGallery(gameStore.getState());
-                    };
-                    footer.appendChild(sellBtn);
-                }
+            if (!photo.sold) {
+                const sellBtn = document.createElement('button');
+                sellBtn.className = 'photo-sell-btn';
+                sellBtn.textContent = '出售';
+                sellBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const earned = state.sellPhoto(photo.id);
+                    document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已售出照片，獲得 $${earned}`, type: 'success' } }));
+                    this.renderGallery(gameStore.getState());
+                };
+                footer.appendChild(sellBtn);
             }
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'photo-del-btn';
+            delBtn.textContent = '刪除';
+            delBtn.style.background = 'rgba(239, 68, 68, 0.15)';
+            delBtn.style.border = '1px solid rgba(239, 68, 68, 0.35)';
+            delBtn.style.color = '#fca5a5';
+            delBtn.style.borderRadius = '4px';
+            delBtn.style.padding = '4px 8px';
+            delBtn.style.fontSize = '12px';
+            delBtn.style.cursor = 'pointer';
+            delBtn.title = '刪除這張照片';
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                state.deletePhoto(photo.id);
+                document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已刪除照片：${photo.targetName}`, type: 'info' } }));
+                this.renderGallery(gameStore.getState());
+            };
+            footer.appendChild(delBtn);
 
             info.appendChild(title);
             info.appendChild(meta);
@@ -412,7 +419,14 @@ export class StudioUI {
         rightPanel.innerHTML = `
             <div class="stacking-viewport-header">
                 <div class="vp-title" id="vp-title">預覽視窗</div>
-                <div class="vp-badge" id="vp-badge">未疊圖單張</div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <div class="vp-mode-buttons" id="vp-mode-buttons" style="display:none;">
+                        <button class="vp-mode-btn active" id="btn-mode-slider">拉桿對比</button>
+                        <button class="vp-mode-btn" id="btn-mode-stacked">大師疊圖</button>
+                        <button class="vp-mode-btn" id="btn-mode-original">單張原圖</button>
+                    </div>
+                    <div class="vp-badge" id="vp-badge">未疊圖單張</div>
+                </div>
             </div>
             <div class="stacking-preview-box" id="stack-preview-box">
                 <img id="stack-preview-img" class="stack-preview-img" src="" alt="預覽"/>
@@ -422,6 +436,8 @@ export class StudioUI {
                     <div class="stack-slider-line" id="stack-slider-line">
                         <div class="stack-slider-handle">⮂ ⮃</div>
                     </div>
+                    <div class="slider-side-tag tag-left">◀ 疊圖前單張 (未處理)</div>
+                    <div class="slider-side-tag tag-right">疊圖後大師 (已降噪) ▶</div>
                 </div>
             </div>
 
@@ -459,6 +475,10 @@ export class StudioUI {
         const sliderBeforeImg = rightPanel.querySelector('#stack-before-img') as HTMLImageElement;
         const sliderAfterImg = rightPanel.querySelector('#stack-after-img') as HTMLImageElement;
         const sliderLine = rightPanel.querySelector('#stack-slider-line') as HTMLElement;
+        const vpModeButtons = rightPanel.querySelector('#vp-mode-buttons') as HTMLElement;
+        const btnModeSlider = rightPanel.querySelector('#btn-mode-slider') as HTMLButtonElement;
+        const btnModeStacked = rightPanel.querySelector('#btn-mode-stacked') as HTMLButtonElement;
+        const btnModeOriginal = rightPanel.querySelector('#btn-mode-original') as HTMLButtonElement;
         const progressPanel = rightPanel.querySelector('#stack-progress-panel') as HTMLElement;
         const stepLabel = rightPanel.querySelector('#stack-step-label') as HTMLElement;
         const calcFill = rightPanel.querySelector('#stack-calc-fill') as HTMLElement;
@@ -498,25 +518,51 @@ export class StudioUI {
 
             currentLights.forEach((p, idx) => {
                 selectedPhotoIds.add(p.id); // default select all
-                const item = document.createElement('label');
-                item.className = 'stack-light-item';
+                const item = document.createElement('div');
+                item.className = `stack-light-item ${idx === 0 ? 'active-preview' : ''}`;
+                item.style.cursor = 'pointer';
                 item.innerHTML = `
-                    <input type="checkbox" value="${p.id}" checked>
+                    <input type="checkbox" value="${p.id}" checked style="cursor:pointer;margin-right:8px;">
                     <img class="stack-light-thumb" src="${p.imageDataUrl}" alt="${p.targetName}"/>
-                    <div class="stack-light-meta">
+                    <div class="stack-light-meta" style="flex:1;">
                         <div class="stack-light-title">#${idx + 1} 曝光 ${p.exposureSeconds}s · ${p.quality}級 (${p.score}分)</div>
                         <div class="stack-light-flags">
                             ${p.hasMotionBlur ? `<span class="flag-blur">晃動殘影</span>` : `<span class="flag-clean">清晰銳利</span>`}
                             <span class="flag-val">$${p.sellPrice}</span>
                         </div>
                     </div>
+                    <button class="stack-light-del" title="刪除此張底片" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;border-radius:4px;padding:3px 7px;font-size:11px;cursor:pointer;margin-left:6px;">🗑️</button>
                 `;
 
                 const chk = item.querySelector('input') as HTMLInputElement;
+                chk.onclick = (e) => {
+                    e.stopPropagation();
+                };
                 chk.onchange = () => {
                     if (chk.checked) selectedPhotoIds.add(p.id);
                     else selectedPhotoIds.delete(p.id);
                     btnExecute.disabled = selectedPhotoIds.size < 2;
+                };
+
+                const delBtn = item.querySelector('.stack-light-del') as HTMLButtonElement;
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    state.deletePhoto(p.id);
+                    document.dispatchEvent(new CustomEvent('show-notification', {
+                        detail: { message: `已刪除底片：#${idx + 1} (${p.exposureSeconds}s)`, type: 'info' }
+                    }));
+                    this.renderStackingLab(gameStore.getState());
+                };
+
+                // Clicking anywhere on the item previews it immediately!
+                item.onclick = () => {
+                    lightsList.querySelectorAll('.stack-light-item').forEach(el => el.classList.remove('active-preview'));
+                    item.classList.add('active-preview');
+                    vpModeButtons.style.display = 'none';
+                    sliderContainer.style.display = 'none';
+                    previewImg.src = p.imageDataUrl;
+                    previewImg.style.display = 'block';
+                    vpBadge.textContent = `預覽第 #${idx + 1} 張底片 (${p.exposureSeconds}s)`;
                 };
 
                 lightsList.appendChild(item);
@@ -646,27 +692,75 @@ export class StudioUI {
                 calibratedWith: { dark: darkChk.checked, flat: flatChk.checked, bias: biasChk.checked }
             };
 
-            // Setup Split-View Comparison Slider
+            // Setup Split-View Comparison Slider & Mode buttons
+            vpModeButtons.style.display = 'flex';
+            btnModeSlider.classList.add('active');
+            btnModeStacked.classList.remove('active');
+            btnModeOriginal.classList.remove('active');
+
             previewImg.style.display = 'none';
             sliderContainer.style.display = 'block';
             sliderBeforeImg.src = currentLights[0].imageDataUrl;
             sliderAfterImg.src = stackedDataUrl;
-            vpBadge.textContent = '★ 疊圖前後滑動對比 (左:疊圖前 / 右:疊圖後)';
+            vpBadge.textContent = '★ 疊圖前後對比';
 
-            // Draggable Slider
+            btnModeSlider.onclick = () => {
+                btnModeSlider.classList.add('active');
+                btnModeStacked.classList.remove('active');
+                btnModeOriginal.classList.remove('active');
+                previewImg.style.display = 'none';
+                sliderContainer.style.display = 'block';
+                sliderBeforeImg.style.clipPath = `polygon(0 0, 50% 0, 50% 100%, 0 100%)`;
+                sliderLine.style.display = 'block';
+                sliderLine.style.left = '50%';
+                vpBadge.textContent = '★ 疊圖前後拉桿對比 (左:疊圖前 / 右:疊圖後)';
+            };
+
+            btnModeStacked.onclick = () => {
+                btnModeStacked.classList.add('active');
+                btnModeSlider.classList.remove('active');
+                btnModeOriginal.classList.remove('active');
+                sliderContainer.style.display = 'none';
+                previewImg.src = stackedDataUrl;
+                previewImg.style.display = 'block';
+                vpBadge.textContent = '★ 疊圖後大師作品 (已降噪消除殘影)';
+            };
+
+            btnModeOriginal.onclick = () => {
+                btnModeOriginal.classList.add('active');
+                btnModeSlider.classList.remove('active');
+                btnModeStacked.classList.remove('active');
+                sliderContainer.style.display = 'none';
+                previewImg.src = currentLights[0].imageDataUrl;
+                previewImg.style.display = 'block';
+                vpBadge.textContent = '單張原始底片 (未處理噪點)';
+            };
+
+            // Draggable & Clickable Slider
             let isDragging = false;
             const setSliderPos = (clientX: number) => {
                 const rect = sliderContainer.getBoundingClientRect();
+                if (rect.width <= 0) return;
                 const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
                 const pct = (x / rect.width) * 100;
                 sliderLine.style.left = `${pct}%`;
                 sliderBeforeImg.style.clipPath = `polygon(0 0, ${pct}% 0, ${pct}% 100%, 0 100%)`;
             };
 
-            sliderContainer.onmousedown = (e) => { isDragging = true; setSliderPos(e.clientX); };
-            window.onmousemove = (e) => { if (isDragging) setSliderPos(e.clientX); };
-            window.onmouseup = () => { isDragging = false; };
-            setSliderPos(sliderContainer.getBoundingClientRect().left + sliderContainer.getBoundingClientRect().width * 0.5);
+            sliderContainer.onmousedown = (e) => { 
+                isDragging = true; 
+                setSliderPos(e.clientX); 
+            };
+            window.onmousemove = (e) => { 
+                if (isDragging) setSliderPos(e.clientX); 
+            };
+            window.onmouseup = () => { 
+                isDragging = false; 
+            };
+            requestAnimationFrame(() => {
+                const rect = sliderContainer.getBoundingClientRect();
+                setSliderPos(rect.left + rect.width * 0.5);
+            });
 
             // Report
             resultReport.innerHTML = `

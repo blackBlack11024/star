@@ -89,6 +89,7 @@ export interface GameState {
   addMoney: (amount: number) => void;
   spendMoney: (amount: number) => boolean;
   addPhoto: (photo: Photo) => void;
+  deletePhoto: (photoId: string) => void;
   sellPhoto: (photoId: string) => number;
   sellAllPhotos: () => number;
   upgradeTelescope: (level: number) => boolean;
@@ -304,6 +305,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   },
 
   addPhoto: (photo) => set((s) => ({ photos: [...s.photos, photo] })),
+  deletePhoto: (photoId) => set((s) => ({ photos: s.photos.filter((p) => p.id !== photoId) })),
 
   sellPhoto: (photoId) => {
     const s = get();
