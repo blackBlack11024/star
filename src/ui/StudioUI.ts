@@ -22,7 +22,7 @@ export class StudioUI {
         header.className = 'studio-header';
         
         const title = document.createElement('h2');
-        title.innerHTML = '觀星工作室 & 裝備工坊 <span style="font-size:12px;color:#38bdf8;font-weight:700;margin-left:8px;background:rgba(56,189,248,0.15);padding:2px 8px;border-radius:4px;border:1px solid rgba(56,189,248,0.3);">v1.4</span>';
+        title.innerHTML = '觀星工作室 & 裝備工坊 <span style="font-size:12px;color:#38bdf8;font-weight:700;margin-left:8px;background:rgba(56,189,248,0.15);padding:2px 8px;border-radius:4px;border:1px solid rgba(56,189,248,0.3);">v1.4.1</span>';
         
         this.headerMoney = document.createElement('div');
         this.headerMoney.className = 'studio-money';
