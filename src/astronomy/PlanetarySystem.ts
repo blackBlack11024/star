@@ -867,25 +867,30 @@ export class PlanetarySystem {
 
       sprite.position.set(x, y, z);
 
-      // Dynamic optical scaling based on planet type and telescope magnification FOV
-      // Real planetary optical expansion:
-      // At 60° (Naked Eye): prominent bright disks
-      // At 7° (Binoculars): clearly resolved disks and shapes
-      // At 1° ~ 0.2° (Telescope): huge, glorious details filling the eyepiece!
-      let baseScale = 8.0;
-      if (p.id === 'moon') baseScale = 38.0;
-      else if (p.id === 'saturn') baseScale = 14.0;
-      else if (p.id === 'jupiter') baseScale = 13.5;
-      else if (p.id === 'venus') baseScale = 12.0;
-      else if (p.id === 'mars') baseScale = 9.0;
-      else if (p.id === 'uranus' || p.id === 'neptune') baseScale = 7.0;
+      // True astronomical angular scale on celestial sphere (R = 998):
+      // Perspective camera naturally magnifies sprites as FOV decreases from 60° down to 0.2°.
+      // We do NOT artificially multiply by a giant power that blows them up into screen-blocking monsters!
+      if (p.id === 'moon') {
+        // Real lunar angular diameter: 31 arcmin (0.517°) = 9.0 units on R=998 sphere
+        // At FOV 60°: takes 0.78% of screen (naked-eye Moon)
+        // At FOV 22°: takes 2.2% of screen (realistic wide telescope view)
+        // At FOV 1°: takes 52% of eyepiece
+        // At FOV 0.5°: takes 100% of eyepiece
+        const moonScale = 9.0;
+        sprite.scale.set(moonScale, moonScale, 1);
+      } else {
+        // Planets: starlike points in wide FOV (1.8 - 3.2 units), resolving into crisp disks at high zoom (< 3.0°)
+        let planetBaseScale = 1.8;
+        if (p.id === 'saturn') planetBaseScale = 3.6;
+        else if (p.id === 'jupiter') planetBaseScale = 3.2;
+        else if (p.id === 'venus') planetBaseScale = 2.4;
+        else if (p.id === 'mars') planetBaseScale = 2.0;
 
-      // Optical zoom curve (scaled with telescope aperture and FOV)
-      const zoomRatio = 60.0 / Math.max(0.18, fov);
-      const opticalFactor = Math.pow(zoomRatio, 0.82);
-      const scale = baseScale * (1.0 + (opticalFactor - 1.0) * 0.55);
-
-      sprite.scale.set(scale, scale, 1);
+        // Gentle resolution boost at extreme telescope magnification (< 3.0°)
+        const highPowerBoost = fov < 3.0 ? Math.min(1.8, 3.0 / fov) : 1.0;
+        const scale = planetBaseScale * highPowerBoost;
+        sprite.scale.set(scale, scale, 1);
+      }
     }
   }
 
