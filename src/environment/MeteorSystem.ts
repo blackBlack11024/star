@@ -25,7 +25,7 @@ export class MeteorSystem {
 
   // Spawning parameters
   private spawnTimer = 0;
-  private spawnInterval = 18; // Seconds between sporadic meteors
+  private spawnInterval = 45; // Peaceful, natural ~45s cadence for sporadic meteors
   private isShowerActive = false; // Meteor shower mode (much higher rate)
 
   // Last meteor captured in FOV flag for PhotoManager
@@ -41,7 +41,7 @@ export class MeteorSystem {
 
   public setShowerActive(active: boolean) {
     this.isShowerActive = active;
-    this.spawnInterval = active ? 3.5 : 18; // 3.5s during shower!
+    this.spawnInterval = active ? 3.5 : 45; // 3.5s during shower!
   }
 
   public update(deltaTime: number, camera: THREE.Camera, sunElevation: number) {
@@ -64,8 +64,8 @@ export class MeteorSystem {
       this.spawnTimer = 0;
       this.spawnMeteor();
       // Randomize next interval slightly
-      const base = this.isShowerActive ? 3.0 : 16.0;
-      this.spawnInterval = base + (Math.random() - 0.5) * (base * 0.6);
+      const base = this.isShowerActive ? 3.2 : 42.0;
+      this.spawnInterval = base + (Math.random() - 0.5) * (base * 0.5);
     }
 
     // Update existing active meteors
@@ -137,15 +137,15 @@ export class MeteorSystem {
 
     const endPos = startPos.clone().add(streakDir.clone().multiplyScalar(streakLength));
 
-    // Element spectral color (magnesium emerald green, sodium yellow, or incandescent white)
+    // Realistic meteor spectral colors (predominantly pure silver-white)
     const colorRoll = Math.random();
     let col = new THREE.Color(0xffffff);
-    if (colorRoll < 0.45) {
-      col = new THREE.Color(0x34d399); // Magnesium emerald green
-    } else if (colorRoll < 0.75) {
-      col = new THREE.Color(0xfef08a); // Sodium bright amber
+    if (colorRoll < 0.80) {
+      col = new THREE.Color(0xf8fafc); // 80% Natural silver-white (authentic to human eye dark-adapted vision)
+    } else if (colorRoll < 0.94) {
+      col = new THREE.Color(0xfef3c7); // 14% Warm sodium amber
     } else {
-      col = new THREE.Color(0xe0f2fe); // High temp ice-blue/white
+      col = new THREE.Color(0xa7f3d0); // 6% Rare bright bolide with subtle ionized cyan-green trail
     }
 
     // Materials
@@ -153,7 +153,7 @@ export class MeteorSystem {
       color: col,
       transparent: true,
       opacity: 0,
-      linewidth: 2,
+      linewidth: 1.5,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -163,14 +163,15 @@ export class MeteorSystem {
     trailLine.frustumCulled = false;
     this.group.add(trailLine);
 
-    // Head sprite
+    // Head sprite (crisp, delicate star-like meteor head)
     const canvas = document.createElement('canvas');
     canvas.width = 32;
     canvas.height = 32;
     const ctx = canvas.getContext('2d')!;
-    const grad = ctx.createRadialGradient(16, 16, 1, 16, 16, 15);
+    const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 15);
     grad.addColorStop(0, '#ffffff');
-    grad.addColorStop(0.4, `#${col.getHexString()}`);
+    grad.addColorStop(0.2, '#ffffff');
+    grad.addColorStop(0.5, `#${col.getHexString()}`);
     grad.addColorStop(1, 'transparent');
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -185,7 +186,7 @@ export class MeteorSystem {
       depthWrite: false,
     });
     const headSprite = new THREE.Sprite(spriteMat);
-    headSprite.scale.set(10, 10, 1);
+    headSprite.scale.set(3.2, 3.2, 1);
     headSprite.position.copy(startPos);
     this.group.add(headSprite);
 

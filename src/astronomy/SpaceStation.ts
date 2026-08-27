@@ -52,14 +52,45 @@ export class SpaceStation {
     canvas.height = 128;
     const ctx = canvas.getContext('2d')!;
 
-    const grad = ctx.createRadialGradient(64, 64, 4, 64, 64, 60);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    grad.addColorStop(0.2, 'rgba(254, 240, 138, 0.9)');
-    grad.addColorStop(0.5, 'rgba(251, 191, 36, 0.4)');
-    grad.addColorStop(1, 'rgba(251, 191, 36, 0)');
+    // 1. Crisp optical core: brilliant diamond white + faint cold ice-blue halo (reflecting 6000K sunlight in vacuum)
+    const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 60);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+    grad.addColorStop(0.08, 'rgba(255, 255, 255, 0.95)');
+    grad.addColorStop(0.2, 'rgba(224, 242, 254, 0.55)');
+    grad.addColorStop(0.5, 'rgba(186, 230, 253, 0.15)');
+    grad.addColorStop(1, 'rgba(186, 230, 253, 0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(64, 64, 60, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 2. Optical diffraction cross-spikes (Airy disk diffraction from camera / telescope optics)
+    const spikeGradH = ctx.createLinearGradient(14, 64, 114, 64);
+    spikeGradH.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    spikeGradH.addColorStop(0.5, 'rgba(255, 255, 255, 0.7)');
+    spikeGradH.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.strokeStyle = spikeGradH;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(14, 64);
+    ctx.lineTo(114, 64);
+    ctx.stroke();
+
+    const spikeGradV = ctx.createLinearGradient(64, 14, 64, 114);
+    spikeGradV.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    spikeGradV.addColorStop(0.5, 'rgba(255, 255, 255, 0.7)');
+    spikeGradV.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.strokeStyle = spikeGradV;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(64, 14);
+    ctx.lineTo(64, 114);
+    ctx.stroke();
+
+    // 3. Central bright point
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(64, 64, 3, 0, Math.PI * 2);
     ctx.fill();
 
     const tex = new THREE.CanvasTexture(canvas);
@@ -71,7 +102,7 @@ export class SpaceStation {
     });
 
     const sprite = new THREE.Sprite(mat);
-    sprite.scale.set(30, 30, 1);
+    sprite.scale.set(8.5, 8.5, 1);
     return sprite;
   }
 
@@ -177,8 +208,17 @@ export class SpaceStation {
     const modelScale = 0.35 * Math.min(25, Math.pow(zoomFactor, 0.85));
     this.issMeshGroup.scale.set(modelScale, modelScale, modelScale);
 
-    // Sprite scales inversely with zoom so point size stays bright and visible
-    const spriteScale = Math.max(15, 30 * (fov / 45));
+    // Fade out point-source diffraction sprite as FOV zooms in through telescope (below 8°)
+    // This allows the high-res 3D ISS space station model (solar wings, modules) to be seen with razor-sharp clarity!
+    const spriteMaterial = this.pointSprite.material as THREE.SpriteMaterial;
+    if (fov < 8.0) {
+      spriteMaterial.opacity = Math.max(0, (fov - 1.5) / 6.5);
+    } else {
+      spriteMaterial.opacity = 1.0;
+    }
+
+    // In naked-eye or wide-angle view, keep point light sharp, compact, and sparkling
+    const spriteScale = Math.min(10.0, Math.max(4.5, 8.5 * Math.min(1.0, fov / 45)));
     this.pointSprite.scale.set(spriteScale, spriteScale, 1);
 
     // Apparent magnitude: brightest at zenith (-3.5 mag)
