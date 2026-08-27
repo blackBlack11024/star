@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { DEEP_SKY_OBJECTS } from '../data/deepSkyObjects';
 import { DeepSkyObjectData } from '../types';
+import { DSOTextureFactory } from './DSOTextureFactory';
 
 export class DeepSkyObjects {
     private group: THREE.Group;
@@ -258,23 +259,11 @@ export class DeepSkyObjects {
     }
 
     private init() {
-        const galaxyTex = this.createGalaxyTexture();
-        const emissionTex = this.createEmissionNebulaTexture();
-        const reflectionTex = this.createReflectionNebulaTexture();
-        const planetaryTex = this.createPlanetaryNebulaTexture();
-        const clusterTex = this.createClusterTexture();
-
         const R = 998;
 
         for (const dso of DEEP_SKY_OBJECTS) {
-            let tex: THREE.Texture;
-            switch(dso.type) {
-                case 'galaxy': tex = galaxyTex; break;
-                case 'nebula': tex = emissionTex; break;
-                case 'cluster': tex = clusterTex; break;
-                case 'planetary_nebula': tex = planetaryTex; break;
-                default: tex = galaxyTex; break;
-            }
+            const tex = DSOTextureFactory.getTexture(dso.id, dso.type);
+            this.textures.push(tex);
 
             const material = new THREE.SpriteMaterial({
                 map: tex,

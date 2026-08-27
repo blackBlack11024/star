@@ -192,7 +192,7 @@ export class HUD {
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
         verBadge.textContent = 'v1.4.1';
-        verBadge.title = '觀星模擬器 v1.4.1 (修復版 · 疊圖工坊 & 四大校準場)';
+        verBadge.title = '觀星模擬器 v1.4.1 (深空天體全獨立圖鑑 · 商店配件實裝 · 疊圖工坊)';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
