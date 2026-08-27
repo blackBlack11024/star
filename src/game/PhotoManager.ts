@@ -181,7 +181,7 @@ export class PhotoManager {
         if (hasMotionBlur) {
             document.dispatchEvent(new CustomEvent('show-notification', {
                 detail: {
-                    message: `鏡筒在曝光中移動！星點產生拖尾殘影，清晰度下降（可至工作室「疊圖工坊」修復）`,
+                    message: `星點拖尾拉線（未配備赤道儀產生場旋或鏡筒晃動）！評級受限於 B 級以下。可至商店購買「赤道儀」或前往「疊圖工坊」修復。`,
                     type: 'warning'
                 }
             }));
@@ -245,10 +245,12 @@ export class PhotoManager {
             score += targetInfo.difficulty * 5;
         }
 
-        // Motion blur penalty (鏡筒晃動拖尾殘影懲罰)
+        // Motion blur penalty (鏡筒晃動拖尾與場旋殘影懲罰)
         if (hasMotionBlur) {
-            const blurPenalty = Math.min(45, Math.max(15, driftAmount * 28));
+            const blurPenalty = Math.min(55, Math.max(25, driftAmount * 35));
             score -= blurPenalty;
+            // 拖尾或場旋照片在天文攝影中屬於失敗/脫焦影格，評級嚴格受限於 B 級（最高 62 分），不可評為 S 或 SSS 級
+            score = Math.min(score, 62);
         }
 
         // Light pollution penalty (0 = dark, 1 = heavy)

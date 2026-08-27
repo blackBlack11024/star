@@ -45,7 +45,7 @@ export class QuestManager {
                 const matchId = targetId === obj.targetId || targetName.includes(obj.targetId || '___');
                 if (!matchId) return false;
                 if (obj.minQuality) {
-                    const grades = ['D', 'C', 'B', 'A', 'S'];
+                    const grades = ['D', 'C', 'B', 'A', 'S', 'SSS'];
                     return grades.indexOf(ph.quality) >= grades.indexOf(obj.minQuality);
                 }
                 return true;
@@ -63,7 +63,7 @@ export class QuestManager {
             }
 
             case 'quality_min': {
-                const grades = ['D', 'C', 'B', 'A', 'S'];
+                const grades = ['D', 'C', 'B', 'A', 'S', 'SSS'];
                 return grades.indexOf(ph.quality) >= grades.indexOf(obj.minQuality || 'A');
             }
         }

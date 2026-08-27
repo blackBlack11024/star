@@ -147,13 +147,16 @@ export class LongExposure {
     gain: number = 1.0,
     currentRa?: number,
     currentDec?: number,
-    driftMitigation: number = 1.0
+    driftMitigation: number = 1.0,
+    hasEquatorialMount: boolean = false,
+    timeScale: number = 1.0,
+    currentFov: number = 60.0
   ) {
     if (!this.isExposingFlag) return;
     
     this.sampleCount++;
     
-    // Track telescope angular motion during exposure
+    // 1. Track manual telescope angular motion during exposure
     if (currentRa !== undefined && currentDec !== undefined) {
       if (this.prevRa !== null && this.prevDec !== null) {
         let dRa = (currentRa - this.prevRa) * 15.0; // hours to degrees
@@ -171,6 +174,18 @@ export class LongExposure {
       }
       this.prevRa = currentRa;
       this.prevDec = currentDec;
+    }
+
+    // 2. Track Field Rotation and Sidereal Trailing without Equatorial Mount
+    if (!hasEquatorialMount) {
+      const elapsed = this.getElapsedSeconds();
+      if (elapsed > 2.5) {
+        // Without equatorial tracking, Earth's rotation smears stars in long exposures
+        const fieldRotationRate = (15.0 / 3600.0) * timeScale;
+        const fovRatio = 45.0 / Math.max(0.5, currentFov);
+        const rotationalDrift = (elapsed - 2.5) * fieldRotationRate * fovRatio * 0.15;
+        this.totalDrift = Math.max(this.totalDrift, rotationalDrift);
+      }
     }
     
     // 1. Render to frameTarget

@@ -324,6 +324,17 @@ export class Game {
       this.camera.position.set(0, 0.2, 0);
       const skyTarget = this.celestialSphere.getRaDecToVector(state.telescopeRa, state.telescopeDec);
       skyTarget.applyMatrix4(this.celestialSphere.group.matrixWorld);
+
+      const hasEquatorialMount = this.telescopeOptics.hasAccessory('mount_eq') || this.telescopeOptics.hasAccessory('mount_goto');
+      if (hasEquatorialMount) {
+        // Equatorial Mount: Camera rotates in sync with celestial pole (eliminates field rotation!)
+        const celestialNorth = new THREE.Vector3(0, 1, 0).applyQuaternion(this.celestialSphere.group.quaternion);
+        this.camera.up.copy(celestialNorth);
+      } else {
+        // Standard Alt-Az Mount: Camera UP is world zenith, naturally causing field rotation during long exposure
+        this.camera.up.set(0, 1, 0);
+      }
+
       this.camera.lookAt(skyTarget);
       this.camera.fov = state.currentFov;
       this.camera.updateProjectionMatrix();
@@ -339,7 +350,18 @@ export class Game {
         // Render scene to offscreen target and accumulate with telescope drift tracking
         const expGain = this.telescopeOptics.getExposureGain();
         const driftMitigation = this.telescopeOptics.getMountDriftMitigation();
-        this.longExposure.accumulate(this.scene, this.camera, expGain, state.telescopeRa, state.telescopeDec, driftMitigation);
+        const timeScale = state.timeScale || 1.0;
+        this.longExposure.accumulate(
+          this.scene,
+          this.camera,
+          expGain,
+          state.telescopeRa,
+          state.telescopeDec,
+          driftMitigation,
+          hasEquatorialMount,
+          timeScale,
+          state.currentFov
+        );
         const elapsed = this.longExposure.getElapsedSeconds();
         state.updateExposureElapsed(elapsed);
       }
