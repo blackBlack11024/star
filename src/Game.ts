@@ -356,7 +356,7 @@ export class Game {
     this.binocularsMode.update(deltaTime);
 
     // ---- Space Station, Meteors & Laser Pointer ----
-    this.spaceStation.update(deltaTime, state.currentFov, loc.latitude, this.sunElevation);
+    this.spaceStation.update(deltaTime, state.currentFov, loc.latitude, this.sunElevation, gameTime);
     this.meteorSystem.update(deltaTime, this.camera, this.sunElevation);
     this.laserPointer.update();
 

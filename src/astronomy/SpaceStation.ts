@@ -18,17 +18,52 @@ export interface SpaceStationPassData {
   isVisible: boolean;
 }
 
+export interface ScheduledPass {
+  startHour: number;
+  durationMinutes: number;
+  maxAltitude: number;
+  startAzimuth: number;
+  endAzimuth: number;
+  maxMag: number;
+  name: string;
+}
+
+export const REALISTIC_DAILY_PASSES: ScheduledPass[] = [
+  {
+    startHour: 19 + 20 / 60, // 19:20:00 (Dusk prime pass - 78 deg zenith)
+    durationMinutes: 4.0,
+    maxAltitude: 78,
+    startAzimuth: 220, // SW to NE
+    endAzimuth: 40,
+    maxMag: -3.5,
+    name: '傍晚黃金過境'
+  },
+  {
+    startHour: 20 + 53 / 60, // 20:53:00 (Secondary dusk pass - 1 orbit later: 93 min)
+    durationMinutes: 3.8,
+    maxAltitude: 36,
+    startAzimuth: 238, // WSW to NNE
+    endAzimuth: 22,
+    maxMag: -1.8,
+    name: '初夜過境'
+  },
+  {
+    startHour: 4 + 45 / 60,  // 04:45:00 (Dawn pre-sunrise pass - 68 deg)
+    durationMinutes: 4.0,
+    maxAltitude: 68,
+    startAzimuth: 215, // SW to ENE
+    endAzimuth: 55,
+    maxMag: -3.0,
+    name: '黎明過境'
+  }
+];
+
 export class SpaceStation {
   private group: THREE.Group;
   private issMeshGroup: THREE.Group;
   private pointSprite: THREE.Sprite;
   private currentPassData: SpaceStationPassData | null = null;
-
-  // Orbital parameters
-  private orbitProgress = 0; // 0 to 1 along current pass
-  private passDurationSeconds = 240; // 4 minutes pass
-  private orbitIntervalSeconds = 900; // pass every 15 minutes of game time
-  private orbitTimer = 180; // initial delay before first pass
+  private lastNotifiedKey = '';
 
   constructor(scene: THREE.Scene) {
     this.group = new THREE.Group();
@@ -168,25 +203,75 @@ export class SpaceStation {
     return group;
   }
 
-  public update(deltaTime: number, fov: number, _latitude: number, _sunElevation: number) {
-    this.orbitTimer += deltaTime;
+  public update(deltaTime: number, fov: number, _latitude: number, sunElevation: number, gameTime?: Date) {
+    const time = gameTime || new Date();
+    const hours = time.getHours();
+    const minutes = time.getMinutes();
+    const seconds = time.getSeconds();
+    const timeOfDayHours = hours + minutes / 60 + seconds / 3600;
 
-    // Check if an orbital pass is in progress
-    const isPassing = this.orbitTimer % this.orbitIntervalSeconds < this.passDurationSeconds;
+    let activePass: ScheduledPass | null = null;
+    let passProgress = 0;
 
-    if (!isPassing) {
+    for (let i = 0; i < REALISTIC_DAILY_PASSES.length; i++) {
+      const p = REALISTIC_DAILY_PASSES[i];
+      const start = p.startHour;
+      const end = p.startHour + p.durationMinutes / 60;
+
+      // 1. Advance notification (~1.5 minutes before pass in game time)
+      const notifyWindowStart = start - 1.5 / 60;
+      if (timeOfDayHours >= notifyWindowStart && timeOfDayHours < start) {
+        const passKey = `${time.toDateString()}_pre_${i}`;
+        if (this.lastNotifiedKey !== passKey) {
+          this.lastNotifiedKey = passKey;
+          const startTotalMin = Math.round(p.startHour * 60);
+          const hh = Math.floor(startTotalMin / 60).toString().padStart(2, '0');
+          const mm = (startTotalMin % 60).toString().padStart(2, '0');
+          document.dispatchEvent(new CustomEvent('show-notification', {
+            detail: { message: `天文預警：國際太空站 (ISS) 即將於 ${hh}:${mm} 過境（預計仰角 ${p.maxAltitude}°）！`, type: 'info' }
+          }));
+        }
+      }
+
+      // 2. Active pass check
+      if (timeOfDayHours >= start && timeOfDayHours <= end) {
+        activePass = p;
+        passProgress = (timeOfDayHours - start) / (p.durationMinutes / 60);
+
+        const activeKey = `${time.toDateString()}_active_${i}`;
+        if (this.lastNotifiedKey !== activeKey) {
+          this.lastNotifiedKey = activeKey;
+          document.dispatchEvent(new CustomEvent('show-notification', {
+            detail: { message: `國際太空站 (ISS) 正在過境天際！視星等 ${p.maxMag} 等，請把握觀測追焦時機。`, type: 'success' }
+          }));
+        }
+        break;
+      }
+    }
+
+    if (!activePass) {
       this.group.visible = false;
       this.currentPassData = null;
       return;
     }
 
-    this.group.visible = true;
-    this.orbitProgress = (this.orbitTimer % this.orbitIntervalSeconds) / this.passDurationSeconds;
+    // Trajectory arc across the sky
+    const altDeg = Math.sin(passProgress * Math.PI) * activePass.maxAltitude;
+    let dAz = activePass.endAzimuth - activePass.startAzimuth;
+    if (dAz < -180) dAz += 360;
+    if (dAz > 180) dAz -= 360;
+    const azDeg = (activePass.startAzimuth + passProgress * dAz + 360) % 360;
 
-    // Trajectory arc across the sky (from South-West to North-East)
-    // Altitude reaches up to 78° at midpoint
-    const altDeg = Math.sin(this.orbitProgress * Math.PI) * 78;
-    const azDeg = 220 + this.orbitProgress * 140; // 220° (SW) to 360° (N)
+    // Optical visibility condition:
+    // Ground must be dark (sunElevation <= -0.08 rad, sun altitude < -4.5°)
+    // and station above horizon (altDeg > 3°)
+    const isVisible = altDeg > 3.0 && sunElevation <= -0.08;
+    this.group.visible = isVisible;
+
+    if (!isVisible) {
+      this.currentPassData = null;
+      return;
+    }
 
     const altRad = (altDeg * Math.PI) / 180;
     const azRad = (azDeg * Math.PI) / 180;
@@ -221,8 +306,8 @@ export class SpaceStation {
     const spriteScale = Math.min(10.0, Math.max(4.5, 8.5 * Math.min(1.0, fov / 45)));
     this.pointSprite.scale.set(spriteScale, spriteScale, 1);
 
-    // Apparent magnitude: brightest at zenith (-3.5 mag)
-    const mag = -1.5 - Math.sin(this.orbitProgress * Math.PI) * 2.2;
+    // Apparent magnitude: brightest at zenith
+    const mag = activePass.maxMag + (1 - Math.sin(passProgress * Math.PI)) * 2.0;
 
     // Approximate RA/Dec from current Cartesian position
     const decDeg = (Math.asin(Math.max(-1, Math.min(1, y / R))) * 180) / Math.PI;
@@ -237,8 +322,8 @@ export class SpaceStation {
       magnitude: mag,
       altitude: altDeg,
       azimuth: azDeg,
-      distanceKm: 420 + (1 - Math.sin(this.orbitProgress * Math.PI)) * 300,
-      isVisible: altDeg > 5,
+      distanceKm: 420 + (1 - Math.sin(passProgress * Math.PI)) * 300,
+      isVisible: true,
     };
   }
 

@@ -190,8 +190,8 @@ export class HUD {
         verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
-        verBadge.textContent = 'v1.6.3';
-        verBadge.title = 'v1.6.3';
+        verBadge.textContent = 'v1.6.4';
+        verBadge.title = 'v1.6.4';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
