@@ -186,15 +186,18 @@ export class DeepSkyObjects {
         const ctx = canvas.getContext('2d')!;
         const cx = 256, cy = 256;
 
-        // Outer O-III green/blue & H-alpha ring
-        const ring = ctx.createRadialGradient(cx, cy, 60, cx, cy, 190);
-        ring.addColorStop(0, 'rgba(20, 30, 50, 0.1)');
-        ring.addColorStop(0.5, 'rgba(60, 230, 190, 0.7)');
-        ring.addColorStop(0.8, 'rgba(255, 80, 100, 0.55)');
+        // Outer O-III green/blue & H-alpha ring with smooth natural falloff
+        const ring = ctx.createRadialGradient(cx, cy, 40, cx, cy, 230);
+        ring.addColorStop(0, 'rgba(10, 20, 35, 0.02)');
+        ring.addColorStop(0.25, 'rgba(20, 60, 70, 0.15)');
+        ring.addColorStop(0.45, 'rgba(50, 220, 180, 0.6)');
+        ring.addColorStop(0.65, 'rgba(240, 70, 90, 0.45)');
+        ring.addColorStop(0.82, 'rgba(180, 40, 60, 0.15)');
+        ring.addColorStop(0.95, 'rgba(100, 20, 40, 0.03)');
         ring.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.fillStyle = ring;
         ctx.beginPath();
-        ctx.arc(cx, cy, 190, 0, Math.PI * 2);
+        ctx.arc(cx, cy, 230, 0, Math.PI * 2);
         ctx.fill();
 
         // Central white dwarf
