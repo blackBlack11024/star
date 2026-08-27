@@ -123,25 +123,27 @@ export class StarIdentifier {
     const objects = this.findObjectsInFov(telescopeRa, telescopeDec, fovDegrees, celestialSphere, planets, spaceStation);
     if (objects.length === 0) return null;
 
-    // Tight targeting cone accurately matching the central reticle crosshair ring:
-    // At FOV 60°: ~1.2° radius (only triggers when aimed directly at the crosshair circle)
-    // At FOV 20°: ~0.6° radius
-    // At FOV 5°: ~0.15° radius
-    // At FOV 1°: ~0.1° radius
-    const maxCenterDist = Math.max(0.1, Math.min(1.2, fovDegrees * 0.03));
+    // Comfortable targeting zone around center crosshair:
+    // Generous enough to easily catch targets without surgical precision,
+    // but tight enough to prevent distant planets from hijacking the whole screen.
+    // At FOV 60°: ~3.5° radius
+    // At FOV 20°: ~1.6° radius
+    // At FOV 5°: ~0.4° radius
+    // At FOV 1°: ~0.25° radius
+    const maxCenterDist = Math.max(0.25, Math.min(3.5, fovDegrees * 0.08));
 
-    // Filter objects to only those inside the center reticle crosshair zone
+    // Filter objects to only those inside the center reticle zone
     const centeredObjects = objects.filter(o => o.angularDistance <= maxCenterDist);
     if (centeredObjects.length === 0) return null;
 
     // Sort primarily by proximity to the optical crosshair center; if similarly close, major targets take priority
     centeredObjects.sort((a, b) => {
       const distDiff = a.angularDistance - b.angularDistance;
-      // If one target is distinctly closer to the dead center crosshair, prioritize it
-      if (Math.abs(distDiff) > 0.08) {
+      // If one target is distinctly closer to the crosshair center, prioritize it
+      if (Math.abs(distDiff) > 0.4) {
         return distDiff;
       }
-      // If targets are clustered at the center crosshair:
+      // If targets are both comfortably centered near the crosshairs:
       // 0. Space Station (ISS) top priority
       if (a.type === TargetType.SpecialEvent && b.type !== TargetType.SpecialEvent) return -1;
       if (b.type === TargetType.SpecialEvent && a.type !== TargetType.SpecialEvent) return 1;
