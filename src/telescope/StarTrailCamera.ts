@@ -92,6 +92,7 @@ export class StarTrailCamera {
   // Key tracking
   private isHoldingT = false;
   private isHoldingR = false;
+  private currentSpeedMagnitude = 60;
   private currentTimeScale = 60;
   private savedTimeScale = 1;
 
@@ -154,9 +155,9 @@ export class StarTrailCamera {
         <span class="st-title">星軌專用相機 · 曝光累積中</span>
       </div>
       <div class="st-bottom">
-        <div class="st-speed" id="st-speed-text">時間流速: 60x</div>
+        <div class="st-speed" id="st-speed-text">時間流速: +60x (時間快轉)</div>
         <div class="st-exposure" id="st-time-text">曝光累積: 0.0s</div>
-        <div class="st-hints">按住 [T] 持續加速 · 按住 [R] 減速 · 放開自動存入照片庫</div>
+        <div class="st-hints">按住 [T] 快轉加速 · 按住 [R] 倒轉加速（同等倍數） · 放開自動存入照片庫</div>
       </div>
     `;
 
@@ -205,7 +206,7 @@ export class StarTrailCamera {
     if (key === 'R') this.isHoldingR = true;
 
     if (!this.isExposing) {
-      this.startExposure();
+      this.startExposure(key === 'R' ? 'reverse' : 'forward');
     }
   }
 
@@ -219,13 +220,14 @@ export class StarTrailCamera {
     }
   }
 
-  private startExposure() {
+  private startExposure(direction: 'forward' | 'reverse' = 'forward') {
     this.isExposing = true;
     this.isFirstFrame = true;
     this.startTime = performance.now();
     this.sampleCount = 0;
     this.savedTimeScale = gameStore.getState().timeScale || 1;
-    this.currentTimeScale = 60;
+    this.currentSpeedMagnitude = 60;
+    this.currentTimeScale = direction === 'reverse' ? -60 : 60;
 
     // Reset render targets
     this.renderer.setRenderTarget(this.accumTargetA);
@@ -254,26 +256,37 @@ export class StarTrailCamera {
 
     this.sampleCount++;
 
-    // Accelerate smoothly while holding T (up to 7200x)
-    if (this.isHoldingT) {
-      const growthRate = 2.5;
-      this.currentTimeScale = Math.min(7200, this.currentTimeScale * Math.pow(growthRate, deltaTime));
-    }
-    // Decelerate smoothly while holding R (down to 1x)
-    if (this.isHoldingR) {
-      const decayRate = 0.3;
-      this.currentTimeScale = Math.max(1, this.currentTimeScale * Math.pow(decayRate, deltaTime));
+    const growthRate = 2.5; // Exponential speed growth rate
+
+    if (this.isHoldingT && !this.isHoldingR) {
+      // Fast forward: accelerate from +60x up to +7200x
+      this.currentSpeedMagnitude = Math.min(7200, this.currentSpeedMagnitude * Math.pow(growthRate, deltaTime));
+      this.currentTimeScale = this.currentSpeedMagnitude;
+    } else if (this.isHoldingR && !this.isHoldingT) {
+      // Rewind: accelerate in reverse from -60x down to -7200x (identical multiplier rate!)
+      this.currentSpeedMagnitude = Math.min(7200, this.currentSpeedMagnitude * Math.pow(growthRate, deltaTime));
+      this.currentTimeScale = -this.currentSpeedMagnitude;
+    } else if (this.isHoldingT && this.isHoldingR) {
+      // Both held: gently stabilize
+      this.currentSpeedMagnitude = Math.max(60, this.currentSpeedMagnitude * Math.pow(0.5, deltaTime));
+      this.currentTimeScale = Math.sign(this.currentTimeScale || 1) * this.currentSpeedMagnitude;
     }
 
     gameStore.getState().setTimeScale(Math.round(this.currentTimeScale));
 
     const elapsed = (performance.now() - this.startTime) / 1000;
+    const roundedScale = Math.round(this.currentTimeScale);
+    const absScale = Math.abs(roundedScale);
+    const isRewind = roundedScale < 0;
+
     if (this.speedLabel) {
-      this.speedLabel.textContent = `時間流速: ${Math.round(this.currentTimeScale)}x`;
+      this.speedLabel.textContent = `時間流速: ${isRewind ? '-' : '+'}${absScale}x (${isRewind ? '時空倒轉' : '時間快轉'})`;
     }
     if (this.timeLabel) {
-      const simMinutes = (elapsed * this.currentTimeScale) / 60;
-      this.timeLabel.textContent = `曝光時間: ${elapsed.toFixed(1)}s (天球自轉約 ${simMinutes >= 60 ? (simMinutes / 60).toFixed(1) + ' 小時' : simMinutes.toFixed(0) + ' 分鐘'})`;
+      const simMinutes = (elapsed * absScale) / 60;
+      const simHours = simMinutes / 60;
+      const timeSpanText = simHours >= 1 ? `${simHours.toFixed(1)} 小時` : `${Math.round(simMinutes)} 分鐘`;
+      this.timeLabel.textContent = `曝光時間: ${elapsed.toFixed(1)}s (天球${isRewind ? '倒轉' : '運轉'}約 ${timeSpanText})`;
     }
   }
 

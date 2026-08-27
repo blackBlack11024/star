@@ -18,7 +18,7 @@ export class TimeManager {
    */
   public update(realDeltaSeconds: number): void {
     const state = gameStore.getState();
-    if (!state.isTimePaused && state.timeScale > 0) {
+    if (!state.isTimePaused && state.timeScale !== 0) {
       state.advanceTime(realDeltaSeconds * 1000);
     }
   }

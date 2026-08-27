@@ -305,7 +305,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   // ---- Actions ----
   setGameMode: (mode) => set({ gameMode: mode }),
 
-  setTimeScale: (scale) => set({ timeScale: Math.max(0, scale) }),
+  setTimeScale: (scale) => set({ timeScale: scale }),
 
   toggleTimePause: () => set((s) => ({ isTimePaused: !s.isTimePaused })),
 

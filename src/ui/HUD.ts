@@ -282,8 +282,8 @@ export class HUD {
         verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
-        verBadge.textContent = 'v1.9.3';
-        verBadge.title = 'v1.9.3';
+        verBadge.textContent = 'v1.9.4';
+        verBadge.title = 'v1.9.4';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
@@ -566,7 +566,7 @@ export class HUD {
         const hasStarTrail = hasCompletedStarTrailQuest || (state.accessories || []).some((a: any) => a.id === 'camera_startrail' && a.owned && a.equipped !== false);
         if (hasStarTrail) {
             this.shortcutGuide.innerHTML = `
-                <span><span class="key-tag" style="background:rgba(245,158,11,0.25);color:#fbbf24;border-color:rgba(245,158,11,0.5);">按住T/R</span>星軌相機</span>
+                <span><span class="key-tag" style="background:rgba(245,158,11,0.25);color:#fbbf24;border-color:rgba(245,158,11,0.5);">按住T/R</span>星軌(快/倒轉)</span>
                 <span><span class="key-tag">B</span>星曆倒流</span>
                 <span><span class="key-tag">Z</span>平躺</span>
                 <span><span class="key-tag">X</span>指星筆</span>
