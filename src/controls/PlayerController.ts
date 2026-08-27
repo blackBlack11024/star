@@ -294,7 +294,7 @@ export class PlayerController {
     document.dispatchEvent(new CustomEvent('telescope-slew'));
   }
 
-  /** Slew telescope along equatorial mount axes (RA and Dec) with meridian pole-crossing */
+  /** Slew telescope along equatorial mount axes (RA and Dec) */
   private slewEquatorial(deltaRa: number, deltaDec: number) {
     const state = gameStore.getState();
     if (state.isTelescopeLocked) return;
@@ -302,15 +302,11 @@ export class PlayerController {
     let ra = state.telescopeRa + deltaRa;
     let dec = state.telescopeDec + deltaDec;
 
-    // Authentic equatorial mount pole-crossing (Meridian flip across celestial poles)
-    if (dec > 90) {
-      dec = 180 - dec;
-      ra = (ra + 12) % 24;
-    } else if (dec < -90) {
-      dec = -180 - dec;
-      ra = (ra + 12) % 24;
-    }
+    // Declination clamp: stop smoothly at celestial poles (+89.5° and -89.5°)
+    // Never flip or roll camera upside down
+    dec = Math.max(-89.5, Math.min(89.5, dec));
 
+    // Right ascension wrap: continuous 0h ~ 24h circle
     if (ra < 0) ra += 24;
     if (ra >= 24) ra %= 24;
 

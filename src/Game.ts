@@ -407,14 +407,7 @@ export class Game {
 
       // Transform celestial basis to world space
       const cMatrix = this.celestialSphere.group.matrixWorld;
-      let wForward = uForward.clone().transformDirection(cMatrix).normalize();
-
-      // Horizon safety clamp: Never allow telescope optical axis to point underground
-      if (wForward.y < 0.035) {
-        wForward.y = 0.035;
-        wForward.normalize();
-      }
-
+      const wForward = uForward.clone().transformDirection(cMatrix).normalize();
       const wRight = uRight.clone().transformDirection(cMatrix).normalize();
       const wUp = uUp.clone().transformDirection(cMatrix).normalize();
 
