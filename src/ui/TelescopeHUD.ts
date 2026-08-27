@@ -1,14 +1,11 @@
 import { gameStore } from '../game/GameStore';
 import { GameMode } from '../types';
-import { DEEP_SKY_OBJECTS } from '../data/deepSkyObjects';
-import { BRIGHT_STARS } from '../data/brightStars';
 
 export class TelescopeHUD {
     private container: HTMLElement;
     private vignette: HTMLElement;
     private reticle: HTMLElement;
     private starIdentifier: HTMLElement;
-    private targetTrackingGuide: HTMLElement;
     private infoPanel: HTMLElement;
     private fovZoomDisplay: HTMLElement;
     private raDecDisplay: HTMLElement;
@@ -43,12 +40,6 @@ export class TelescopeHUD {
         this.starIdentifier = document.createElement('div');
         this.starIdentifier.className = 'star-identifier';
         this.starIdentifier.style.display = 'none';
-
-        // Target Tracking Guide Badge
-        this.targetTrackingGuide = document.createElement('div');
-        this.targetTrackingGuide.className = 'telescope-target-tracker';
-        this.targetTrackingGuide.style.display = 'none';
-        this.container.appendChild(this.targetTrackingGuide);
 
         // Calibration Visor Banner (Dark/Flat/Bias active notification)
         this.calibrationBanner = document.createElement('div');
@@ -219,99 +210,7 @@ export class TelescopeHUD {
 
         const state = gameStore.getState() as any;
 
-        // Target Tracking Guide Update
-        const trackedId = state.customTrackedDsoId;
-        if (trackedId) {
-            let targetRa: number | null = null;
-            let targetDec: number | null = null;
-            let targetDisplayName = trackedId;
 
-            // Search in planets
-            const pl = (state.planets || []).find((p: any) => p.id === trackedId || p.name === trackedId || p.nameEn === trackedId);
-            if (pl) {
-                targetRa = pl.ra;
-                targetDec = pl.dec;
-                targetDisplayName = pl.name;
-            }
-
-            // Search in DSOs
-            if (targetRa === null) {
-                const dso = DEEP_SKY_OBJECTS.find(d => d.id === trackedId || d.name === trackedId || d.commonName === trackedId);
-                if (dso) {
-                    targetRa = dso.ra;
-                    targetDec = dso.dec;
-                    targetDisplayName = dso.commonName || dso.name;
-                }
-            }
-
-            // Search in Bright Stars
-            if (targetRa === null) {
-                const star = BRIGHT_STARS.find(s => s.name.includes(trackedId) || (s.hip && `HIP ${s.hip}` === trackedId));
-                if (star) {
-                    targetRa = star.ra;
-                    targetDec = star.dec;
-                    const parts = star.name.split('·').map((p: string) => p.trim());
-                    targetDisplayName = parts.length > 1 ? parts[1] : parts[0];
-                }
-            }
-
-            if (targetRa !== null && targetDec !== null) {
-                const radRa1 = (ra * Math.PI) / 12;
-                const radDec1 = (dec * Math.PI) / 180;
-                const radRa2 = (targetRa * Math.PI) / 12;
-                const radDec2 = (targetDec * Math.PI) / 180;
-                const dRa = radRa1 - radRa2;
-                const cosAngle = Math.sin(radDec1) * Math.sin(radDec2) +
-                                 Math.cos(radDec1) * Math.cos(radDec2) * Math.cos(dRa);
-                const distDeg = (Math.acos(Math.max(-1, Math.min(1, cosAngle))) * 180) / Math.PI;
-
-                let dRaHours = targetRa - ra;
-                while (dRaHours > 12) dRaHours -= 24;
-                while (dRaHours < -12) dRaHours += 24;
-                const dDecDeg = targetDec - dec;
-
-                if (distDeg < 0.8) {
-                    this.targetTrackingGuide.className = 'telescope-target-tracker on-target';
-                    this.targetTrackingGuide.innerHTML = `
-                        <span style="color:#34d399;font-weight:600;">已對準目標: ${targetDisplayName} (${distDeg.toFixed(1)}°)</span>
-                        <button class="tracker-cancel" id="tracker-cancel-btn" title="取消鎖定">&times;</button>
-                    `;
-                } else {
-                    let arrow = '↑';
-                    const dRaDeg = dRaHours * 15;
-                    if (Math.abs(dRaDeg) < 3 && dDecDeg > 0) arrow = '↑';
-                    else if (Math.abs(dRaDeg) < 3 && dDecDeg < 0) arrow = '↓';
-                    else if (dRaDeg > 0 && dDecDeg > 3) arrow = '↗';
-                    else if (dRaDeg > 0 && dDecDeg < -3) arrow = '↘';
-                    else if (dRaDeg > 0) arrow = '→';
-                    else if (dRaDeg < 0 && dDecDeg > 3) arrow = '↖';
-                    else if (dRaDeg < 0 && dDecDeg < -3) arrow = '↙';
-                    else if (dRaDeg < 0) arrow = '←';
-
-                    this.targetTrackingGuide.className = 'telescope-target-tracker';
-                    this.targetTrackingGuide.innerHTML = `
-                        <span class="tracker-arrow">${arrow}</span>
-                        <span>導引: ${targetDisplayName}</span>
-                        <span style="color:#38bdf8;font-weight:600;margin-left:4px;">${distDeg.toFixed(1)}°</span>
-                        <button class="tracker-cancel" id="tracker-cancel-btn" title="取消鎖定">&times;</button>
-                    `;
-                }
-
-                const cancelBtn = this.targetTrackingGuide.querySelector('#tracker-cancel-btn') as HTMLElement;
-                if (cancelBtn) {
-                    cancelBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        state.setCustomTrackedDso(null);
-                    };
-                }
-
-                this.targetTrackingGuide.style.display = 'flex';
-            } else {
-                this.targetTrackingGuide.style.display = 'none';
-            }
-        } else {
-            this.targetTrackingGuide.style.display = 'none';
-        }
 
         // Update active frame type button & calibration banner
         const activeFrame = state.currentFrameType || 'light';

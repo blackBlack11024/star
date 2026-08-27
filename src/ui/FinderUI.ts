@@ -283,8 +283,8 @@ export class FinderUI {
                                     <button class="f-btn track-btn ${isTracking ? 'active' : ''}" data-id="${t.id}" data-name="${t.name}">
                                         ${isTracking ? '取消' : '鎖定'}
                                     </button>
-                                    <button class="f-btn goto-btn ${hasGoto ? 'ready' : 'manual'}" data-id="${t.id}" data-ra="${t.ra}" data-dec="${t.dec}" data-name="${t.commonName || t.name}">
-                                        ${hasGoto ? 'GoTo' : '導引'}
+                                    <button class="f-btn goto-btn ${hasGoto ? 'ready' : 'disabled'}" data-id="${t.id}" data-ra="${t.ra}" data-dec="${t.dec}" data-name="${t.commonName || t.name}">
+                                        ${hasGoto ? 'GoTo' : '未配備'}
                                     </button>
                                 </div>
                             </div>
@@ -404,8 +404,8 @@ export class FinderUI {
                                 <button class="f-btn track-btn ${isTracking ? 'active' : ''}" data-id="${t.id}" data-name="${t.name}">
                                     ${isTracking ? '取消' : '鎖定'}
                                 </button>
-                                <button class="f-btn goto-btn ${hasGoto ? 'ready' : 'manual'}" data-id="${t.id}" data-ra="${t.ra}" data-dec="${t.dec}" data-name="${t.commonName || t.name}">
-                                    ${hasGoto ? 'GoTo' : '導引'}
+                                <button class="f-btn goto-btn ${hasGoto ? 'ready' : 'disabled'}" data-id="${t.id}" data-ra="${t.ra}" data-dec="${t.dec}" data-name="${t.commonName || t.name}">
+                                    ${hasGoto ? 'GoTo' : '未配備'}
                                 </button>
                             </div>
                         </div>
@@ -435,7 +435,7 @@ export class FinderUI {
                 } else {
                     state.setCustomTrackedDso(id);
                     document.dispatchEvent(new CustomEvent('show-notification', {
-                        detail: { message: `已鎖定 ${id}：請依照目鏡上方的導引箭頭轉動望遠鏡`, type: 'success' }
+                        detail: { message: `已鎖定 ${id}`, type: 'success' }
                     }));
                     this.hide();
                 }
@@ -448,19 +448,16 @@ export class FinderUI {
             btn.addEventListener('click', (e: any) => {
                 e.stopPropagation();
                 const hasGoto = (gameStore.getState().accessories || []).some((a: any) => a.id === 'mount_goto' && a.owned);
-                const id = btn.getAttribute('data-id') || '';
-                const targetName = btn.getAttribute('data-name') || id;
-                const ra = parseFloat(btn.getAttribute('data-ra') || '0');
-                const dec = parseFloat(btn.getAttribute('data-dec') || '0');
-
                 if (!hasGoto) {
-                    gameStore.getState().setCustomTrackedDso(id);
                     document.dispatchEvent(new CustomEvent('show-notification', {
-                        detail: { message: `已鎖定 ${targetName}：請依照目鏡上方的導引箭頭手動轉動望遠鏡`, type: 'info' }
+                        detail: { message: '需先在工作室購買 GoTo 系統', type: 'warning' }
                     }));
-                    this.hide();
                     return;
                 }
+
+                const ra = parseFloat(btn.getAttribute('data-ra') || '0');
+                const dec = parseFloat(btn.getAttribute('data-dec') || '0');
+                const targetName = btn.getAttribute('data-name') || '';
 
                 document.dispatchEvent(new CustomEvent('goto-target', {
                     detail: { ra, dec, targetName }
