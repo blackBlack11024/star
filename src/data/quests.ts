@@ -36,31 +36,31 @@ export const CHARACTERS: Record<string, QuestCharacter> = {
   chen: {
     name: '陳伯',
     role: '合歡山老氣象員 · 前天文台技師',
-    avatarIcon: '',
+    avatarIcon: `<svg viewBox="0 0 40 40" width="100%" height="100%"><circle cx="20" cy="20" r="18" fill="rgba(251,191,36,0.15)" stroke="#fbbf24" stroke-width="1.5"/><path d="M6 32 L16 16 L24 26 L34 32 Z" fill="#fbbf24" opacity="0.3"/><path d="M12 32 L20 18 L28 32 Z" fill="#fbbf24" opacity="0.5"/><circle cx="28" cy="11" r="3.5" fill="none" stroke="#fbbf24" stroke-width="1.2"/><circle cx="28" cy="11" r="1.5" fill="#fbbf24"/><path d="M20 18 L20 10 M17 10 L23 10 M18 8 L22 8" stroke="#fbbf24" stroke-width="1.2" stroke-linecap="round"/></svg>`,
     color: '#fbbf24',
   },
   lin: {
     name: '星際旅人 Lin',
     role: '天文攝影論壇版主 · 巡天愛好者',
-    avatarIcon: '',
+    avatarIcon: `<svg viewBox="0 0 40 40" width="100%" height="100%"><circle cx="20" cy="20" r="18" fill="rgba(56,189,248,0.15)" stroke="#38bdf8" stroke-width="1.5"/><ellipse cx="20" cy="20" rx="14" ry="5" fill="none" stroke="#38bdf8" stroke-width="1.2" transform="rotate(-25 20 20)"/><path d="M20 6 L22 17 L33 20 L22 23 L20 34 L18 23 L7 20 L18 17 Z" fill="#38bdf8"/><circle cx="20" cy="20" r="2.5" fill="#0b1329"/><circle cx="20" cy="20" r="1.2" fill="#fff"/></svg>`,
     color: '#38bdf8',
   },
   director: {
     name: '張弘道館長',
     role: '國家天文台名譽台長',
-    avatarIcon: '',
+    avatarIcon: `<svg viewBox="0 0 40 40" width="100%" height="100%"><circle cx="20" cy="20" r="18" fill="rgba(168,85,247,0.15)" stroke="#a855f7" stroke-width="1.5"/><path d="M10 26 C10 15, 30 15, 30 26 Z" fill="none" stroke="#a855f7" stroke-width="1.5"/><rect x="9" y="26" width="22" height="6" rx="1" fill="#a855f7" opacity="0.4"/><path d="M18 16 L22 16 L22 26 L18 26 Z" fill="#0b1329" stroke="#a855f7" stroke-width="1"/><line x1="14" y1="24" x2="27" y2="10" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round"/><circle cx="27" cy="10" r="1.8" fill="#fff"/></svg>`,
     color: '#a855f7',
   },
   sophie: {
     name: '蘇菲主編',
     role: '《國際天文攝影》亞洲特刊總編',
-    avatarIcon: '',
+    avatarIcon: `<svg viewBox="0 0 40 40" width="100%" height="100%"><circle cx="20" cy="20" r="18" fill="rgba(236,72,153,0.15)" stroke="#ec4899" stroke-width="1.5"/><circle cx="20" cy="20" r="11" fill="none" stroke="#ec4899" stroke-width="1.5"/><polygon points="20,13 25,16 23,22 17,22 15,16" fill="none" stroke="#ec4899" stroke-width="1.2"/><circle cx="20" cy="20" r="3" fill="#ec4899"/><path d="M9 10 L13 10 M31 10 L27 10 M9 30 L13 30 M31 30 L27 30" stroke="#ec4899" stroke-width="1.5" stroke-linecap="round"/></svg>`,
     color: '#ec4899',
   },
   alan: {
     name: '艾倫研究員',
     role: '跨國深空巡天計畫通訊員',
-    avatarIcon: '',
+    avatarIcon: `<svg viewBox="0 0 40 40" width="100%" height="100%"><circle cx="20" cy="20" r="18" fill="rgba(52,211,153,0.15)" stroke="#34d399" stroke-width="1.5"/><path d="M12 26 Q20 18 28 26" fill="none" stroke="#34d399" stroke-width="2"/><line x1="20" y1="21" x2="20" y2="13" stroke="#34d399" stroke-width="1.5"/><line x1="17" y1="13" x2="23" y2="13" stroke="#34d399" stroke-width="1.5"/><path d="M14 9 Q20 4 26 9" fill="none" stroke="#34d399" stroke-width="1.2" stroke-dasharray="2,2"/><path d="M16 11 Q20 7 24 11" fill="none" stroke="#34d399" stroke-width="1.2"/><path d="M20 23 L20 32 M16 32 L24 32" stroke="#34d399" stroke-width="1.5" stroke-linecap="round"/></svg>`,
     color: '#34d399',
   },
 };

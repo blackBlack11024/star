@@ -94,7 +94,7 @@ export class StoryDialogue {
     }
 
     private setCharacter(char: QuestCharacter, title: string) {
-        this.avatarEl.textContent = char.avatarIcon;
+        this.avatarEl.innerHTML = char.avatarIcon;
         this.nameEl.textContent = char.name;
         this.nameEl.style.color = char.color;
         this.roleEl.textContent = char.role;
