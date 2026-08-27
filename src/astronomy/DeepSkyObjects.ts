@@ -284,7 +284,9 @@ export class DeepSkyObjects {
             sprite.position.y = R * Math.sin(dec_rad);
             sprite.position.z = R * Math.cos(dec_rad) * Math.sin(ra_rad);
 
-            const baseScale = Math.max(4.0, (dso.sizeArcmin || 15) * 0.22);
+            // True astronomical angular scale on celestial sphere (R = 998): 1 arcmin = 0.29 units
+            // Give tiny compact nebulae/clusters a reasonable minimum so they remain visible when centered
+            const baseScale = Math.max(1.8, (dso.sizeArcmin || 15) * 0.29);
             sprite.scale.set(baseScale, baseScale, 1);
 
             this.group.add(sprite);
@@ -308,24 +310,29 @@ export class DeepSkyObjects {
 
         const fov = isTelescope ? Math.max(0.5, cameraFov) : cameraFov;
         const zoomFactor = isTelescope ? 1.0 : Math.min(1.0, (35.0 - fov) / 20.0);
-        
-        // Stellarium-like dynamic magnification: as FOV decreases, DSO scales up smoothly and reveals HD details
-        const zoomMagnification = Math.min(7.0, Math.pow(60.0 / fov, 0.8));
 
         for (const { sprite, dso, baseScale } of this.sprites) {
             sprite.getWorldPosition(this.tempWorldPos);
             
             // Hide DSO if below horizon or too faint for current optics
-            if (this.tempWorldPos.y < 0.0 || dso.magnitude > limitingMagnitude) {
+            const magDiff = limitingMagnitude - dso.magnitude;
+            if (this.tempWorldPos.y < 0.0 || magDiff < 0) {
                 sprite.visible = false;
             } else {
                 sprite.visible = true;
-                const dynamicScale = baseScale * zoomMagnification;
+
+                // Perspective camera already zooms optically as FOV decreases.
+                // At high magnification (FOV < 4.0 deg), apply a gentle boost for very small targets (e.g. M57)
+                const highPowerBoost = fov < 4.0 ? Math.min(2.2, 4.0 / fov) : 1.0;
+                const dynamicScale = baseScale * highPowerBoost;
                 sprite.scale.set(dynamicScale, dynamicScale, 1);
 
-                const brightness = Math.max(0.15, (limitingMagnitude - dso.magnitude) * 0.22);
-                const zoomAlpha = Math.min(0.95, brightness * (0.4 + zoomMagnification * 0.12) * zoomFactor);
-                (sprite.material as THREE.SpriteMaterial).opacity = zoomAlpha;
+                // Realistic eyepiece optics: nebulae are faint, ghostly, translucent clouds (not opaque disks!)
+                // Stars shine clearly through them. True brilliant colors reveal during Long Exposure photography.
+                const brightnessFactor = Math.min(1.0, Math.max(0.25, magDiff * 0.2));
+                const zoomAlphaBoost = fov < 12.0 ? (12.0 - fov) * 0.012 : 0.0;
+                const visualOpacity = Math.min(0.40, (0.16 + zoomAlphaBoost) * brightnessFactor * zoomFactor);
+                (sprite.material as THREE.SpriteMaterial).opacity = visualOpacity;
             }
         }
     }

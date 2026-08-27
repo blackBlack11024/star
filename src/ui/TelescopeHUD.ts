@@ -102,8 +102,24 @@ export class TelescopeHUD {
             frameSelector.appendChild(btn);
         });
 
+        const finderBtn = document.createElement('button');
+        finderBtn.className = 'telescope-finder-btn';
+        finderBtn.innerHTML = `<span>尋星儀系統</span><kbd>F</kbd>`;
+        finderBtn.title = '開啟電子尋星儀系統與 GoTo 自動導星 [快捷鍵 F]';
+        finderBtn.onclick = (e) => {
+            e.stopPropagation();
+            document.dispatchEvent(new CustomEvent('toggle-finder-ui'));
+        };
+
         controlsRow.appendChild(this.toggleExposureBtn);
         controlsRow.appendChild(frameSelector);
+        controlsRow.appendChild(finderBtn);
+
+        this.finderGuidance.style.cursor = 'pointer';
+        this.finderGuidance.onclick = (e) => {
+            e.stopPropagation();
+            document.dispatchEvent(new CustomEvent('toggle-finder-ui'));
+        };
 
         this.exposureBar = document.createElement('div');
         this.exposureBar.className = 'exposure-bar';

@@ -178,6 +178,9 @@ export class PlayerController {
         case 'KeyE':
           document.dispatchEvent(new CustomEvent('capture-photo'));
           return;
+        case 'KeyF':
+          document.dispatchEvent(new CustomEvent('toggle-finder-ui'));
+          return;
         case 'Digit1':
           state.setFrameType('light');
           document.dispatchEvent(new CustomEvent('frame-type-changed', { detail: 'light' }));

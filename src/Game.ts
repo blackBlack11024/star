@@ -36,6 +36,7 @@ import { CodexUI } from './ui/CodexUI';
 import { PhotoLightbox } from './ui/PhotoLightbox';
 import { StoryDialogue } from './ui/StoryDialogue';
 import { MenuSystem } from './ui/MenuSystem';
+import { FinderUI } from './ui/FinderUI';
 import { getTelescopeConfig } from './data/telescopes';
 
 type ProgressCallback = (pct: number, text: string) => void;
@@ -84,6 +85,17 @@ export class Game {
   private photoLightbox!: PhotoLightbox;
   private storyDialogue!: StoryDialogue;
   private menuSystem!: MenuSystem;
+  private finderUI!: FinderUI;
+
+  // GoTo auto-slew animation state
+  private isGoToSlewing = false;
+  private goToStartRa = 0;
+  private goToStartDec = 0;
+  private goToTargetRa = 0;
+  private goToTargetDec = 0;
+  private goToStartTime = 0;
+  private goToDuration = 1800; // ms
+  private goToTargetName = '';
 
   // ---- State ----
   private isRunning = false;
@@ -203,6 +215,7 @@ export class Game {
     this.photoLightbox = new PhotoLightbox();
     this.storyDialogue = new StoryDialogue();
     this.menuSystem = new MenuSystem();
+    this.finderUI = new FinderUI();
 
     // ---- Wire up interactions ----
     this.setupInteractions();
@@ -317,6 +330,29 @@ export class Game {
     // ---- Player controller & Binoculars smooth zoom ----
     this.playerController.update(deltaTime);
     this.binocularsMode.update(deltaTime);
+
+    // ---- GoTo Auto-Slewing Interpolation ----
+    if (this.isGoToSlewing) {
+      const elapsed = performance.now() - this.goToStartTime;
+      const progress = Math.min(1.0, elapsed / this.goToDuration);
+      // Smooth cosine easing
+      const t = (1 - Math.cos(progress * Math.PI)) / 2;
+      
+      let dRa = this.goToTargetRa - this.goToStartRa;
+      while (dRa > 12) dRa -= 24;
+      while (dRa < -12) dRa += 24;
+      
+      let curRa = (this.goToStartRa + dRa * t) % 24;
+      if (curRa < 0) curRa += 24;
+      const curDec = Math.max(-90, Math.min(90, this.goToStartDec + (this.goToTargetDec - this.goToStartDec) * t));
+      
+      gameStore.getState().setTelescopePointing(curRa, curDec);
+
+      if (progress >= 1.0) {
+        this.isGoToSlewing = false;
+        this.hud.showNotification(`GoTo 自動導星就緒：已中心對準 ${this.goToTargetName}`, 'success');
+      }
+    }
 
     // ---- Telescope mode logic ----
     if (state.gameMode === GameMode.Telescope) {
@@ -502,6 +538,35 @@ export class Game {
     document.addEventListener('telescope-slew', () => {
       this.audioManager.playMotor(0.5);
     });
+
+    // Electronic Finder UI events
+    document.addEventListener('toggle-finder-ui', () => {
+      this.finderUI.toggle();
+    });
+
+    document.addEventListener('goto-target', (e: any) => {
+      const { ra, dec, targetName } = e.detail;
+      this.startGoToSlew(ra, dec, targetName);
+    });
+  }
+
+  /** Slew telescope smoothly to target coordinates with motor sound */
+  private startGoToSlew(targetRa: number, targetDec: number, targetName: string) {
+    const state = gameStore.getState();
+    if (state.gameMode !== GameMode.Telescope) {
+      state.setGameMode(GameMode.Telescope);
+    }
+    state.setCustomTrackedDso(targetName);
+    this.goToStartRa = state.telescopeRa;
+    this.goToStartDec = state.telescopeDec;
+    this.goToTargetRa = targetRa;
+    this.goToTargetDec = targetDec;
+    this.goToTargetName = targetName;
+    this.goToStartTime = performance.now();
+    this.goToDuration = 1800;
+    this.isGoToSlewing = true;
+    this.audioManager.playMotor(2.0);
+    this.hud.showNotification(`GoTo 自動導星轉向中：正在對準 ${targetName}...`, 'info');
   }
 
   /** Handle game mode transitions. */
@@ -600,6 +665,7 @@ export class Game {
     this.photoLightbox.dispose();
     this.storyDialogue.dispose();
     this.menuSystem.dispose();
+    this.finderUI.dispose();
     this.renderer.dispose();
   }
 }

@@ -196,7 +196,7 @@ export class CodexUI {
                     <span class="dso-badge" style="background:${typeInfo.color}22; color:${typeInfo.color}; border:1px solid ${typeInfo.color}44;">${dso.id}</span>
                     <span class="dso-type-tag" style="color:${typeInfo.color}; font-size:11px;">${typeInfo.name}</span>
                 </div>
-                ${captured && bestPhoto ? `<img src="${bestPhoto.imageDataUrl}" alt="${dso.name}" class="codex-thumb"/>` : `<div class="codex-thumb-lock">${dso.id}</div>`}
+                ${captured && bestPhoto ? `<img src="${bestPhoto.imageDataUrl}" alt="${dso.name}" class="codex-thumb" style="cursor:pointer;" title="點擊全螢幕檢視相片"/>` : `<div class="codex-thumb-lock" style="cursor:pointer;" title="點擊檢視天文台參考相片">${dso.id}</div>`}
                 <div class="codex-dso-info">
                     <div class="codex-dso-name" title="${dso.commonName}">${dso.name} · ${dso.commonName}</div>
                     <div class="codex-dso-meta">視星等 ${dso.magnitude} · 視直徑 ${dso.sizeArcmin}' · RA ${dso.ra.toFixed(2)}h / Dec ${dso.dec.toFixed(1)}°</div>
@@ -210,9 +210,33 @@ export class CodexUI {
                     <button class="codex-track-btn ${isTracking ? 'active' : ''}" id="btn-track-${dso.id}">
                         ${isTracking ? '追蹤中 (點擊取消)' : '設為望遠鏡尋星目標'}
                     </button>
-                    ${captured && bestPhoto ? `<button class="codex-view-btn" id="btn-view-${dso.id}">查看相片</button>` : ''}
+                    ${captured && bestPhoto 
+                        ? `<button class="codex-view-btn" id="btn-view-${dso.id}">查看相片 (${matches.length}張)</button>` 
+                        : `<button class="codex-view-btn ref-btn" id="btn-ref-${dso.id}" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">觀測參考照</button>`}
                 </div>
             `;
+
+            // Click thumbnail to view
+            const thumb = card.querySelector('.codex-thumb, .codex-thumb-lock');
+            if (thumb) {
+                (thumb as HTMLElement).onclick = (e) => {
+                    e.stopPropagation();
+                    if (captured && bestPhoto) {
+                        document.dispatchEvent(new CustomEvent('open-lightbox', { detail: { photoId: bestPhoto.id } }));
+                    } else {
+                        const baseUrl = (import.meta as any).env?.BASE_URL || './';
+                        const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+                        this.showReferenceModal(
+                            `${dso.id} ${dso.commonName}`,
+                            typeInfo.name,
+                            `${cleanBase}textures/dso/${dso.id}.png`,
+                            dso.starHoppingGuide || '暫無深空天體特殊描述',
+                            `赤經 ${dso.ra.toFixed(2)}h · 赤緯 ${dso.dec.toFixed(1)}° · 視星等 ${dso.magnitude}`,
+                            dso.id
+                        );
+                    }
+                };
+            }
 
             const trackBtn = card.querySelector(`#btn-track-${dso.id}`) as HTMLButtonElement | null;
             if (trackBtn) {
@@ -237,6 +261,23 @@ export class CodexUI {
                 };
             }
 
+            const refBtn = card.querySelector(`#btn-ref-${dso.id}`) as HTMLButtonElement | null;
+            if (refBtn) {
+                refBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const baseUrl = (import.meta as any).env?.BASE_URL || './';
+                    const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+                    this.showReferenceModal(
+                        `${dso.id} ${dso.commonName}`,
+                        typeInfo.name,
+                        `${cleanBase}textures/dso/${dso.id}.png`,
+                        dso.starHoppingGuide || '暫無深空天體特殊描述',
+                        `赤經 ${dso.ra.toFixed(2)}h · 赤緯 ${dso.dec.toFixed(1)}° · 視星等 ${dso.magnitude}`,
+                        dso.id
+                    );
+                };
+            }
+
             body.appendChild(card);
         }
     }
@@ -258,7 +299,7 @@ export class CodexUI {
                     <span class="dso-badge" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">${p.commonName}</span>
                     <span class="dso-type-tag" style="color:#94a3b8; font-size:11px;">${p.type}</span>
                 </div>
-                ${captured && bestPhoto ? `<img src="${bestPhoto.imageDataUrl}" alt="${p.commonName}" class="codex-thumb"/>` : `<div class="codex-thumb-lock">${p.commonName}</div>`}
+                ${captured && bestPhoto ? `<img src="${bestPhoto.imageDataUrl}" alt="${p.commonName}" class="codex-thumb" style="cursor:pointer;" title="點擊全螢幕檢視相片"/>` : `<div class="codex-thumb-lock" style="cursor:pointer;" title="點擊檢視天文台參考相片">${p.commonName}</div>`}
                 <div class="codex-dso-info">
                     <div class="codex-dso-name">${p.commonName} · ${p.name}</div>
                     <div class="codex-dso-meta">${p.type} &bull; 視星等 ${p.magnitude}</div>
@@ -269,9 +310,33 @@ export class CodexUI {
                     <button class="codex-track-btn ${isTracking ? 'active' : ''}" id="btn-track-planet-${p.id}">
                         ${isTracking ? '追蹤中 (點擊取消)' : '設為望遠鏡尋星目標'}
                     </button>
-                    ${captured && bestPhoto ? `<button class="codex-view-btn" id="btn-view-planet-${p.id}">查看相片</button>` : ''}
+                    ${captured && bestPhoto 
+                        ? `<button class="codex-view-btn" id="btn-view-planet-${p.id}">查看相片 (${matches.length}張)</button>` 
+                        : `<button class="codex-view-btn ref-btn" id="btn-ref-planet-${p.id}" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">觀測參考照</button>`}
                 </div>
             `;
+
+            // Click thumbnail to view
+            const thumb = card.querySelector('.codex-thumb, .codex-thumb-lock');
+            if (thumb) {
+                (thumb as HTMLElement).onclick = (e) => {
+                    e.stopPropagation();
+                    if (captured && bestPhoto) {
+                        document.dispatchEvent(new CustomEvent('open-lightbox', { detail: { photoId: bestPhoto.id } }));
+                    } else {
+                        const baseUrl = (import.meta as any).env?.BASE_URL || './';
+                        const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+                        this.showReferenceModal(
+                            `${p.commonName} ${p.name}`,
+                            p.type,
+                            `${cleanBase}textures/planets/${p.id}.png`,
+                            p.desc,
+                            `太陽系天體 · 視星等 ${p.magnitude}`,
+                            p.id
+                        );
+                    }
+                };
+            }
 
             const trackBtn = card.querySelector(`#btn-track-planet-${p.id}`) as HTMLButtonElement | null;
             if (trackBtn) {
@@ -296,7 +361,82 @@ export class CodexUI {
                 };
             }
 
+            const refBtn = card.querySelector(`#btn-ref-planet-${p.id}`) as HTMLButtonElement | null;
+            if (refBtn) {
+                refBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const baseUrl = (import.meta as any).env?.BASE_URL || './';
+                    const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+                    this.showReferenceModal(
+                        `${p.commonName} ${p.name}`,
+                        p.type,
+                        `${cleanBase}textures/planets/${p.id}.png`,
+                        p.desc,
+                        `太陽系天體 · 視星等 ${p.magnitude}`,
+                        p.id
+                    );
+                };
+            }
+
             body.appendChild(card);
+        }
+    }
+
+    private showReferenceModal(title: string, category: string, imgUrl: string, desc: string, coords: string, targetId: string) {
+        let modal = document.getElementById('codex-ref-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'codex-ref-modal';
+            modal.className = 'lightbox-overlay';
+            modal.style.zIndex = '10050';
+            document.body.appendChild(modal);
+        }
+
+        modal.innerHTML = `
+            <div class="lightbox-backdrop"></div>
+            <div class="lightbox-content" style="max-width:640px; width:90%; background:rgba(15,23,42,0.96); border:1px solid rgba(56,189,248,0.4); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 25px 60px rgba(0,0,0,0.85);">
+                <div style="padding:14px 18px; background:rgba(30,41,59,0.8); border-bottom:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <span style="background:rgba(56,189,248,0.2); color:#38bdf8; font-size:11px; padding:2px 8px; border-radius:4px; margin-right:8px; font-weight:700;">${category}</span>
+                        <strong style="font-size:16px; color:#f8fafc;">${title} · 官方觀測參考影像</strong>
+                    </div>
+                    <button class="close-btn" id="ref-modal-close" style="background:none; border:none; color:#cbd5e1; font-size:24px; cursor:pointer;">&times;</button>
+                </div>
+                <div style="width:100%; height:340px; background:#020617; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                    <img src="${imgUrl}" style="max-width:100%; max-height:100%; object-fit:contain;" alt="${title}"/>
+                </div>
+                <div style="padding:16px 20px; display:flex; flex-direction:column; gap:8px;">
+                    <div style="font-size:12px; color:#38bdf8; font-weight:500;">${coords}</div>
+                    <div style="font-size:13px; line-height:1.6; color:#cbd5e1;">${desc}</div>
+                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                        <button id="ref-modal-track" style="background:#38bdf8; color:#020617; border:none; padding:8px 18px; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;">設為尋星目標並前往望遠鏡</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modal.style.display = 'flex';
+
+        const close = () => {
+            if (modal) modal.style.display = 'none';
+        };
+
+        const closeBtn = modal.querySelector('#ref-modal-close') as HTMLElement | null;
+        if (closeBtn) closeBtn.onclick = close;
+        const backdrop = modal.querySelector('.lightbox-backdrop');
+        if (backdrop) (backdrop as HTMLElement).onclick = close;
+
+        const trackBtn = modal.querySelector('#ref-modal-track');
+        if (trackBtn) {
+            (trackBtn as HTMLElement).onclick = () => {
+                close();
+                this.hide();
+                gameStore.getState().setCustomTrackedDso(targetId);
+                gameStore.getState().setGameMode(GameMode.Telescope);
+                document.dispatchEvent(new CustomEvent('show-notification', {
+                    detail: { message: `已鎖定 ${title}！進入望遠鏡並啟用尋星導引`, type: 'success' }
+                }));
+            };
         }
     }
 
