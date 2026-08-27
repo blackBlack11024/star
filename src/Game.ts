@@ -347,7 +347,9 @@ export class Game {
 
     // ---- World objects ----
     this.telescopeModel.update(this.camera.position);
-    this.telescopeModel.updatePointing(state.telescopeRa, state.telescopeDec, loc.latitude, this.celestialSphere.getLst());
+    const skyVec = this.celestialSphere.getRaDecToVector(state.telescopeRa, state.telescopeDec);
+    skyVec.applyMatrix4(this.celestialSphere.group.matrixWorld);
+    this.telescopeModel.updatePointing(skyVec);
 
     // ---- Player controller & Binoculars smooth zoom ----
     this.playerController.update(deltaTime);

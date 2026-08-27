@@ -1,8 +1,10 @@
 import * as THREE from 'three';
+import { gameStore } from '../game/GameStore';
 
 export class TelescopeModel {
   private group: THREE.Group;
   private tubeGroup: THREE.Group;
+  private mountedLaserGroup: THREE.Group;
   private eyepieceMesh: THREE.Mesh;
   private eyepieceGlow: THREE.PointLight;
   private beaconLight: THREE.PointLight;
@@ -136,6 +138,103 @@ export class TelescopeModel {
     // Soft red night-vision glow at eyepiece
     this.eyepieceGlow = new THREE.PointLight(0xef4444, 0.8, 2.0);
     this.eyepieceMesh.add(this.eyepieceGlow);
+
+    // ==========================================
+    // 4. Mounted 532nm Green Laser Pointer Assembly
+    // ==========================================
+    this.mountedLaserGroup = new THREE.Group();
+    const laserOffset = new THREE.Vector3(-0.11, 0.16, 0.3);
+
+    // 1. Dovetail mounting clamp bracket
+    const clampGeo = new THREE.BoxGeometry(0.035, 0.035, 0.12);
+    const clamp = new THREE.Mesh(clampGeo, mountMat);
+    clamp.position.set(laserOffset.x, laserOffset.y - 0.02, laserOffset.z);
+    this.mountedLaserGroup.add(clamp);
+
+    // 2. Laser pointer cylinder body (matte dark alloy with brass accent)
+    const laserBodyGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.22, 16);
+    laserBodyGeo.rotateX(Math.PI / 2);
+    const laserBodyMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      metalness: 0.85,
+      roughness: 0.2
+    });
+    const laserBody = new THREE.Mesh(laserBodyGeo, laserBodyMat);
+    laserBody.position.copy(laserOffset);
+    this.mountedLaserGroup.add(laserBody);
+
+    // 3. Brass emitter bezel ring
+    const bezelGeo = new THREE.TorusGeometry(0.016, 0.003, 8, 16);
+    const bezel = new THREE.Mesh(bezelGeo, accentMat);
+    bezel.position.set(laserOffset.x, laserOffset.y, laserOffset.z + 0.11);
+    this.mountedLaserGroup.add(bezel);
+
+    // 4. Emerald aperture glow point light
+    const emitterGlow = new THREE.PointLight(0x34d399, 1.2, 2.0);
+    emitterGlow.position.set(laserOffset.x, laserOffset.y, laserOffset.z + 0.13);
+    this.mountedLaserGroup.add(emitterGlow);
+
+    // 5. Emerald Laser Beam (Intense core + atmospheric Rayleigh scatter)
+    const beamStart = new THREE.Vector3(laserOffset.x, laserOffset.y, laserOffset.z + 0.12);
+    const beamEnd = new THREE.Vector3(laserOffset.x, laserOffset.y, 2500);
+
+    const coreBeamGeo = new THREE.BufferGeometry().setFromPoints([beamStart, beamEnd]);
+    const coreBeamMat = new THREE.LineBasicMaterial({
+      color: 0xd1fae5,
+      linewidth: 3,
+      transparent: true,
+      opacity: 0.95,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const coreBeam = new THREE.Line(coreBeamGeo, coreBeamMat);
+    coreBeam.frustumCulled = false;
+    this.mountedLaserGroup.add(coreBeam);
+
+    const scatterBeamMat = new THREE.LineBasicMaterial({
+      color: 0x10b981,
+      linewidth: 6,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const scatterBeam = new THREE.Line(coreBeamGeo, scatterBeamMat);
+    scatterBeam.frustumCulled = false;
+    this.mountedLaserGroup.add(scatterBeam);
+
+    // 6. Sky target dot sprite (shines on the celestial dome)
+    const dotCanvas = document.createElement('canvas');
+    dotCanvas.width = 64;
+    dotCanvas.height = 64;
+    const ctx = dotCanvas.getContext('2d')!;
+    const grad = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    grad.addColorStop(0.3, 'rgba(52, 211, 153, 0.8)');
+    grad.addColorStop(1, 'rgba(52, 211, 153, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(32, 32, 30, 0, Math.PI * 2);
+    ctx.fill();
+
+    const dotTex = new THREE.CanvasTexture(dotCanvas);
+    const dotMat = new THREE.SpriteMaterial({
+      map: dotTex,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const dotSprite = new THREE.Sprite(dotMat);
+    dotSprite.position.set(laserOffset.x, laserOffset.y, 1000);
+    dotSprite.scale.set(16, 16, 1);
+    this.mountedLaserGroup.add(dotSprite);
+
+    this.tubeGroup.add(this.mountedLaserGroup);
+
+    this.mountedLaserGroup.visible = gameStore.getState().isLaserPointerMounted;
+    gameStore.subscribe((state) => {
+      this.mountedLaserGroup.visible = state.isLaserPointerMounted;
+    });
     
     this.group.add(this.tubeGroup);
 
@@ -155,17 +254,25 @@ export class TelescopeModel {
     return this.group.position.clone();
   }
 
+  public getTubeWorldPosition(): THREE.Vector3 {
+    const pos = new THREE.Vector3(0, 0, 0.52);
+    this.tubeGroup.localToWorld(pos);
+    return pos;
+  }
+
   public getOpticalDirection(): THREE.Vector3 {
-    const dir = new THREE.Vector3(0, 1, 0);
+    const dir = new THREE.Vector3(0, 0, 1);
     dir.applyQuaternion(this.tubeGroup.quaternion);
     return dir.normalize();
   }
   
-  public updatePointing(ra: number, dec: number, latitude: number, lst: number) {
-    const ha = lst - ra;
-    this.tubeGroup.rotation.order = 'YXZ';
-    this.tubeGroup.rotation.y = ha * Math.PI / 12;
-    this.tubeGroup.rotation.x = dec * Math.PI / 180;
+  public updatePointing(targetWorldDir: THREE.Vector3) {
+    const dir = targetWorldDir.clone().normalize();
+    if (dir.y < 0.08) {
+      dir.y = 0.08;
+      dir.normalize();
+    }
+    this.tubeGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
   }
   
   public update(playerPos: THREE.Vector3) {

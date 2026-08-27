@@ -20,7 +20,6 @@ export class LaserPointer {
 
   // Visual Meshes
   private handheldBeamLine: THREE.Line;
-  private mountedBeamLine: THREE.Line;
   private targetDotSprite: THREE.Sprite;
 
   // State
@@ -69,17 +68,7 @@ export class LaserPointer {
     this.handheldBeamLine.visible = false;
     this.scene.add(this.handheldBeamLine);
 
-    // 2. Mounted Telescope Beam
-    const mountedGeom = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 1000, 0),
-    ]);
-    this.mountedBeamLine = new THREE.Line(mountedGeom, beamMaterial.clone());
-    this.mountedBeamLine.frustumCulled = false;
-    this.mountedBeamLine.visible = false;
-    this.scene.add(this.mountedBeamLine);
-
-    // 3. Target Dot
+    // 2. Target Dot
     const dotCanvas = document.createElement('canvas');
     dotCanvas.width = 64;
     dotCanvas.height = 64;
@@ -138,40 +127,7 @@ export class LaserPointer {
   public update() {
     const state = gameStore.getState();
 
-    // 1. Handle Mounted Telescope Beam
-    if (this.isMounted) {
-      this.mountedBeamLine.visible = true;
-      const origin = this.telescopeModelProvider
-        ? this.telescopeModelProvider()
-        : new THREE.Vector3(5, 1.6, -3);
-
-      let dir = new THREE.Vector3(0, 1, 0);
-      if (this.telescopeDirProvider) {
-        dir = this.telescopeDirProvider().normalize();
-      } else {
-        // Compute from RA / Dec and LST
-        const raRad = (state.telescopeRa * 15 * Math.PI) / 180;
-        const decRad = (state.telescopeDec * Math.PI) / 180;
-        dir.set(
-          Math.cos(decRad) * Math.cos(raRad),
-          Math.sin(decRad),
-          Math.cos(decRad) * Math.sin(raRad)
-        ).normalize();
-        if (this.celestialSphere) {
-          dir.applyMatrix4(this.celestialSphere.group.matrixWorld);
-        }
-      }
-
-      const endPoint = origin.clone().add(dir.clone().multiplyScalar(1500));
-      const posAttr = this.mountedBeamLine.geometry.attributes.position as THREE.BufferAttribute;
-      posAttr.setXYZ(0, origin.x, origin.y, origin.z);
-      posAttr.setXYZ(1, endPoint.x, endPoint.y, endPoint.z);
-      posAttr.needsUpdate = true;
-    } else {
-      this.mountedBeamLine.visible = false;
-    }
-
-    // 2. Handle Handheld Beam
+    // Handle Handheld Beam
     // Player cannot use handheld laser if it is mounted onto telescope!
     const canUseHandheld = this.isPointerActive && !this.isMounted && state.gameMode !== GameMode.Studio;
 
@@ -260,7 +216,6 @@ export class LaserPointer {
   public dispose() {
     document.body.classList.remove('laser-active');
     this.handheldBeamLine.geometry.dispose();
-    this.mountedBeamLine.geometry.dispose();
     this.targetDotSprite.geometry.dispose();
     this.labelElement.remove();
   }
