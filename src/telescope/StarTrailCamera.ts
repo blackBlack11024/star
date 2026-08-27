@@ -123,6 +123,17 @@ export class StarTrailCamera {
 
   public isEquipped(): boolean {
     const state = gameStore.getState();
+    const completedIds: string[] = state.completedQuestIds || [];
+
+    // If player has completed the quest, automatically unlock and equip
+    if (completedIds.includes('ch5_all_planets') || completedIds.includes('ch6_southern_wonders') || completedIds.includes('ch5_mount_laser')) {
+      const acc = (state.accessories || []).find((a: any) => a.id === 'camera_startrail');
+      if (acc && (!acc.owned || acc.equipped === false)) {
+        state.unlockAccessory('camera_startrail');
+      }
+      return true;
+    }
+
     return (state.accessories || []).some(
       (a: any) => a.id === 'camera_startrail' && a.owned && a.equipped !== false
     );

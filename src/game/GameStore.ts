@@ -8,6 +8,7 @@ import {
 } from '../types';
 import { LOCATIONS } from '../data/locations';
 import { TELESCOPE_CONFIGS, ACCESSORIES, getTelescopeConfig } from '../data/telescopes';
+import { QUESTS } from '../data/quests';
 
 export interface GameState {
   // ---- Time ----
@@ -203,6 +204,32 @@ export function autoSaveState(state: GameState) {
 }
 
 const savedData = loadSavedData();
+const savedCompletedIds: string[] = savedData?.completedQuestIds || [];
+
+const initialAccessories: Accessory[] = (savedData?.accessories || JSON.parse(JSON.stringify(ACCESSORIES))).map((a: Accessory) => ({
+  ...a,
+  equipped: a.equipped !== undefined ? a.equipped : a.owned
+}));
+
+// Retroactively ensure all accessories awarded by completed quests are unlocked & equipped
+for (const q of QUESTS) {
+  if (savedCompletedIds.includes(q.id) && q.rewards.unlockAccessory) {
+    const acc = initialAccessories.find((a) => a.id === q.rewards.unlockAccessory);
+    if (acc) {
+      acc.owned = true;
+      acc.equipped = true;
+    }
+  }
+}
+
+// Special safeguard: If player completed the planetary tour or end-game, guarantee star trail camera is unlocked!
+if (savedCompletedIds.includes('ch5_all_planets') || savedCompletedIds.includes('ch6_southern_wonders')) {
+  const stAcc = initialAccessories.find((a) => a.id === 'camera_startrail');
+  if (stAcc) {
+    stAcc.owned = true;
+    stAcc.equipped = true;
+  }
+}
 
 export const gameStore = createStore<GameState>()((set, get) => ({
   // ---- Initial state (Default to player's current real-world time) ----
@@ -216,10 +243,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   money: savedData?.money ?? 0,
   telescopeLevel: savedData?.telescopeLevel ?? 1,
   unlockedTelescopeLevels: savedData?.unlockedTelescopeLevels ?? Array.from(new Set([1, savedData?.telescopeLevel ?? 1])),
-  accessories: (savedData?.accessories || JSON.parse(JSON.stringify(ACCESSORIES))).map((a: Accessory) => ({
-    ...a,
-    equipped: a.equipped !== undefined ? a.equipped : a.owned
-  })),
+  accessories: initialAccessories,
   photos: (savedData?.photos as Photo[]) || [],
 
   gameMode: GameMode.Walk,

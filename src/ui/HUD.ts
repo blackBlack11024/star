@@ -282,8 +282,8 @@ export class HUD {
         verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
-        verBadge.textContent = 'v1.9.1';
-        verBadge.title = 'v1.9.1';
+        verBadge.textContent = 'v1.9.2';
+        verBadge.title = 'v1.9.2';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
@@ -559,7 +559,11 @@ export class HUD {
         }
 
         // Update shortcut guide if Star Trail Camera is equipped
-        const hasStarTrail = (state.accessories || []).some((a: any) => a.id === 'camera_startrail' && a.owned && a.equipped !== false);
+        const completedIds: string[] = state.completedQuestIds || [];
+        const hasCompletedStarTrailQuest = completedIds.includes('ch5_all_planets') ||
+                                           completedIds.includes('ch6_southern_wonders') ||
+                                           completedIds.includes('ch5_mount_laser');
+        const hasStarTrail = hasCompletedStarTrailQuest || (state.accessories || []).some((a: any) => a.id === 'camera_startrail' && a.owned && a.equipped !== false);
         if (hasStarTrail) {
             this.shortcutGuide.innerHTML = `
                 <span><span class="key-tag" style="background:rgba(245,158,11,0.25);color:#fbbf24;border-color:rgba(245,158,11,0.5);">按住T/R</span>星軌相機</span>

@@ -35,11 +35,46 @@ export class QuestManager {
             }
         });
 
+        // Synchronize rewards from previously completed quests immediately
+        this.syncCompletedQuestRewards();
+
         // Check if any existing photos in album satisfy active or unlocked quests on startup
-        setTimeout(() => this.checkAllQuests(), 300);
+        setTimeout(() => {
+            this.syncCompletedQuestRewards();
+            this.checkAllQuests();
+        }, 300);
+    }
+
+    public syncCompletedQuestRewards() {
+        const state = gameStore.getState();
+        const completedIds: string[] = state.completedQuestIds || [];
+
+        for (const quest of QUESTS) {
+            if (completedIds.includes(quest.id)) {
+                if (quest.rewards.unlockAccessory) {
+                    const acc = (state.accessories || []).find(a => a.id === quest.rewards.unlockAccessory);
+                    if (acc && (!acc.owned || acc.equipped === false)) {
+                        state.unlockAccessory(quest.rewards.unlockAccessory);
+                    }
+                }
+                if (quest.rewards.unlockLocation) {
+                    if (!(state.unlockedLocations || []).includes(quest.rewards.unlockLocation)) {
+                        state.unlockLocation(quest.rewards.unlockLocation);
+                    }
+                }
+            }
+        }
+
+        if (completedIds.includes('ch5_all_planets') || completedIds.includes('ch6_southern_wonders')) {
+            const stAcc = (state.accessories || []).find(a => a.id === 'camera_startrail');
+            if (stAcc && (!stAcc.owned || stAcc.equipped === false)) {
+                state.unlockAccessory('camera_startrail');
+            }
+        }
     }
 
     public checkAllQuests() {
+        this.syncCompletedQuestRewards();
         const state = gameStore.getState();
         const completedIds: string[] = state.completedQuestIds || [];
 

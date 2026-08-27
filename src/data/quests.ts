@@ -301,9 +301,9 @@ export const QUESTS: Quest[] = [
     ],
     completeDialogue: [
       '張館長在通訊中讚賞鼓掌：「不可思議的壯舉！從內側岩質行星到外側冰巨星，太陽系全家福已被你完整珍藏！」',
-      '「國家天文台特批發放兩千元專項巡天基金，向你的耐心與天文技藝致敬！」'
+      '「國家天文台特批發放兩千元專項巡天基金，並贈送你一台頂級的【星軌專用相機】！在戶外漫遊時按住 T 鍵即可快轉時間並拍攝同心圓星軌！」'
     ],
-    storySummary: '完成太陽系大巡航，成功拍得水星、金星、火星、木星、土星、天王星與海王星，達成全行星大滿貫。',
+    storySummary: '完成太陽系大巡航，成功拍得水星、金星、火星、木星、土星、天王星與海王星，達成全行星大滿貫並獲贈星軌專用相機。',
     starHoppingTip: '【張館長傳授】：金星在黃昏或清晨極為耀眼；水星緊隨太陽起落；天王星與海王星視星等較暗，可使用尋星盤（按 F 鍵）快速導航定位！',
     objectives: [
       { type: 'capture_target', targetId: '水星', description: '拍攝「水星 Mercury」' },
@@ -314,7 +314,7 @@ export const QUESTS: Quest[] = [
       { type: 'capture_target', targetId: '天王星', description: '拍攝「天王星 Uranus」' },
       { type: 'capture_target', targetId: '海王星', description: '拍攝「海王星 Neptune」' },
     ],
-    rewards: { money: 2000 },
+    rewards: { money: 2000, unlockAccessory: 'camera_startrail' },
     prerequisiteQuestId: 'ch4_saturn_mars',
   },
   {
