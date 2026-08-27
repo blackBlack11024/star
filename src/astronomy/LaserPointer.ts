@@ -185,8 +185,8 @@ export class LaserPointer {
     const raHours = (raRad * 12) / Math.PI;
 
     const planets = this.planetsProvider();
-    // Use StarIdentifier with a 3.5-degree pointing acceptance cone
-    const target = this.starIdentifier.identify(raHours, decDeg, 3.5, this.celestialSphere, planets);
+    // Use StarIdentifier with a crisp pointing acceptance cone
+    const target = this.starIdentifier.identify(raHours, decDeg, 15, this.celestialSphere, planets);
 
     if (target) {
       this.lastIdentifiedTarget = target;

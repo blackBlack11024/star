@@ -115,7 +115,7 @@ export class StarIdentifier {
     return results.sort((a, b) => a.magnitude - b.magnitude);
   }
 
-  /** Identify the closest/brightest object near the center crosshair. */
+  /** Identify the celestial object currently centered in the telescope's reticle crosshair. */
   public identify(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere, planets?: PlanetData[], spaceStation?: any): IdentifiedObject | null {
     if (!this.isAboveHorizon(telescopeRa, telescopeDec, celestialSphere)) {
       return null;
@@ -123,26 +123,38 @@ export class StarIdentifier {
     const objects = this.findObjectsInFov(telescopeRa, telescopeDec, fovDegrees, celestialSphere, planets, spaceStation);
     if (objects.length === 0) return null;
 
-    // Prioritize Special Events (ISS), Planets/Moon, and DSOs over faint background point stars
-    objects.sort((a, b) => {
-      // 0. Special Events (ISS) have top priority
+    // Tight targeting cone accurately matching the central reticle crosshair ring:
+    // At FOV 60°: ~1.2° radius (only triggers when aimed directly at the crosshair circle)
+    // At FOV 20°: ~0.6° radius
+    // At FOV 5°: ~0.15° radius
+    // At FOV 1°: ~0.1° radius
+    const maxCenterDist = Math.max(0.1, Math.min(1.2, fovDegrees * 0.03));
+
+    // Filter objects to only those inside the center reticle crosshair zone
+    const centeredObjects = objects.filter(o => o.angularDistance <= maxCenterDist);
+    if (centeredObjects.length === 0) return null;
+
+    // Sort primarily by proximity to the optical crosshair center; if similarly close, major targets take priority
+    centeredObjects.sort((a, b) => {
+      const distDiff = a.angularDistance - b.angularDistance;
+      // If one target is distinctly closer to the dead center crosshair, prioritize it
+      if (Math.abs(distDiff) > 0.08) {
+        return distDiff;
+      }
+      // If targets are clustered at the center crosshair:
+      // 0. Space Station (ISS) top priority
       if (a.type === TargetType.SpecialEvent && b.type !== TargetType.SpecialEvent) return -1;
       if (b.type === TargetType.SpecialEvent && a.type !== TargetType.SpecialEvent) return 1;
-      // 1. If one is a Planet / Moon and within targeting range, strongly prioritize it
+      // 1. Planet / Moon
       if (a.type === TargetType.Planet && b.type !== TargetType.Planet) return -1;
       if (b.type === TargetType.Planet && a.type !== TargetType.Planet) return 1;
-      // 2. If one is a DSO and the other is a background star
+      // 2. DSO over generic background star
       if (a.type === TargetType.Messier && b.type === TargetType.StarField) return -1;
       if (b.type === TargetType.Messier && a.type === TargetType.StarField) return 1;
-      // 3. Otherwise closest to optical center
-      return a.angularDistance - b.angularDistance;
+
+      return distDiff;
     });
 
-    // Forgiving identification: recognized as long as object is comfortably inside eyepiece field
-    const maxCenterDist = Math.max(2.5, fovDegrees * 0.48);
-    if (objects[0].angularDistance <= maxCenterDist) {
-      return objects[0];
-    }
-    return null;
+    return centeredObjects[0];
   }
 }

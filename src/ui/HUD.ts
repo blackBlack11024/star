@@ -281,8 +281,8 @@ export class HUD {
         verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
-        verBadge.textContent = 'v1.7.7';
-        verBadge.title = 'v1.7.7';
+        verBadge.textContent = 'v1.7.8';
+        verBadge.title = 'v1.7.8';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
