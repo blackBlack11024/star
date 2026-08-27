@@ -210,6 +210,9 @@ export class MenuSystem {
     }
 
     public showGuide() {
+        if (document.pointerLockElement) {
+            document.exitPointerLock();
+        }
         this.switchGuideTab(this.currentGuideTab);
         this.guideModal.style.display = 'flex';
     }
@@ -219,6 +222,9 @@ export class MenuSystem {
     }
 
     public showLocationSelector() {
+        if (document.pointerLockElement) {
+            document.exitPointerLock();
+        }
         const state = gameStore.getState() as any;
         this.locationModal.innerHTML = `
             <div class="location-list">
@@ -292,6 +298,9 @@ export class MenuSystem {
     }
 
     public showTimeReversal() {
+        if (document.pointerLockElement) {
+            document.exitPointerLock();
+        }
         const state = gameStore.getState();
         const curr = state.currentTime;
         const timeStr = curr.toLocaleString('zh-TW', {

@@ -281,8 +281,8 @@ export class HUD {
         verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
-        verBadge.textContent = 'v1.7.2';
-        verBadge.title = 'v1.7.2';
+        verBadge.textContent = 'v1.7.3';
+        verBadge.title = 'v1.7.3';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
@@ -298,6 +298,11 @@ export class HUD {
         const bottomLeft = document.createElement('div');
         bottomLeft.className = 'hud-panel bottom-left';
         this.locationDisplay = document.createElement('div');
+        this.locationDisplay.style.cursor = 'pointer';
+        this.locationDisplay.title = '點擊開啟全球觀測地點選單 [L]';
+        this.locationDisplay.onclick = () => {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l', code: 'KeyL' }));
+        };
         bottomLeft.appendChild(this.locationDisplay);
 
         // 5. Bottom-right panel: Shortcut Guide
