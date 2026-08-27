@@ -63,7 +63,6 @@ export class SpaceStation {
   private issMeshGroup: THREE.Group;
   private pointSprite: THREE.Sprite;
   private currentPassData: SpaceStationPassData | null = null;
-  private lastNotifiedKey = '';
 
   constructor(scene: THREE.Scene) {
     this.group = new THREE.Group();
@@ -218,33 +217,10 @@ export class SpaceStation {
       const start = p.startHour;
       const end = p.startHour + p.durationMinutes / 60;
 
-      // 1. Advance notification (~1.5 minutes before pass in game time)
-      const notifyWindowStart = start - 1.5 / 60;
-      if (timeOfDayHours >= notifyWindowStart && timeOfDayHours < start) {
-        const passKey = `${time.toDateString()}_pre_${i}`;
-        if (this.lastNotifiedKey !== passKey) {
-          this.lastNotifiedKey = passKey;
-          const startTotalMin = Math.round(p.startHour * 60);
-          const hh = Math.floor(startTotalMin / 60).toString().padStart(2, '0');
-          const mm = (startTotalMin % 60).toString().padStart(2, '0');
-          document.dispatchEvent(new CustomEvent('show-notification', {
-            detail: { message: `天文預警：國際太空站 (ISS) 即將於 ${hh}:${mm} 過境（預計仰角 ${p.maxAltitude}°）！`, type: 'info' }
-          }));
-        }
-      }
-
-      // 2. Active pass check
+      // Active pass check
       if (timeOfDayHours >= start && timeOfDayHours <= end) {
         activePass = p;
         passProgress = (timeOfDayHours - start) / (p.durationMinutes / 60);
-
-        const activeKey = `${time.toDateString()}_active_${i}`;
-        if (this.lastNotifiedKey !== activeKey) {
-          this.lastNotifiedKey = activeKey;
-          document.dispatchEvent(new CustomEvent('show-notification', {
-            detail: { message: `國際太空站 (ISS) 正在過境天際！視星等 ${p.maxMag} 等，請把握觀測追焦時機。`, type: 'success' }
-          }));
-        }
         break;
       }
     }
