@@ -32,6 +32,7 @@ export class HUD {
     private machineValSpan!: HTMLElement;
     private ambientValSpan!: HTMLElement;
     private weatherValSpan!: HTMLElement;
+    private shortcutGuide!: HTMLElement;
 
     constructor() {
         const overlay = document.getElementById('ui-overlay');
@@ -281,8 +282,8 @@ export class HUD {
         verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
-        verBadge.textContent = 'v1.8.1';
-        verBadge.title = 'v1.8.1';
+        verBadge.textContent = 'v1.9.0';
+        verBadge.title = 'v1.9.0';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
@@ -306,9 +307,9 @@ export class HUD {
         bottomLeft.appendChild(this.locationDisplay);
 
         // 5. Bottom-right panel: Shortcut Guide
-        const bottomRight = document.createElement('div');
-        bottomRight.className = 'hud-panel bottom-right';
-        bottomRight.innerHTML = `
+        this.shortcutGuide = document.createElement('div');
+        this.shortcutGuide.className = 'hud-panel bottom-right';
+        this.shortcutGuide.innerHTML = `
             <span><span class="key-tag">Z</span>平躺</span>
             <span><span class="key-tag">X</span>指星筆</span>
             <span><span class="key-tag">Alt</span>游標</span>
@@ -343,7 +344,7 @@ export class HUD {
         this.container.appendChild(topRight);
         this.container.appendChild(this.audioModal);
         this.container.appendChild(bottomLeft);
-        this.container.appendChild(bottomRight);
+        this.container.appendChild(this.shortcutGuide);
         this.container.appendChild(this.promptDisplay);
         this.container.appendChild(this.telescopeMarker);
         this.container.appendChild(this.studioMarker);
@@ -555,6 +556,34 @@ export class HUD {
         const tracker = document.getElementById('quest-tracker-hud');
         if (tracker && state.gameMode !== GameMode.Walk) {
             tracker.style.display = 'none';
+        }
+
+        // Update shortcut guide if Star Trail Camera is equipped
+        const hasStarTrail = (state.accessories || []).some((a: any) => a.id === 'camera_startrail' && a.owned && a.equipped !== false);
+        if (hasStarTrail) {
+            this.shortcutGuide.innerHTML = `
+                <span><span class="key-tag" style="background:rgba(245,158,11,0.25);color:#fbbf24;border-color:rgba(245,158,11,0.5);">按住T/R</span>星軌相機</span>
+                <span><span class="key-tag">Z</span>平躺</span>
+                <span><span class="key-tag">X</span>指星筆</span>
+                <span><span class="key-tag">Alt</span>游標</span>
+                <span><span class="key-tag">C</span>星座</span>
+                <span><span class="key-tag">L</span>地點</span>
+                <span><span class="key-tag">M</span>音量</span>
+                <span><span class="key-tag">H</span>說明</span>
+                <span><span class="key-tag">U</span>無UI</span>
+            `;
+        } else {
+            this.shortcutGuide.innerHTML = `
+                <span><span class="key-tag">Z</span>平躺</span>
+                <span><span class="key-tag">X</span>指星筆</span>
+                <span><span class="key-tag">Alt</span>游標</span>
+                <span><span class="key-tag">C</span>星座</span>
+                <span><span class="key-tag">L</span>地點</span>
+                <span><span class="key-tag">R</span>倒流</span>
+                <span><span class="key-tag">M</span>音量</span>
+                <span><span class="key-tag">H</span>說明</span>
+                <span><span class="key-tag">U</span>無UI</span>
+            `;
         }
     }
 

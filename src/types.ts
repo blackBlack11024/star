@@ -71,6 +71,7 @@ export interface Accessory {
   effects: Record<string, number>;
   owned: boolean;
   equipped?: boolean;
+  isQuestExclusive?: boolean;
 }
 
 export interface Photo {

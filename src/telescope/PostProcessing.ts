@@ -61,9 +61,12 @@ const ChromaticAberrationShader = {
   `
 };
 
+import { StarTrailShader, StarTrailCamera } from './StarTrailCamera';
+
 export class PostProcessing {
   private composer: EffectComposer;
   private renderPass: RenderPass;
+  private starTrailPass: ShaderPass;
   private bloomPass: UnrealBloomPass;
   private vignettePass: ShaderPass;
   private caPass: ShaderPass;
@@ -73,6 +76,9 @@ export class PostProcessing {
     
     this.renderPass = new RenderPass(scene, camera);
     this.composer.addPass(this.renderPass);
+
+    this.starTrailPass = new ShaderPass(StarTrailShader);
+    this.composer.addPass(this.starTrailPass);
     
     const bloomRes = new THREE.Vector2(Math.floor(window.innerWidth / 2), Math.floor(window.innerHeight / 2));
     // Optimized half-resolution bloom for high FPS and smooth soft glow
@@ -103,8 +109,15 @@ export class PostProcessing {
     }
   }
 
-  public render() {
-    this.composer.render();
+  public render(starTrailCamera?: StarTrailCamera) {
+    if (starTrailCamera && starTrailCamera.active) {
+      starTrailCamera.beforeRenderPass(this.starTrailPass);
+      this.composer.render();
+      starTrailCamera.afterRenderPass(this.composer.readBuffer.texture);
+    } else {
+      this.starTrailPass.uniforms.uActive.value = 0.0;
+      this.composer.render();
+    }
   }
 
   public resize(width: number, height: number) {

@@ -26,6 +26,7 @@ import { TelescopeOptics } from './telescope/TelescopeOptics';
 import { LongExposure } from './telescope/LongExposure';
 import { PostProcessing } from './telescope/PostProcessing';
 import { BinocularsMode } from './telescope/BinocularsMode';
+import { StarTrailCamera } from './telescope/StarTrailCamera';
 import { PhotoManager } from './game/PhotoManager';
 import { QuestManager } from './game/QuestManager';
 import { EconomySystem } from './game/EconomySystem';
@@ -78,6 +79,7 @@ export class Game {
   private telescopeOptics!: TelescopeOptics;
   private longExposure!: LongExposure;
   private postProcessing!: PostProcessing;
+  private starTrailCamera!: StarTrailCamera;
 
   private photoManager!: PhotoManager;
   private questManager!: QuestManager;
@@ -220,6 +222,8 @@ export class Game {
       window.innerHeight,
     );
     this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
+    this.starTrailCamera = new StarTrailCamera(this.renderer, window.innerWidth, window.innerHeight);
+    this.playerController.setStarTrailCamera(this.starTrailCamera);
 
     // ---- Game systems ----
     progress(0.8, '正在載入遊戲與任務系統...');
@@ -283,6 +287,9 @@ export class Game {
   /** Update all systems. */
   private update(deltaTime: number, elapsedTime: number): void {
     const state = gameStore.getState();
+
+    // ---- Star Trail Camera ----
+    this.starTrailCamera.update(deltaTime);
 
     // ---- Time ----
     this.timeManager.update(deltaTime);
@@ -501,7 +508,7 @@ export class Game {
     } else {
       this.postProcessing.setTelescopeMode(false, 0, this.sunElevation);
     }
-    this.postProcessing.render();
+    this.postProcessing.render(this.starTrailCamera);
   }
 
   /** Wire up cross-system interactions. */
@@ -553,6 +560,11 @@ export class Game {
       } else {
         this.storyDialogue.playIntroDialogue(quest);
       }
+    });
+
+    // Shutter sound event
+    document.addEventListener('play-shutter-sound', () => {
+      this.audioManager.playShutter();
     });
 
     // Custom notification event
@@ -732,6 +744,7 @@ export class Game {
     this.renderer.setSize(width, height);
     this.postProcessing.resize(width, height);
     this.longExposure.resize(width, height);
+    this.starTrailCamera.resize(width, height);
   }
 
   /** Clean up all resources. */
@@ -750,6 +763,7 @@ export class Game {
     this.studio.dispose();
     this.playerController.dispose();
     this.binocularsMode.dispose();
+    this.starTrailCamera.dispose();
     this.longExposure.dispose();
     this.postProcessing.dispose();
     this.hud.dispose();

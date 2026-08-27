@@ -4,6 +4,7 @@ import { gameStore } from '../game/GameStore';
 import { GameMode } from '../types';
 import { TelescopeOptics } from '../telescope/TelescopeOptics';
 import { CelestialSphere } from '../astronomy/CelestialSphere';
+import { StarTrailCamera } from '../telescope/StarTrailCamera';
 
 /**
  * Handles all player input and camera control across game modes.
@@ -15,6 +16,7 @@ export class PlayerController {
   private controls: PointerLockControls;
   private optics?: TelescopeOptics;
   private celestialSphere?: CelestialSphere;
+  private starTrailCamera?: StarTrailCamera;
 
   private moveForward = false;
   private moveBackward = false;
@@ -184,6 +186,13 @@ export class PlayerController {
     }
 
     if (mode === GameMode.Walk) {
+      if (this.starTrailCamera?.isEquipped() && (event.code === 'KeyT' || event.code === 'KeyR')) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.starTrailCamera.onKeyDown(event.code === 'KeyT' ? 'T' : 'R');
+        return;
+      }
+
       if (this.isLyingDown && (event.code === 'Space' || event.code === 'KeyW' || event.code === 'KeyA' || event.code === 'KeyS' || event.code === 'KeyD')) {
         this.toggleLieDown();
         return;
@@ -333,10 +342,14 @@ export class PlayerController {
       case 'ShiftLeft':
       case 'ShiftRight': this.isSprinting = false; break;
     }
+
+    if (this.starTrailCamera?.isEquipped() && (event.code === 'KeyT' || event.code === 'KeyR')) {
+      this.starTrailCamera.onKeyUp(event.code === 'KeyT' ? 'T' : 'R');
+    }
   }
 
   private onMouseMove(event: MouseEvent) {
-    if (this.isAnyModalActive()) return;
+    if (this.isAnyModalActive() || this.starTrailCamera?.active) return;
     const mode = gameStore.getState().gameMode;
     if (mode === GameMode.Telescope) {
       // If view is locked, ignore mouse movement
@@ -370,6 +383,10 @@ export class PlayerController {
 
   public setCelestialSphere(celestialSphere: CelestialSphere) {
     this.celestialSphere = celestialSphere;
+  }
+
+  public setStarTrailCamera(cam: StarTrailCamera) {
+    this.starTrailCamera = cam;
   }
 
   private onWheel(event: WheelEvent) {
@@ -463,7 +480,7 @@ export class PlayerController {
 
     const mode = gameStore.getState().gameMode;
     if (mode === GameMode.Walk && this.controls.isLocked) {
-      if (this.isLyingDown) {
+      if (this.isLyingDown || this.starTrailCamera?.active) {
         this.velocity.set(0, 0, 0);
         return;
       }

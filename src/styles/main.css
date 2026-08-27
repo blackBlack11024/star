@@ -3359,6 +3359,137 @@ body.laser-active canvas {
   cursor: none !important;
 }
 
+/* ============================================================
+   Star Trail Camera Walk-Mode Viewfinder & Flash
+   ============================================================ */
+.star-trail-viewfinder {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 180;
+}
+
+.st-corners {
+  position: absolute;
+  inset: 40px;
+}
+
+.st-corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-color: rgba(56, 189, 248, 0.75);
+  border-style: solid;
+}
+
+.st-corner.tl {
+  top: 0;
+  left: 0;
+  border-width: 2px 0 0 2px;
+}
+
+.st-corner.tr {
+  top: 0;
+  right: 0;
+  border-width: 2px 2px 0 0;
+}
+
+.st-corner.bl {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 2px 2px;
+}
+
+.st-corner.br {
+  bottom: 0;
+  right: 0;
+  border-width: 0 2px 2px 0;
+}
+
+.st-header {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(8px);
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+}
+
+.st-rec-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+  animation: st-pulse 1s infinite alternate;
+}
+
+@keyframes st-pulse {
+  from { opacity: 0.4; }
+  to { opacity: 1.0; }
+}
+
+.st-title {
+  color: #38bdf8;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.st-bottom {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 10px 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.st-speed {
+  color: #f59e0b;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.st-exposure {
+  color: #94a3b8;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.st-hints {
+  color: #cbd5e1;
+  font-size: 12px;
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+.st-flash-effect {
+  position: fixed;
+  inset: 0;
+  background: white;
+  opacity: 0.85;
+  z-index: 9999;
+  pointer-events: none;
+  transition: opacity 0.25s ease-out;
+}
+
+.st-flash-effect.fade {
+  opacity: 0;
+}
+
 
 
 

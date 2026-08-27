@@ -304,6 +304,11 @@ export class StudioUI {
         list.className = 'shop-list';
 
         state.accessories.forEach((acc: any) => {
+            // Quest exclusive items cannot be bought in the shop!
+            if (!acc.owned && (acc.isQuestExclusive || acc.id === 'camera_startrail' || acc.id === 'camera_cooled')) {
+                return;
+            }
+
             const item = document.createElement('div');
             item.className = 'shop-item';
 
