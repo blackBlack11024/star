@@ -692,18 +692,19 @@ export class PlanetarySystem {
 
   /** Compute Heliocentric position (x, y, z in AU) */
   private getHeliocentric(elem: PlanetOrbitalElements, d: number): { x: number; y: number; z: number } {
-    const a = elem.a0 + elem.a1 * d;
-    const e = elem.e0 + elem.e1 * d;
-    const I = (elem.I0 + elem.I1 * d) * (Math.PI / 180);
-    const L = (elem.L0 + elem.L1 * d) % 360;
-    const w = (elem.w0 + elem.w1 * d) % 360;
-    const node = (elem.node0 + elem.node1 * d) * (Math.PI / 180);
+    const T = d / 36525.0; // Julian centuries from J2000.0 (secular rates are per century)
+    const a = elem.a0 + elem.a1 * T;
+    const e = Math.max(0.00001, Math.min(0.9999, elem.e0 + elem.e1 * T));
+    const I = (elem.I0 + elem.I1 * T) * (Math.PI / 180);
+    const L = (elem.L0 + elem.L1 * d) % 360; // L1 is mean daily motion (deg/day)
+    const w = (elem.w0 + elem.w1 * T) % 360;
+    const node = (elem.node0 + elem.node1 * T) * (Math.PI / 180);
 
     const M = (L - w + 360) % 360;
     const E = this.solveKepler(M, e);
 
     const xv = a * (Math.cos(E) - e);
-    const yv = a * (Math.sqrt(1 - e * e) * Math.sin(E));
+    const yv = a * (Math.sqrt(Math.max(0, 1 - e * e)) * Math.sin(E));
 
     const v = Math.atan2(yv, xv);
     const r = Math.sqrt(xv * xv + yv * yv);
