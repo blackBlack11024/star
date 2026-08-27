@@ -347,36 +347,53 @@ export class Game {
       
       let curRa = (this.goToStartRa + dRa * t) % 24;
       if (curRa < 0) curRa += 24;
-      const curDec = Math.max(-90, Math.min(90, this.goToStartDec + (this.goToTargetDec - this.goToStartDec) * t));
+      const curDec = Math.max(-89.5, Math.min(89.5, this.goToStartDec + (this.goToTargetDec - this.goToStartDec) * t));
       
       gameStore.getState().setTelescopePointing(curRa, curDec);
 
       if (progress >= 1.0) {
         this.isGoToSlewing = false;
-        this.hud.showNotification(`GoTo 自動導星就緒：已中心對準 ${this.goToTargetName}`, 'success');
+        this.hud.showNotification(`GoTo 就緒：已對準 ${this.goToTargetName}`, 'success');
       }
     }
 
     // ---- Telescope mode logic ----
     if (state.gameMode === GameMode.Telescope) {
-      // Position camera at optical center and point directly at the sky coordinates
+      // Position camera at optical center
       this.camera.position.set(0, 0.2, 0);
-      const skyTarget = this.celestialSphere.getRaDecToVector(state.telescopeRa, state.telescopeDec);
-      skyTarget.applyMatrix4(this.celestialSphere.group.matrixWorld);
+
+      const raRad = state.telescopeRa * Math.PI / 12;
+      const decRad = state.telescopeDec * Math.PI / 180;
+      const cosDec = Math.cos(decRad);
+      const sinDec = Math.sin(decRad);
+      const cosRa = Math.cos(raRad);
+      const sinRa = Math.sin(raRad);
+
+      // Local celestial orthonormal basis:
+      // Forward: direction pointing at (RA, Dec)
+      const uForward = new THREE.Vector3(cosDec * cosRa, sinDec, cosDec * sinRa);
+      // Right: Eastward along celestial equator
+      const uRight = new THREE.Vector3(-sinRa, 0, cosRa);
+      // Up: Northward along celestial meridian towards North Celestial Pole
+      const uUp = new THREE.Vector3(-sinDec * cosRa, cosDec, -sinDec * sinRa);
+
+      // Transform celestial basis to world space
+      const cMatrix = this.celestialSphere.group.matrixWorld;
+      const wForward = uForward.clone().transformDirection(cMatrix).normalize();
+      const wRight = uRight.clone().transformDirection(cMatrix).normalize();
+      const wUp = uUp.clone().transformDirection(cMatrix).normalize();
 
       const hasEquatorialMount = this.telescopeOptics.hasAccessory('mount_eq') || this.telescopeOptics.hasAccessory('mount_goto');
-      if (hasEquatorialMount) {
-        // Equatorial Mount: Camera rotates in sync with celestial pole (eliminates field rotation!)
-        const celestialNorth = new THREE.Vector3(0, 1, 0).applyQuaternion(this.celestialSphere.group.quaternion);
-        this.camera.up.copy(celestialNorth);
-      } else {
-        // Standard Alt-Az Mount: Camera UP is world zenith, naturally causing field rotation during long exposure
-        this.camera.up.set(0, 1, 0);
-      }
 
-      this.camera.lookAt(skyTarget);
+      const camBasisMatrix = new THREE.Matrix4();
+      // Eyepiece aligns with telescope optical axes (RA horizontal, Dec vertical)
+      // Perfectly smooth rotation across all angles without gimbal lock or polar snap
+      camBasisMatrix.makeBasis(wRight, wUp, wForward.clone().negate());
+
+      this.camera.quaternion.setFromRotationMatrix(camBasisMatrix);
       this.camera.fov = state.currentFov;
       this.camera.updateProjectionMatrix();
+      this.camera.updateMatrixWorld(true);
 
       // Star & Planet identification (filtered by horizon)
       const identified = this.starIdentifier.identify(

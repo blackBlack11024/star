@@ -261,7 +261,7 @@ export class PlayerController {
     if (key === 'ArrowLeft') ra -= delta / 15; // RA is in hours
     if (key === 'ArrowRight') ra += delta / 15;
 
-    dec = Math.max(-90, Math.min(90, dec));
+    dec = Math.max(-89.5, Math.min(89.5, dec));
     if (ra < 0) ra += 24;
     if (ra >= 24) ra -= 24;
 
@@ -305,10 +305,11 @@ export class PlayerController {
         let ra = state.telescopeRa;
         let dec = state.telescopeDec;
 
+        // Natural camera look: move mouse up -> look up (increase dec)
         ra -= event.movementX * 0.0018 * fovFactor * speedMultiplier;
-        dec += event.movementY * 0.025 * fovFactor * speedMultiplier;
+        dec -= event.movementY * 0.025 * fovFactor * speedMultiplier;
 
-        dec = Math.max(-90, Math.min(90, dec));
+        dec = Math.max(-89.5, Math.min(89.5, dec));
         if (ra < 0) ra += 24;
         if (ra >= 24) ra -= 24;
 

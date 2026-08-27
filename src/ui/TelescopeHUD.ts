@@ -1,14 +1,11 @@
 import { gameStore } from '../game/GameStore';
 import { GameMode } from '../types';
-import { DEEP_SKY_OBJECTS } from '../data/deepSkyObjects';
-import { QUESTS } from '../data/quests';
 
 export class TelescopeHUD {
     private container: HTMLElement;
     private vignette: HTMLElement;
     private reticle: HTMLElement;
     private starIdentifier: HTMLElement;
-    private finderGuidance: HTMLElement;
     private infoPanel: HTMLElement;
     private fovZoomDisplay: HTMLElement;
     private raDecDisplay: HTMLElement;
@@ -44,10 +41,6 @@ export class TelescopeHUD {
         this.starIdentifier = document.createElement('div');
         this.starIdentifier.className = 'star-identifier';
         this.starIdentifier.style.display = 'none';
-
-        this.finderGuidance = document.createElement('div');
-        this.finderGuidance.className = 'finder-guidance';
-        this.finderGuidance.style.display = 'none';
 
         // Calibration Visor Banner (Dark/Flat/Bias active notification)
         this.calibrationBanner = document.createElement('div');
@@ -115,12 +108,6 @@ export class TelescopeHUD {
         controlsRow.appendChild(frameSelector);
         controlsRow.appendChild(finderBtn);
 
-        this.finderGuidance.style.cursor = 'pointer';
-        this.finderGuidance.onclick = (e) => {
-            e.stopPropagation();
-            document.dispatchEvent(new CustomEvent('toggle-finder-ui'));
-        };
-
         this.exposureBar = document.createElement('div');
         this.exposureBar.className = 'exposure-bar';
         this.exposureBar.style.display = 'none';
@@ -146,7 +133,6 @@ export class TelescopeHUD {
         this.container.appendChild(this.vignette);
         this.container.appendChild(this.reticle);
         this.container.appendChild(this.calibrationBanner);
-        this.container.appendChild(this.finderGuidance);
         this.container.appendChild(this.starIdentifier);
         this.container.appendChild(this.infoPanel);
 
@@ -216,68 +202,6 @@ export class TelescopeHUD {
             this.accessoriesBar.style.display = 'none';
         }
 
-        // ---- Target Finder Compass ----
-        const completedIds: string[] = state.completedQuestIds || [];
-        const activeQuest = QUESTS.find(q => {
-            if (completedIds.includes(q.id)) return false;
-            if (q.prerequisiteQuestId && !completedIds.includes(q.prerequisiteQuestId)) return false;
-            return true;
-        });
-
-        // Find current target DSO
-        let targetDso: any = null;
-        if (state.customTrackedDsoId) {
-            targetDso = DEEP_SKY_OBJECTS.find(d => d.id === state.customTrackedDsoId || d.name === state.customTrackedDsoId);
-        } else if (activeQuest) {
-            const targetObj = activeQuest.objectives.find(o => o.targetId);
-            if (targetObj?.targetId) {
-                targetDso = DEEP_SKY_OBJECTS.find(d => d.id === targetObj.targetId || d.name === targetObj.targetId);
-            }
-        }
-
-        if (targetDso) {
-            // Check if player owns electronic finder scope or GoTo system
-            const hasFinderSystem = ownedAccessories.some((a: any) => a.id === 'finder_red_dot' || a.id === 'mount_goto');
-
-            // Precise lock check: target must be identified by optical crosshair
-            const isLocked = Boolean(identifiedTarget && (identifiedTarget.name.includes(targetDso.name) || identifiedTarget.name.includes(targetDso.commonName)));
-
-            if (isLocked) {
-                this.finderGuidance.className = 'finder-guidance locked';
-                this.finderGuidance.innerHTML = `
-                    <div class="fg-badge">已入鏡</div>
-                    <div class="fg-title">${targetDso.commonName || targetDso.name}</div>
-                    <div class="fg-sub">按空白鍵開始曝光</div>
-                `;
-                this.finderGuidance.style.display = 'flex';
-            } else if (hasFinderSystem) {
-                // Electronic Pointer Compass (Active only after purchasing finder accessory)
-                let dRaDeg = (targetDso.ra - ra) * 15;
-                while (dRaDeg > 180) dRaDeg -= 360;
-                while (dRaDeg < -180) dRaDeg += 360;
-                const dDecDeg = targetDso.dec - dec;
-                const distDeg = Math.sqrt(Math.pow(dRaDeg * Math.cos(dec * Math.PI / 180), 2) + Math.pow(dDecDeg, 2));
-
-                const angleRad = Math.atan2(dDecDeg, -dRaDeg);
-                const deg360 = (angleRad * 180 / Math.PI + 360) % 360;
-                const arrows = ['→', '↗', '↑', '↖', '←', '↙', '↓', '↘'];
-                const arrowIdx = Math.round(deg360 / 45) % 8;
-                const arrow = arrows[arrowIdx];
-
-                this.finderGuidance.className = 'finder-guidance seeking pointer';
-                this.finderGuidance.innerHTML = `
-                    <div class="fg-badge">尋星模式</div>
-                    <div class="fg-title">${arrow} ${targetDso.commonName || targetDso.name}</div>
-                    <div class="fg-dist">偏角 ${distDeg.toFixed(1)}°</div>
-                `;
-                this.finderGuidance.style.display = 'flex';
-            } else {
-                // Pure immersion manual mode before buying finder system: no floating boxes
-                this.finderGuidance.style.display = 'none';
-            }
-        } else {
-            this.finderGuidance.style.display = 'none';
-        }
 
         // Update active frame type button & calibration banner
         const activeFrame = state.currentFrameType || 'light';
