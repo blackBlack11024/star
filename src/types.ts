@@ -20,12 +20,15 @@ export enum WeatherState {
 }
 
 export enum PhotoQuality {
+  SSS = 'SSS',
   S = 'S',
   A = 'A',
   B = 'B',
   C = 'C',
   D = 'D',
 }
+
+export type FrameType = 'light' | 'dark' | 'flat' | 'bias';
 
 export enum TargetType {
   StarField = 'star_field',
@@ -83,6 +86,12 @@ export interface Photo {
   score: number;
   sellPrice: number;
   sold: boolean;
+  frameType?: FrameType;
+  isStacked?: boolean;
+  stackedCount?: number;
+  calibratedWith?: { dark: boolean; flat: boolean; bias: boolean };
+  hasMotionBlur?: boolean;
+  driftAmount?: number;
 }
 
 export interface DeepSkyObjectData {

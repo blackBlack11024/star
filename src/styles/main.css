@@ -2231,3 +2231,439 @@ html, body {
   transform: translateY(-1px);
 }
 
+/* =============================================================
+   Astrophotography Frame Selectors & Calibration Visor Banners
+   ============================================================= */
+.frame-selector-group {
+  display: flex;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.frame-type-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.frame-type-btn kbd {
+  background: rgba(0, 0, 0, 0.4);
+  color: #94a3b8;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-family: monospace;
+}
+.frame-type-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+.frame-type-btn.active {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(37, 99, 235, 0.4));
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+.frame-type-btn.active kbd {
+  background: rgba(56, 189, 248, 0.2);
+  color: #fff;
+}
+
+.calibration-banner {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  animation: fadeIn 0.3s ease;
+}
+.calibration-banner.dark-mode {
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+.calibration-banner.flat-mode {
+  background: rgba(241, 245, 249, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  color: #0f172a;
+}
+.calibration-banner.bias-mode {
+  background: rgba(30, 41, 59, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #7dd3fc;
+}
+
+/* =============================================================
+   Astrophotography Stacking Lab (StudioUI Tab 4)
+   ============================================================= */
+.stacking-lab-container {
+  display: flex;
+  gap: 20px;
+  height: 100%;
+  overflow: hidden;
+}
+.stacking-left-panel {
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  overflow-y: auto;
+}
+.stacking-right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  overflow: hidden;
+}
+.stacking-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.stack-small-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.stacking-target-select {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+}
+.stacking-lights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.stack-light-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.stack-light-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.stack-light-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: #000;
+}
+.stack-light-meta {
+  flex: 1;
+  font-size: 11px;
+}
+.stack-light-title {
+  color: #e2e8f0;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.stack-light-flags {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.flag-blur {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+.flag-clean {
+  background: rgba(52, 211, 153, 0.2);
+  color: #6ee7b7;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+}
+.flag-val {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.calibration-slots-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.calib-slot-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.calib-slot-item.available {
+  border-color: rgba(56, 189, 248, 0.3);
+}
+.calib-slot-item.empty {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.calib-slot-info {
+  flex: 1;
+}
+.calib-slot-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+.calib-slot-desc {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.calibration-status-box {
+  margin-top: 14px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.calib-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.calib-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #34d399);
+  transition: width 0.3s ease;
+}
+.calib-status-text {
+  font-size: 11px;
+}
+
+.stack-execute-btn {
+  margin-top: 16px;
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
+}
+.stack-execute-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0369a1, #1d4ed8);
+  transform: translateY(-1px);
+}
+.stack-execute-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Stacking Right Viewport */
+.stacking-viewport-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.vp-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.vp-badge {
+  font-size: 11px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.stacking-preview-box {
+  flex: 1;
+  position: relative;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stack-preview-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Split-View Slider */
+.stack-slider-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  cursor: ew-resize;
+}
+.stack-slider-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.stack-slider-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: #fff;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+.stack-slider-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  background: #38bdf8;
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 900;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.8);
+}
+
+/* Progress Panel */
+.stacking-progress-panel {
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.stack-step-label {
+  font-size: 12px;
+  color: #38bdf8;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.stack-calc-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.stack-calc-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #34d399);
+  transition: width 0.35s ease;
+}
+
+/* Report & Result */
+.stacking-result-actions {
+  margin-top: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+/* Photo Badges */
+.stacked-badge {
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+.motion-blur-badge {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+.calib-tag {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+.quality-SSS {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
+  color: #000 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.6) !important;
+}
+
+

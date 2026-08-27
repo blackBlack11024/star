@@ -1,4 +1,12 @@
 import * as THREE from 'three';
+import { FrameType } from '../types';
+
+export interface ExposureResult {
+  elapsedSeconds: number;
+  totalDrift: number;
+  hasMotionBlur: boolean;
+  dataUrl: string;
+}
 
 export class LongExposure {
   private renderer: THREE.WebGLRenderer;
@@ -16,9 +24,15 @@ export class LongExposure {
   private quad: THREE.Mesh;
   
   private isExposingFlag = false;
+  private currentFrameType: FrameType = 'light';
   private startTime = 0;
-  private duration = 0;
   private sampleCount = 0;
+  
+  // Motion blur tracking
+  private prevRa: number | null = null;
+  private prevDec: number | null = null;
+  private totalDrift = 0;
+  private maxDriftStep = 0;
   
   private resultCanvas: HTMLCanvasElement;
 
@@ -46,7 +60,8 @@ export class LongExposure {
         uCurrentFrame: { value: null },
         uAccumulatedFrame: { value: null },
         uSampleCount: { value: 1.0 },
-        uExposureGain: { value: 1.0 }
+        uExposureGain: { value: 1.0 },
+        uIntegrationWeight: { value: 0.08 }
       },
       vertexShader: `
         varying vec2 vUv;
@@ -60,14 +75,26 @@ export class LongExposure {
         uniform sampler2D uAccumulatedFrame;
         uniform float uSampleCount;
         uniform float uExposureGain;
+        uniform float uIntegrationWeight;
         varying vec2 vUv;
         
         void main() {
           vec4 current = texture2D(uCurrentFrame, vUv) * uExposureGain;
+          
+          if (uSampleCount <= 1.5) {
+            gl_FragColor = current;
+            return;
+          }
+          
           vec4 accumulated = texture2D(uAccumulatedFrame, vUv);
           
-          vec4 result = mix(accumulated, current, 1.0 / uSampleCount);
-          gl_FragColor = result;
+          // Additive photon accumulation with trail persistence:
+          // Moving stars leave streaks (peak blending), while stationary deep sky objects integrate photons
+          vec4 photonSum = accumulated + current * uIntegrationWeight;
+          vec4 streakPeak = max(accumulated, current);
+          vec4 result = mix(photonSum, streakPeak, 0.45);
+          
+          gl_FragColor = min(result, vec4(2.5, 2.5, 2.5, 1.0));
         }
       `
     });
@@ -78,11 +105,15 @@ export class LongExposure {
     this.resultCanvas = document.createElement('canvas');
   }
 
-  public startExposure(_durationSeconds?: number) {
+  public startExposure(frameType: FrameType = 'light') {
     this.isExposingFlag = true;
-    this.duration = 0;
+    this.currentFrameType = frameType;
     this.startTime = performance.now();
     this.sampleCount = 0;
+    this.totalDrift = 0;
+    this.maxDriftStep = 0;
+    this.prevRa = null;
+    this.prevDec = null;
     
     this.renderer.setRenderTarget(this.rtA);
     this.renderer.clear();
@@ -101,10 +132,43 @@ export class LongExposure {
     return this.sampleCount;
   }
 
-  public accumulate(mainScene: THREE.Scene, mainCamera: THREE.PerspectiveCamera, gain: number = 1.0) {
+  public getFrameType(): FrameType {
+    return this.currentFrameType;
+  }
+
+  public getTotalDrift(): number {
+    return this.totalDrift;
+  }
+
+  public accumulate(
+    mainScene: THREE.Scene,
+    mainCamera: THREE.PerspectiveCamera,
+    gain: number = 1.0,
+    currentRa?: number,
+    currentDec?: number
+  ) {
     if (!this.isExposingFlag) return;
     
     this.sampleCount++;
+    
+    // Track telescope angular motion during exposure
+    if (currentRa !== undefined && currentDec !== undefined) {
+      if (this.prevRa !== null && this.prevDec !== null) {
+        let dRa = (currentRa - this.prevRa) * 15.0; // hours to degrees
+        while (dRa > 180) dRa -= 360;
+        while (dRa < -180) dRa += 360;
+        const dDec = currentDec - this.prevDec;
+        const cosDec = Math.cos((currentDec * Math.PI) / 180);
+        const step = Math.sqrt(Math.pow(dRa * cosDec, 2) + Math.pow(dDec, 2));
+        
+        if (step > 0.005) {
+          this.totalDrift += step;
+          this.maxDriftStep = Math.max(this.maxDriftStep, step);
+        }
+      }
+      this.prevRa = currentRa;
+      this.prevDec = currentDec;
+    }
     
     // 1. Render main scene to frameTarget
     this.renderer.setRenderTarget(this.frameTarget);
@@ -114,10 +178,15 @@ export class LongExposure {
     const currentAccumTarget = this.bufferIdx === 0 ? this.rtA : this.rtB;
     const nextAccumTarget = this.bufferIdx === 0 ? this.rtB : this.rtA;
     
+    // Adjust integration weight based on elapsed time to simulate photographic photon saturation curve
+    const elapsed = this.getElapsedSeconds();
+    const integrationWeight = Math.max(0.02, 0.12 / Math.sqrt(1.0 + elapsed * 0.5));
+    
     this.blendMaterial.uniforms.uCurrentFrame.value = this.frameTarget.texture;
     this.blendMaterial.uniforms.uAccumulatedFrame.value = currentAccumTarget.texture;
     this.blendMaterial.uniforms.uSampleCount.value = this.sampleCount;
     this.blendMaterial.uniforms.uExposureGain.value = gain;
+    this.blendMaterial.uniforms.uIntegrationWeight.value = integrationWeight;
     
     this.renderer.setRenderTarget(nextAccumTarget);
     this.renderer.render(this.blendScene, this.blendCamera);
@@ -126,42 +195,261 @@ export class LongExposure {
     this.bufferIdx = 1 - this.bufferIdx;
   }
 
-  public finishExposure(): number {
-    const elapsed = this.getElapsedSeconds();
+  /** Finish exposure and generate realistic astrophotography photo data */
+  public finishExposure(): ExposureResult {
+    const elapsed = Math.max(0.5, this.getElapsedSeconds());
     this.isExposingFlag = false;
+    const frameType = this.currentFrameType;
     const finalTarget = this.bufferIdx === 0 ? this.rtA : this.rtB;
     
-    this.resultCanvas.width = this.width;
-    this.resultCanvas.height = this.height;
+    // Target canvas for photography result
+    const outW = Math.min(1920, this.width);
+    const outH = Math.min(1080, this.height);
+    this.resultCanvas.width = outW;
+    this.resultCanvas.height = outH;
     const ctx = this.resultCanvas.getContext('2d');
-    if (!ctx) return elapsed;
     
+    if (!ctx) {
+      return {
+        elapsedSeconds: elapsed,
+        totalDrift: this.totalDrift,
+        hasMotionBlur: this.totalDrift > 0.25,
+        dataUrl: '',
+      };
+    }
+    
+    // -------------------------------------------------------------
+    // Case 1: Dark Frame (暗場 - 蓋上鏡頭蓋，拍攝熱噪聲與壞點)
+    // -------------------------------------------------------------
+    if (frameType === 'dark') {
+      this.generateDarkFrame(ctx, outW, outH, elapsed);
+      return {
+        elapsedSeconds: elapsed,
+        totalDrift: 0,
+        hasMotionBlur: false,
+        dataUrl: this.resultCanvas.toDataURL('image/jpeg', 0.92),
+      };
+    }
+    
+    // -------------------------------------------------------------
+    // Case 2: Flat Frame (平場 - 均勻光源校準暗角與塵埃斑)
+    // -------------------------------------------------------------
+    if (frameType === 'flat') {
+      this.generateFlatFrame(ctx, outW, outH);
+      return {
+        elapsedSeconds: elapsed,
+        totalDrift: 0,
+        hasMotionBlur: false,
+        dataUrl: this.resultCanvas.toDataURL('image/jpeg', 0.92),
+      };
+    }
+    
+    // -------------------------------------------------------------
+    // Case 3: Bias Frame (偏壓 - 極速快門基準讀出噪聲)
+    // -------------------------------------------------------------
+    if (frameType === 'bias') {
+      this.generateBiasFrame(ctx, outW, outH);
+      return {
+        elapsedSeconds: 0.001,
+        totalDrift: 0,
+        hasMotionBlur: false,
+        dataUrl: this.resultCanvas.toDataURL('image/jpeg', 0.92),
+      };
+    }
+    
+    // -------------------------------------------------------------
+    // Case 4: Light Frame (亮場 - 真實光子累積 + 晃動拖尾殘影)
+    // -------------------------------------------------------------
     const buffer = new Uint16Array(this.width * this.height * 4);
     this.renderer.readRenderTargetPixels(finalTarget, 0, 0, this.width, this.height, buffer);
     
-    const imgData = ctx.createImageData(this.width, this.height);
-    for (let i = 0; i < buffer.length; i++) {
-        imgData.data[i] = Math.min(255, Math.max(0, THREE.DataUtils.fromHalfFloat(buffer[i]) * 255));
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = this.width;
+    tempCanvas.height = this.height;
+    const tempCtx = tempCanvas.getContext('2d')!;
+    const imgData = tempCtx.createImageData(this.width, this.height);
+    
+    // Astronomical Photon Accumulation & Non-linear Asinh Stretch Curve:
+    // Short exposure (<5s): Faint signals are very dim, dark background has subtle CMOS read noise.
+    // Long exposure (15-60s+): Faint nebulae / galaxy arms emerge with rich HDR colors!
+    const exposureFactor = Math.min(2.8, Math.log10(elapsed + 1.0) * 1.35 + 0.35);
+    const hasMotionBlur = this.totalDrift > 0.25;
+    
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        const srcIdx = (y * this.width + x) * 4;
+        const dstIdx = ((this.height - 1 - y) * this.width + x) * 4;
+        
+        let r = THREE.DataUtils.fromHalfFloat(buffer[srcIdx]);
+        let g = THREE.DataUtils.fromHalfFloat(buffer[srcIdx + 1]);
+        let b = THREE.DataUtils.fromHalfFloat(buffer[srcIdx + 2]);
+        
+        // Photon scale
+        r *= exposureFactor;
+        g *= exposureFactor;
+        b *= exposureFactor;
+        
+        // Non-linear Asinh tone mapping for deep sky astrophotography
+        // Preserves bright core stars while dramatically boosting faint emission nebulae
+        const asinhStretch = (val: number) => {
+          const stretch = Math.asinh(val * 4.0) / Math.asinh(4.0);
+          return Math.min(1.0, Math.max(0.0, stretch));
+        };
+        
+        let finalR = asinhStretch(r) * 255;
+        let finalG = asinhStretch(g) * 255;
+        let finalB = asinhStretch(b) * 255;
+        
+        // If exposure was very short (< 3s), add slight sensor shot noise
+        if (elapsed < 3.0 && finalR < 40 && finalG < 40 && finalB < 40) {
+          const noise = (Math.random() - 0.5) * 8 * (3.0 - elapsed);
+          finalR = Math.max(0, finalR + noise);
+          finalG = Math.max(0, finalG + noise);
+          finalB = Math.max(0, finalB + noise);
+        }
+        
+        imgData.data[dstIdx] = finalR;
+        imgData.data[dstIdx + 1] = finalG;
+        imgData.data[dstIdx + 2] = finalB;
+        imgData.data[dstIdx + 3] = 255;
+      }
     }
     
-    // Flip Y
-    const flipped = ctx.createImageData(this.width, this.height);
-    for (let y = 0; y < this.height; y++) {
-        for (let x = 0; x < this.width; x++) {
-            const idx = (y * this.width + x) * 4;
-            const fIdx = ((this.height - 1 - y) * this.width + x) * 4;
-            flipped.data[fIdx] = imgData.data[idx];
-            flipped.data[fIdx + 1] = imgData.data[idx + 1];
-            flipped.data[fIdx + 2] = imgData.data[idx + 2];
-            flipped.data[fIdx + 3] = imgData.data[idx + 3];
-        }
+    tempCtx.putImageData(imgData, 0, 0);
+    
+    // Draw onto result canvas
+    ctx.drawImage(tempCanvas, 0, 0, outW, outH);
+    
+    // If telescope was moved significantly during exposure, bake directional star trails (殘影 / 拖尾)
+    if (hasMotionBlur) {
+      this.applyMotionBlurEffect(ctx, outW, outH, this.totalDrift);
     }
-    ctx.putImageData(flipped, 0, 0);
-    return elapsed;
+    
+    return {
+      elapsedSeconds: elapsed,
+      totalDrift: this.totalDrift,
+      hasMotionBlur,
+      dataUrl: this.resultCanvas.toDataURL('image/jpeg', 0.90),
+    };
+  }
+
+  /** Apply directional streak motion blur when telescope moves during exposure */
+  private applyMotionBlurEffect(ctx: CanvasRenderingContext2D, w: number, h: number, drift: number) {
+    const streakLength = Math.min(48, Math.max(8, drift * 35));
+    const passes = 6;
+    
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.28;
+    
+    for (let i = 1; i <= passes; i++) {
+      const offset = (i / passes) * streakLength;
+      // Slight directional jitter reflecting hand slew or mount drift
+      ctx.drawImage(ctx.canvas, offset, offset * 0.3);
+      ctx.drawImage(ctx.canvas, -offset * 0.6, -offset * 0.2);
+    }
+    
+    ctx.restore();
+  }
+
+  /** Generate realistic Dark frame: lens cap on, thermal noise + hot pixels */
+  private generateDarkFrame(ctx: CanvasRenderingContext2D, w: number, h: number, elapsed: number) {
+    const imgData = ctx.createImageData(w, h);
+    const noiseLevel = Math.min(25, 4 + elapsed * 0.4);
+    
+    // 1. CMOS thermal background noise
+    for (let i = 0; i < imgData.data.length; i += 4) {
+      const n = Math.floor(Math.random() * noiseLevel);
+      imgData.data[i] = n;     // R
+      imgData.data[i + 1] = n; // G
+      imgData.data[i + 2] = n + Math.floor(Math.random() * 3); // B
+      imgData.data[i + 3] = 255;
+    }
+    
+    // 2. Hot pixels (常駐熱噪壞點: 隨機幾十個亮紅/綠/白像素)
+    const hotPixelCount = Math.floor(35 + elapsed * 2.5);
+    for (let k = 0; k < hotPixelCount; k++) {
+      const x = Math.floor(Math.random() * w);
+      const y = Math.floor(Math.random() * h);
+      const idx = (y * w + x) * 4;
+      const type = Math.random();
+      if (type < 0.4) {
+        // Red hot pixel
+        imgData.data[idx] = 255;
+        imgData.data[idx + 1] = 40;
+        imgData.data[idx + 2] = 40;
+      } else if (type < 0.7) {
+        // Green hot pixel
+        imgData.data[idx] = 40;
+        imgData.data[idx + 1] = 255;
+        imgData.data[idx + 2] = 40;
+      } else {
+        // White saturated hot pixel
+        imgData.data[idx] = 255;
+        imgData.data[idx + 1] = 255;
+        imgData.data[idx + 2] = 255;
+      }
+    }
+    
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  /** Generate realistic Flat frame: even light source with lens vignetting & dust donuts */
+  private generateFlatFrame(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    const cx = w / 2;
+    const cy = h / 2;
+    const maxR = Math.sqrt(cx * cx + cy * cy);
+    
+    // 1. Base even illuminated field with radial optical vignetting (cos^4 falloff)
+    const grad = ctx.createRadialGradient(cx, cy, maxR * 0.1, cx, cy, maxR);
+    grad.addColorStop(0, '#e2e8f0');
+    grad.addColorStop(0.5, '#cbd5e1');
+    grad.addColorStop(0.85, '#94a3b8');
+    grad.addColorStop(1.0, '#64748b'); // ~35% vignetting falloff at corners
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    
+    // 2. Dust donuts (鏡片光學灰塵斑圈: 圓環形微弱暗斑)
+    const dustPositions = [
+      { x: cx * 0.65, y: cy * 0.7, r: 18 },
+      { x: cx * 1.35, y: cy * 1.25, r: 24 },
+      { x: cx * 1.1, y: cy * 0.45, r: 14 }
+    ];
+    
+    for (const d of dustPositions) {
+      const dGrad = ctx.createRadialGradient(d.x, d.y, d.r * 0.5, d.x, d.y, d.r);
+      dGrad.addColorStop(0, 'rgba(71, 85, 105, 0.25)');
+      dGrad.addColorStop(0.8, 'rgba(100, 116, 139, 0.4)');
+      dGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = dGrad;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  /** Generate realistic Bias frame: sensor readout offset pattern */
+  private generateBiasFrame(ctx: CanvasRenderingContext2D, w: number, h: number) {
+    const imgData = ctx.createImageData(w, h);
+    
+    for (let y = 0; y < h; y++) {
+      // Subtle horizontal CMOS readout banding
+      const band = Math.sin(y * 0.15) * 1.5;
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
+        const val = Math.max(0, Math.min(255, 12 + band + (Math.random() - 0.5) * 6));
+        imgData.data[idx] = val;
+        imgData.data[idx + 1] = val;
+        imgData.data[idx + 2] = val;
+        imgData.data[idx + 3] = 255;
+      }
+    }
+    
+    ctx.putImageData(imgData, 0, 0);
   }
 
   public getResultAsDataUrl(): string {
-    return this.resultCanvas.toDataURL('image/jpeg', 0.85);
+    return this.resultCanvas.toDataURL('image/jpeg', 0.90);
   }
 
   public isExposing(): boolean {

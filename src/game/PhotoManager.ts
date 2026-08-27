@@ -1,6 +1,6 @@
 import { gameStore } from './GameStore';
 import * as THREE from 'three';
-import { Photo, PhotoQuality, TargetType, WeatherState } from '../types';
+import { Photo, PhotoQuality, TargetType, WeatherState, FrameType } from '../types';
 
 // Track how many times each target has been photographed this session
 const targetPhotoCounts: Record<string, number> = {};
@@ -22,13 +22,56 @@ export class PhotoManager {
 
     constructor() {}
 
-    public capturePhoto(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, targetInfo: any, actualExposureSeconds?: number): Photo {
+    public capturePhoto(
+        renderer: THREE.WebGLRenderer,
+        scene: THREE.Scene,
+        camera: THREE.Camera,
+        targetInfo: any,
+        actualExposureSeconds?: number,
+        customImageDataUrl?: string,
+        hasMotionBlur: boolean = false,
+        driftAmount: number = 0,
+        frameType: FrameType = 'light'
+    ): Photo {
         const state = gameStore.getState();
-        const expSec = Math.max(0.5, actualExposureSeconds ?? state.exposureDuration ?? 5);
+        const expSec = Math.max(0.001, actualExposureSeconds ?? state.exposureDuration ?? 5);
         
-        // Render scene to get imageDataUrl
-        renderer.render(scene, camera);
-        const imageDataUrl = renderer.domElement.toDataURL('image/jpeg', 0.85);
+        // Use accumulated long exposure image if available, else render fallback
+        let imageDataUrl = customImageDataUrl;
+        if (!imageDataUrl) {
+            renderer.render(scene, camera);
+            imageDataUrl = renderer.domElement.toDataURL('image/jpeg', 0.85);
+        }
+
+        // Handle Calibration Frames (Dark, Flat, Bias)
+        if (frameType !== 'light') {
+            const calibNames: Record<string, string> = {
+                dark: `暗場校準幀 (Dark Frame · 曝光 ${expSec.toFixed(1)}s)`,
+                flat: `平場校準幀 (Flat Frame · 均勻光學校正)`,
+                bias: `偏壓校準幀 (Bias Frame · 1/1000s 讀出偏置)`,
+            };
+
+            const calibPhoto: Photo = {
+                id: `calib_${frameType}_${++this.photoIdCounter}_${Date.now()}`,
+                imageDataUrl,
+                targetName: calibNames[frameType] || '校準幀',
+                targetType: TargetType.StarField,
+                exposureSeconds: parseFloat(expSec.toFixed(3)),
+                telescopeLevel: state.telescopeLevel || 1,
+                weatherCondition: state.weather,
+                locationId: state.currentLocation?.id || 'hehuanshan',
+                score: 85,
+                quality: PhotoQuality.A,
+                sellPrice: 50,
+                sold: false,
+                timestamp: new Date(),
+                frameType,
+            };
+
+            state.addPhoto(calibPhoto);
+            document.dispatchEvent(new CustomEvent('photo-captured', { detail: { photo: calibPhoto, targetInfo } }));
+            return calibPhoto;
+        }
 
         // Identify the target ID (use DSO id if available, else use name)
         const targetId = targetInfo?.id || targetInfo?.name || 'star_field';
@@ -37,12 +80,12 @@ export class PhotoManager {
         const penaltyFactor = getRepeatPenaltyFactor(targetId);
         targetPhotoCounts[targetId] = (targetPhotoCounts[targetId] || 0) + 1;
 
-        const qualityScore = this.calculateQuality(targetInfo, state, expSec);
+        const qualityScore = this.calculateQuality(targetInfo, state, expSec, hasMotionBlur, driftAmount);
         const quality = this.getQualityGrade(qualityScore);
         const basePrice = this.calculatePrice(quality, targetInfo?.type || TargetType.StarField);
         const finalPrice = Math.floor(basePrice * penaltyFactor);
 
-        const photo: any = {
+        const photo: Photo = {
             id: `photo_${++this.photoIdCounter}_${Date.now()}`,
             imageDataUrl,
             targetName: targetInfo?.name || '未知星野',
@@ -52,17 +95,26 @@ export class PhotoManager {
             weatherCondition: state.weather,
             locationId: state.currentLocation?.id || 'hehuanshan',
             score: qualityScore,
-            quality: quality as PhotoQuality,
+            quality,
             sellPrice: finalPrice,
             sold: false,
             timestamp: new Date(),
-            repeatPenaltyFactor: penaltyFactor,
+            frameType: 'light',
+            hasMotionBlur,
+            driftAmount: parseFloat(driftAmount.toFixed(2)),
         };
 
-        state.addPhoto(photo as Photo);
+        state.addPhoto(photo);
 
-        // Show warning if repeat penalty applied
-        if (penaltyFactor < 1.0) {
+        // Show warning if telescope drifted or repeat penalty applied
+        if (hasMotionBlur) {
+            document.dispatchEvent(new CustomEvent('show-notification', {
+                detail: {
+                    message: `⚠️ 鏡筒在曝光中移動！星點產生拖尾殘影，清晰度下降（可至工作室「疊圖工坊」修復）`,
+                    type: 'warning'
+                }
+            }));
+        } else if (penaltyFactor < 1.0) {
             const msg = finalPrice === 0
                 ? `市場飽和！${photo.targetName} 已無人願購買`
                 : `重複拍攝！價值降至 $${finalPrice}（原價 $${basePrice}）`;
@@ -72,10 +124,16 @@ export class PhotoManager {
         // Dispatch quest progress event
         document.dispatchEvent(new CustomEvent('photo-captured', { detail: { photo, targetInfo } }));
 
-        return photo as Photo;
+        return photo;
     }
 
-    public calculateQuality(targetInfo: any, state: any, expSec: number = 5): number {
+    public calculateQuality(
+        targetInfo: any,
+        state: any,
+        expSec: number = 5,
+        hasMotionBlur: boolean = false,
+        driftAmount: number = 0
+    ): number {
         let score = 45;
 
         // Weather multiplier
@@ -90,16 +148,35 @@ export class PhotoManager {
         const telLevel = state.telescopeLevel || 1;
         score += telLevel * 8;
 
-        // Exposure signal-to-noise accumulation bonus
-        if (expSec < 2.0) {
-            score -= 15; // Underexposed
+        // Exposure signal-to-noise ratio curve
+        const isPlanet = targetInfo?.type === TargetType.Planet;
+        if (isPlanet) {
+            // Planets & Moon want short exposures (0.5s - 3s)
+            if (expSec <= 3.5) {
+                score += 20; // Crisp planetary surface features
+            } else {
+                score -= Math.min(30, (expSec - 3.5) * 4); // Overexposure washing out planetary bands
+            }
         } else {
-            score += Math.min(26, Math.log2(expSec + 1) * 4.8);
+            // Deep Sky Objects need long photon integration
+            if (expSec < 3.0) {
+                score -= 22; // Underexposed, faint clouds barely visible
+            } else if (expSec >= 15.0 && expSec <= 90.0) {
+                score += Math.min(28, Math.log2(expSec + 1) * 5.0); // Rich emission nebula colors
+            } else {
+                score += 15;
+            }
         }
 
         // Difficulty bonus
         if (targetInfo?.difficulty) {
             score += targetInfo.difficulty * 5;
+        }
+
+        // Motion blur penalty (鏡筒晃動拖尾殘影懲罰)
+        if (hasMotionBlur) {
+            const blurPenalty = Math.min(45, Math.max(15, driftAmount * 28));
+            score -= blurPenalty;
         }
 
         // Light pollution penalty (0 = dark, 1 = heavy)
@@ -110,10 +187,11 @@ export class PhotoManager {
     }
 
     private getQualityGrade(score: number): PhotoQuality {
-        if (score >= 90) return PhotoQuality.S;
-        if (score >= 75) return PhotoQuality.A;
-        if (score >= 55) return PhotoQuality.B;
-        if (score >= 35) return PhotoQuality.C;
+        if (score >= 95) return PhotoQuality.SSS;
+        if (score >= 88) return PhotoQuality.S;
+        if (score >= 72) return PhotoQuality.A;
+        if (score >= 50) return PhotoQuality.B;
+        if (score >= 32) return PhotoQuality.C;
         return PhotoQuality.D;
     }
 
@@ -124,28 +202,32 @@ export class PhotoManager {
                 [PhotoQuality.C]: 15,
                 [PhotoQuality.B]: 40,
                 [PhotoQuality.A]: 80,
-                [PhotoQuality.S]: 150
+                [PhotoQuality.S]: 150,
+                [PhotoQuality.SSS]: 300,
             },
             [TargetType.Planet]: {
                 [PhotoQuality.D]: 20,
                 [PhotoQuality.C]: 50,
                 [PhotoQuality.B]: 120,
                 [PhotoQuality.A]: 250,
-                [PhotoQuality.S]: 500
+                [PhotoQuality.S]: 500,
+                [PhotoQuality.SSS]: 1000,
             },
             [TargetType.Messier]: {
                 [PhotoQuality.D]: 50,
                 [PhotoQuality.C]: 120,
                 [PhotoQuality.B]: 300,
                 [PhotoQuality.A]: 600,
-                [PhotoQuality.S]: 1200
+                [PhotoQuality.S]: 1200,
+                [PhotoQuality.SSS]: 2500,
             },
             [TargetType.SpecialEvent]: {
                 [PhotoQuality.D]: 100,
                 [PhotoQuality.C]: 250,
                 [PhotoQuality.B]: 600,
                 [PhotoQuality.A]: 1200,
-                [PhotoQuality.S]: 2500
+                [PhotoQuality.S]: 2500,
+                [PhotoQuality.SSS]: 5000,
             }
         };
 

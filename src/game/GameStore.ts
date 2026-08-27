@@ -4,7 +4,7 @@
 import { createStore } from 'zustand/vanilla';
 import {
   GameMode, WeatherState, Photo, ObservationLocation,
-  Accessory,
+  Accessory, FrameType,
 } from '../types';
 import { LOCATIONS } from '../data/locations';
 import { TELESCOPE_CONFIGS, ACCESSORIES, getTelescopeConfig } from '../data/telescopes';
@@ -42,6 +42,8 @@ export interface GameState {
   exposureElapsed: number;
   exposureProgress: number;
   exposureDuration: number;
+  currentFrameType: FrameType;
+  setFrameType: (type: FrameType) => void;
 
   // ---- Time Reversal ----
   timeReversalCostPerHour: number;
@@ -202,6 +204,8 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   exposureElapsed: 0,
   exposureProgress: 0,
   exposureDuration: 30,
+  currentFrameType: 'light',
+  setFrameType: (type) => set({ currentFrameType: type }),
 
   completedQuestIds: savedData?.completedQuestIds || [],
   discoveredTargets: savedData?.discoveredTargets || [],

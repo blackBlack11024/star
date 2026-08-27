@@ -333,8 +333,8 @@ export class Game {
 
       // Long exposure accumulation
       if (state.isExposing) {
-        // Render scene to offscreen target and accumulate
-        this.longExposure.accumulate(this.scene, this.camera, 1.0);
+        // Render scene to offscreen target and accumulate with telescope drift tracking
+        this.longExposure.accumulate(this.scene, this.camera, 1.0, state.telescopeRa, state.telescopeDec);
         const elapsed = this.longExposure.getElapsedSeconds();
         state.updateExposureElapsed(elapsed);
       }
@@ -450,14 +450,13 @@ export class Game {
       this.photoLightbox.open(photos, Math.max(0, idx));
     });
 
-    // Photo capture event
     // Photo capture event (Manual Start / Stop Exposure)
     document.addEventListener('capture-photo', () => {
       const state = gameStore.getState();
       if (state.gameMode !== GameMode.Telescope) return;
 
       if (!state.isExposing) {
-        this.longExposure.startExposure();
+        this.longExposure.startExposure(state.currentFrameType || 'light');
         state.startExposure();
         this.audioManager.playShutter();
       } else {
@@ -484,14 +483,14 @@ export class Game {
       this.studio.setVisible(false);
       this.telescopeHUD.show();
     } else if (from === GameMode.Telescope) {
-      this.telescopeModel.setVisible(true);
-      this.terrain.setVisible(true);
-      this.studio.setVisible(true);
       this.camera.position.copy(this.savedWalkPos);
       this.camera.rotation.copy(this.savedWalkRot);
       this.camera.fov = 60;
       this.camera.updateProjectionMatrix();
       gameStore.getState().setFov(60);
+      this.telescopeModel.setVisible(true);
+      this.terrain.setVisible(true);
+      this.studio.setVisible(true);
       this.telescopeHUD.hide();
     }
 
@@ -505,23 +504,33 @@ export class Game {
   /** Complete a long exposure and save the photo. */
   private finishExposure(identified: { name: string; type: any; magnitude: number } | null): void {
     const state = gameStore.getState();
-
-    const elapsedSeconds = this.longExposure.finishExposure();
+    const result = this.longExposure.finishExposure();
     state.stopExposure();
 
     // Determine target info
     const targetName = identified?.name || '未知星野';
     const targetType = identified?.type || 'star_field';
 
-    // Capture and score the photo
+    // Capture and score the photo with true accumulated data URL and drift metrics
     const photo = this.photoManager.capturePhoto(
       this.renderer, this.scene, this.camera,
       { name: targetName, type: targetType, difficulty: 1 },
-      elapsedSeconds
+      result.elapsedSeconds,
+      result.dataUrl,
+      result.hasMotionBlur,
+      result.totalDrift,
+      state.currentFrameType || 'light'
     );
 
     this.audioManager.playShutter();
-    this.hud.showNotification(`照片已儲存: ${targetName}（曝光 ${elapsedSeconds.toFixed(1)} 秒 · ${photo.quality}級）`, 'success');
+    const typeNames: Record<string, string> = {
+      dark: '暗場校準底片',
+      flat: '平場校準底片',
+      bias: '偏壓校準底片',
+      light: '天文照片',
+    };
+    const label = typeNames[state.currentFrameType || 'light'] || '照片';
+    this.hud.showNotification(`${label}已儲存: ${photo.targetName}（曝光 ${result.elapsedSeconds.toFixed(1)} 秒 · ${photo.quality}級）`, 'success');
   }
 
   /** Handle window resize. */

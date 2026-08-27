@@ -175,7 +175,30 @@ export class PlayerController {
         case 'Space':
         case 'KeyE':
           document.dispatchEvent(new CustomEvent('capture-photo'));
-          break;
+          return;
+        case 'Digit1':
+          state.setFrameType('light');
+          document.dispatchEvent(new CustomEvent('frame-type-changed', { detail: 'light' }));
+          return;
+        case 'Digit2':
+          state.setFrameType('dark');
+          document.dispatchEvent(new CustomEvent('frame-type-changed', { detail: 'dark' }));
+          return;
+        case 'Digit3':
+          state.setFrameType('flat');
+          document.dispatchEvent(new CustomEvent('frame-type-changed', { detail: 'flat' }));
+          return;
+        case 'Digit4':
+          state.setFrameType('bias');
+          document.dispatchEvent(new CustomEvent('frame-type-changed', { detail: 'bias' }));
+          return;
+        case 'KeyV': {
+          const types: ('light' | 'dark' | 'flat' | 'bias')[] = ['light', 'dark', 'flat', 'bias'];
+          const nextIdx = (types.indexOf(state.currentFrameType) + 1) % types.length;
+          state.setFrameType(types[nextIdx]);
+          document.dispatchEvent(new CustomEvent('frame-type-changed', { detail: types[nextIdx] }));
+          return;
+        }
         case 'ArrowUp':
         case 'ArrowDown':
         case 'ArrowLeft':
@@ -186,13 +209,13 @@ export class PlayerController {
       }
     }
 
-    // ---- Global shortcuts ----
+    // ---- Global shortcuts (Walk & Studio) ----
     switch (event.code) {
-      case 'Digit1': state.setTimeScale(1); break;
-      case 'Digit2': state.setTimeScale(10); break;
-      case 'Digit3': state.setTimeScale(60); break;
-      case 'Digit4': state.setTimeScale(300); break;
-      case 'Digit5': state.setTimeScale(1000); break;
+      case 'Digit1': if (mode !== GameMode.Telescope) state.setTimeScale(1); break;
+      case 'Digit2': if (mode !== GameMode.Telescope) state.setTimeScale(10); break;
+      case 'Digit3': if (mode !== GameMode.Telescope) state.setTimeScale(60); break;
+      case 'Digit4': if (mode !== GameMode.Telescope) state.setTimeScale(300); break;
+      case 'Digit5': if (mode !== GameMode.Telescope) state.setTimeScale(1000); break;
       case 'KeyP': state.toggleTimePause(); break;
       case 'KeyC': state.toggleConstellations(); break;
       case 'KeyN': state.toggleStarNames(); break;
