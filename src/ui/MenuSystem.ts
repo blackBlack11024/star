@@ -125,7 +125,8 @@ export class MenuSystem {
                         <tr><td><span class="key-hint">Space (空白鍵)</span></td><td>自由長曝光（點擊開始，再次點擊或按空白鍵完成）</td><td>望遠鏡模式</td></tr>
                         <tr><td><span class="key-hint">Esc</span></td><td>退出望遠鏡 / 退出工作室返回漫遊</td><td>全域</td></tr>
                         <tr><td><span class="key-hint">1</span> ~ <span class="key-hint">4</span> / <span class="key-hint">V</span></td><td>場次切換 (亮場/暗場/平場/偏壓)，V 循環</td><td>望遠鏡模式</td></tr>
-                        <tr><td><span class="key-hint">按住 T / R</span></td><td>星軌相機快門（按住 T 時間加速生成星軌，R 減速，放開自動存入照片庫；需裝備星軌相機）/ 開啟時間面板</td><td>漫遊模式</td></tr>
+                        <tr><td><span class="key-hint">B</span> 或 <span class="key-hint">Y</span></td><td>開啟「時空倒流與星曆穿梭中心」</td><td>全域</td></tr>
+                        <tr><td><span class="key-hint">按住 T / R</span></td><td>星軌相機快門（按住 T 時間加速生成星軌，R 減速，放開自動存入照片庫；需獲得星軌相機）</td><td>漫遊模式</td></tr>
                         <tr><td><span class="key-hint">L</span></td><td>開啟「全球觀測地點選擇器」</td><td>全域</td></tr>
                         <tr><td><span class="key-hint">C</span></td><td>開啟 / 關閉 20+ 星座連線</td><td>全域</td></tr>
                         <tr><td><span class="key-hint">M</span></td><td>一鍵靜音 / 開啟音效混音面板</td><td>全域</td></tr>
@@ -189,12 +190,7 @@ export class MenuSystem {
                 } else {
                     this.hideLocationSelector();
                 }
-            } else if (e.key.toLowerCase() === 'r' || e.key.toLowerCase() === 't') {
-                const state = gameStore.getState();
-                const hasStarTrail = state.accessories?.some((a: any) => a.id === 'camera_startrail' && a.owned && a.equipped !== false);
-                if (state.gameMode === GameMode.Walk && hasStarTrail) {
-                    return; // Star Trail Camera handles T/R in Walk mode
-                }
+            } else if (e.code === 'KeyB' || e.code === 'KeyY' || e.key.toLowerCase() === 'b' || e.key.toLowerCase() === 'y') {
                 if (this.timeReversalPanel.style.display === 'none') {
                     this.showTimeReversal();
                 } else {

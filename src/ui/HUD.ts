@@ -55,17 +55,17 @@ export class HUD {
         this.timeDisplay = document.createElement('div');
         this.timeDisplay.className = 'time-display';
         this.timeDisplay.textContent = '--:--:--';
-        this.timeDisplay.title = '點擊開啟完整星曆時空穿梭面板 [R]';
+        this.timeDisplay.title = '點擊開啟完整星曆時空穿梭面板 [B]';
         this.timeDisplay.onclick = () => {
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
+            window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', key: 'b' }));
         };
 
         this.sunPhaseDisplay = document.createElement('div');
         this.sunPhaseDisplay.className = 'sun-phase';
         this.sunPhaseDisplay.textContent = '觀星夜';
-        this.sunPhaseDisplay.title = '目前天象相位 · 點擊開啟星曆面板 [R]';
+        this.sunPhaseDisplay.title = '目前天象相位 · 點擊開啟星曆面板 [B]';
         this.sunPhaseDisplay.onclick = () => {
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
+            window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', key: 'b' }));
         };
 
         timeWrap.appendChild(this.timeDisplay);
@@ -192,9 +192,9 @@ export class HUD {
         const moreBtn = document.createElement('button');
         moreBtn.className = 'hud-preset-btn more-btn';
         moreBtn.textContent = '星曆';
-        moreBtn.title = '開啟完整穿梭星曆面板 [R]（自訂日期、年份與四季星空）';
+        moreBtn.title = '開啟完整穿梭星曆面板 [B]（自訂日期、年份與四季星空）';
         moreBtn.onclick = () => {
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
+            window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyB', key: 'b' }));
         };
         presetsBtnGroup.appendChild(moreBtn);
 
@@ -282,8 +282,8 @@ export class HUD {
         verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
-        verBadge.textContent = 'v1.9.0';
-        verBadge.title = 'v1.9.0';
+        verBadge.textContent = 'v1.9.1';
+        verBadge.title = 'v1.9.1';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
@@ -315,7 +315,7 @@ export class HUD {
             <span><span class="key-tag">Alt</span>游標</span>
             <span><span class="key-tag">C</span>星座</span>
             <span><span class="key-tag">L</span>地點</span>
-            <span><span class="key-tag">R</span>倒流</span>
+            <span><span class="key-tag">B</span>星曆倒流</span>
             <span><span class="key-tag">M</span>音量</span>
             <span><span class="key-tag">H</span>說明</span>
             <span><span class="key-tag">U</span>無UI</span>
@@ -563,6 +563,7 @@ export class HUD {
         if (hasStarTrail) {
             this.shortcutGuide.innerHTML = `
                 <span><span class="key-tag" style="background:rgba(245,158,11,0.25);color:#fbbf24;border-color:rgba(245,158,11,0.5);">按住T/R</span>星軌相機</span>
+                <span><span class="key-tag">B</span>星曆倒流</span>
                 <span><span class="key-tag">Z</span>平躺</span>
                 <span><span class="key-tag">X</span>指星筆</span>
                 <span><span class="key-tag">Alt</span>游標</span>
@@ -579,7 +580,7 @@ export class HUD {
                 <span><span class="key-tag">Alt</span>游標</span>
                 <span><span class="key-tag">C</span>星座</span>
                 <span><span class="key-tag">L</span>地點</span>
-                <span><span class="key-tag">R</span>倒流</span>
+                <span><span class="key-tag">B</span>星曆倒流</span>
                 <span><span class="key-tag">M</span>音量</span>
                 <span><span class="key-tag">H</span>說明</span>
                 <span><span class="key-tag">U</span>無UI</span>

@@ -186,10 +186,16 @@ export class PlayerController {
     }
 
     if (mode === GameMode.Walk) {
-      if (this.starTrailCamera?.isEquipped() && (event.code === 'KeyT' || event.code === 'KeyR')) {
+      if (event.code === 'KeyT' || event.code === 'KeyR') {
         event.preventDefault();
         event.stopPropagation();
-        this.starTrailCamera.onKeyDown(event.code === 'KeyT' ? 'T' : 'R');
+        if (this.starTrailCamera?.isEquipped()) {
+          this.starTrailCamera.onKeyDown(event.code === 'KeyT' ? 'T' : 'R');
+        } else {
+          document.dispatchEvent(new CustomEvent('show-notification', {
+            detail: { message: '按住 T / R 為星軌相機快門（需先獲得星軌相機）；開啟時空倒流星曆面板請按 B 鍵', type: 'info' }
+          }));
+        }
         return;
       }
 
