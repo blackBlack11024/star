@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import SunCalc from 'suncalc';
 import { TargetType } from '../types';
+import { PlanetaryTextureFactory } from './PlanetaryTextureFactory';
 
 export interface PlanetData {
   id: string;
@@ -144,7 +145,7 @@ export class PlanetarySystem {
     // Load real NASA Photographic Moon Map from public directory
     const baseUrl = (import.meta as any).env?.BASE_URL || './';
     const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-    const moonUrl = `${cleanBase}textures/moon_map.jpg`;
+    const moonUrl = `${cleanBase}textures/planets/moon.png`;
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -178,14 +179,14 @@ export class PlanetarySystem {
     ctx.fillStyle = halo;
     ctx.fillRect(0, 0, w, h);
 
-    // 2. Draw Real NASA Photographic Moon Disk (or fallback)
+    // 2. Draw Real NASA Orthographic Photographic Moon Disk (or fallback)
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, R, 0, Math.PI * 2);
     ctx.clip();
 
     if (this.moonImage && this.moonImage.complete && this.moonImage.naturalWidth > 0) {
-      // Draw real NASA photo map
+      // Draw real NASA mathematically projected near-side photo
       ctx.drawImage(this.moonImage, cx - R, cy - R, R * 2, R * 2);
     } else {
       // Procedural lunar base
@@ -214,8 +215,8 @@ export class PlanetarySystem {
     // phase: 0=New Moon, 0.25=First Quarter, 0.5=Full Moon, 0.75=Last Quarter, 1=New Moon
     const normPhase = ((phase % 1) + 1) % 1;
     
-    // Draw Earthshine / Dark side overlay
-    ctx.fillStyle = 'rgba(10, 15, 26, 0.94)';
+    // Draw Earthshine / Dark side overlay (not pitch black!)
+    ctx.fillStyle = 'rgba(6, 10, 18, 0.92)';
 
     if (normPhase < 0.02 || normPhase > 0.98) {
       // New Moon: completely in shadow
@@ -227,23 +228,22 @@ export class PlanetarySystem {
       ctx.beginPath();
       if (normPhase < 0.5) {
         // Waxing (First Quarter side): Right side is lit, Left side is in shadow
-        ctx.arc(cx, cy, R + 1, Math.PI * 0.5, Math.PI * 1.5, false);
-        // Terminator ellipse
+        ctx.arc(cx, cy, R + 2, Math.PI * 0.5, Math.PI * 1.5, false);
         const k = Math.cos(normPhase * Math.PI * 2); // 1 at new -> 0 at quarter -> -1 at full
-        ctx.ellipse(cx, cy, Math.abs(k) * R, R + 1, 0, Math.PI * 1.5, Math.PI * 0.5, k > 0);
+        ctx.ellipse(cx, cy, Math.abs(k) * R, R + 2, 0, Math.PI * 1.5, Math.PI * 0.5, k > 0);
       } else {
         // Waning (Last Quarter side): Left side is lit, Right side is in shadow
-        ctx.arc(cx, cy, R + 1, Math.PI * 1.5, Math.PI * 0.5, false);
+        ctx.arc(cx, cy, R + 2, Math.PI * 1.5, Math.PI * 0.5, false);
         const k = Math.cos(normPhase * Math.PI * 2);
-        ctx.ellipse(cx, cy, Math.abs(k) * R, R + 1, 0, Math.PI * 0.5, Math.PI * 1.5, k > 0);
+        ctx.ellipse(cx, cy, Math.abs(k) * R, R + 2, 0, Math.PI * 0.5, Math.PI * 1.5, k > 0);
       }
       ctx.fill();
     }
 
     // Subtle 3D limb darkening along the outer circular edge
-    const limb = ctx.createRadialGradient(cx, cy, R * 0.75, cx, cy, R);
+    const limb = ctx.createRadialGradient(cx, cy, R * 0.8, cx, cy, R);
     limb.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    limb.addColorStop(1, 'rgba(15, 23, 42, 0.4)');
+    limb.addColorStop(1, 'rgba(15, 23, 42, 0.45)');
     ctx.fillStyle = limb;
     ctx.fillRect(0, 0, w, h);
 
@@ -253,13 +253,13 @@ export class PlanetarySystem {
   }
 
   private initTextures() {
-    this.textures.set('mercury', this.createMercuryTexture());
-    this.textures.set('venus', this.createVenusTexture());
-    this.textures.set('mars', this.createMarsTexture());
-    this.textures.set('jupiter', this.createJupiterTexture());
-    this.textures.set('saturn', this.createSaturnTexture());
-    this.textures.set('uranus', this.createUranusTexture());
-    this.textures.set('neptune', this.createNeptuneTexture());
+    this.textures.set('mercury', PlanetaryTextureFactory.getPlanetTexture('mercury'));
+    this.textures.set('venus', PlanetaryTextureFactory.getPlanetTexture('venus'));
+    this.textures.set('mars', PlanetaryTextureFactory.getPlanetTexture('mars'));
+    this.textures.set('jupiter', PlanetaryTextureFactory.getPlanetTexture('jupiter'));
+    this.textures.set('saturn', PlanetaryTextureFactory.getPlanetTexture('saturn'));
+    this.textures.set('uranus', PlanetaryTextureFactory.getPlanetTexture('uranus'));
+    this.textures.set('neptune', PlanetaryTextureFactory.getPlanetTexture('neptune'));
     this.textures.set('moon', this.moonTexture);
   }
 

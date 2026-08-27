@@ -127,7 +127,24 @@ export class DSOTextureFactory {
         }
 
         const texture = new THREE.CanvasTexture(canvas);
+        texture.generateMipmaps = true;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
         this.cache.set(dsoId, texture);
+
+        // Asynchronously load real NASA / Hubble / ESO observation photo
+        const baseUrl = (import.meta as any).env?.BASE_URL || './';
+        const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+        const photoUrl = `${cleanBase}textures/dso/${dsoId}.png`;
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            texture.image = img;
+            texture.needsUpdate = true;
+        };
+        img.src = photoUrl;
+
         return texture;
     }
 
