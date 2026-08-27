@@ -69,7 +69,7 @@ export class TelescopeHUD {
 
         this.toggleExposureBtn = document.createElement('button');
         this.toggleExposureBtn.className = 'shutter-btn';
-        this.toggleExposureBtn.innerHTML = `<span>開始曝光 [空白鍵]</span>`;
+        this.toggleExposureBtn.innerHTML = `<span>開始曝光</span>`;
         this.toggleExposureBtn.onclick = (e) => {
             e.stopPropagation();
             document.dispatchEvent(new CustomEvent('capture-photo'));
@@ -104,8 +104,8 @@ export class TelescopeHUD {
 
         const finderBtn = document.createElement('button');
         finderBtn.className = 'telescope-finder-btn';
-        finderBtn.innerHTML = `<span>尋星儀系統</span><kbd>F</kbd>`;
-        finderBtn.title = '開啟電子尋星儀系統與 GoTo 自動導星 [快捷鍵 F]';
+        finderBtn.innerHTML = `<span>尋星儀</span><kbd>F</kbd>`;
+        finderBtn.title = '尋星儀 [F]';
         finderBtn.onclick = (e) => {
             e.stopPropagation();
             document.dispatchEvent(new CustomEvent('toggle-finder-ui'));
@@ -135,7 +135,7 @@ export class TelescopeHUD {
 
         const hints = document.createElement('div');
         hints.className = 'keyboard-hints';
-        hints.textContent = '空白鍵: 曝光 · 1: 亮場 · 2: 暗場 · 3: 平場 · 4: 偏壓 · V: 切換 · 滾輪: 變焦 · ESC: 退出';
+        hints.textContent = '空白鍵 曝光 · 1-4 場次 · V 循環 · 滾輪 變焦 · ESC 退出';
 
         this.infoPanel.appendChild(readouts);
         this.infoPanel.appendChild(this.accessoriesBar);
@@ -195,7 +195,7 @@ export class TelescopeHUD {
         if (identifiedTarget) {
             this.starIdentifier.innerHTML = `
                 <strong>${identifiedTarget.name}</strong><br/>
-                <span style="font-size:12px;color:#94a3b8">星等: ${identifiedTarget.magnitude.toFixed(1)} · 赤經: ${identifiedTarget.ra.toFixed(2)}h · 赤緯: ${identifiedTarget.dec.toFixed(2)}°</span>
+                <span style="font-size:12px;color:#94a3b8">${identifiedTarget.magnitude.toFixed(1)} mag · RA ${identifiedTarget.ra.toFixed(2)}h · Dec ${identifiedTarget.dec.toFixed(2)}°</span>
             `;
             this.starIdentifier.style.display = 'block';
         } else {
@@ -245,9 +245,9 @@ export class TelescopeHUD {
             if (isLocked) {
                 this.finderGuidance.className = 'finder-guidance locked';
                 this.finderGuidance.innerHTML = `
-                    <div class="fg-badge">目標已精確入鏡</div>
+                    <div class="fg-badge">已入鏡</div>
                     <div class="fg-title">${targetDso.commonName || targetDso.name}</div>
-                    <div class="fg-sub">已成功定位天體！按空白鍵開始長曝光攝影</div>
+                    <div class="fg-sub">按空白鍵開始曝光</div>
                 `;
                 this.finderGuidance.style.display = 'flex';
             } else if (hasFinderSystem) {
@@ -266,9 +266,9 @@ export class TelescopeHUD {
 
                 this.finderGuidance.className = 'finder-guidance seeking pointer';
                 this.finderGuidance.innerHTML = `
-                    <div class="fg-badge">電子尋星系統已啟用</div>
+                    <div class="fg-badge">尋星模式</div>
                     <div class="fg-title">${arrow} ${targetDso.commonName || targetDso.name}</div>
-                    <div class="fg-dist">距離視野: ${distDeg.toFixed(1)}° · 請順指針轉動鏡筒</div>
+                    <div class="fg-dist">偏角 ${distDeg.toFixed(1)}°</div>
                 `;
                 this.finderGuidance.style.display = 'flex';
             } else {
@@ -291,12 +291,12 @@ export class TelescopeHUD {
                 <div class="mask-cap-emboss">
                     <span style="font-size:15px;letter-spacing:0.1em;margin-bottom:6px;color:#f87171;">[ LENS CAP ]</span>
                     <span>LENS CAP ON</span>
-                    <span style="font-size:11px;margin-top:4px;color:#f87171;">鏡頭蓋已蓋上 (全黑)</span>
+                    <span style="font-size:11px;margin-top:4px;color:#f87171;">鏡頭蓋蓋上</span>
                 </div>
             `;
             this.reticle.style.display = 'none';
             this.starIdentifier.style.display = 'none';
-            this.calibrationBanner.innerHTML = `<span>【暗場模式 · 鏡頭蓋已蓋上】按空白鍵開始曝光，記錄感光元件熱噪點與壞點 [2]</span>`;
+            this.calibrationBanner.innerHTML = `<span>暗場 · 鏡頭蓋已蓋上 · 按空白鍵曝光</span>`;
             this.calibrationBanner.className = 'calibration-banner dark-mode visible';
             this.calibrationBanner.style.display = 'block';
         } else if (activeFrame === 'bias') {
@@ -305,12 +305,12 @@ export class TelescopeHUD {
                 <div class="mask-cap-emboss">
                     <span style="font-size:15px;letter-spacing:0.1em;margin-bottom:6px;color:#38bdf8;">[ FAST SHUTTER ]</span>
                     <span>FAST SHUTTER BIAS</span>
-                    <span style="font-size:11px;margin-top:4px;color:#38bdf8;">極速快門讀出底噪 (全黑)</span>
+                    <span style="font-size:11px;margin-top:4px;color:#38bdf8;">快門底噪讀出</span>
                 </div>
             `;
             this.reticle.style.display = 'none';
             this.starIdentifier.style.display = 'none';
-            this.calibrationBanner.innerHTML = `<span>【偏壓模式 · 極速快門讀出】按空白鍵 1/1000s 快速記錄晶片底噪 [4]</span>`;
+            this.calibrationBanner.innerHTML = `<span>偏壓 · 極速快門 · 按空白鍵曝光</span>`;
             this.calibrationBanner.className = 'calibration-banner bias-mode visible';
             this.calibrationBanner.style.display = 'block';
         } else if (activeFrame === 'flat') {
@@ -319,12 +319,12 @@ export class TelescopeHUD {
                 <div class="mask-flat-emboss">
                     <span style="font-size:15px;letter-spacing:0.1em;margin-bottom:6px;color:#0284c7;">[ FLAT PANEL ]</span>
                     <span>FLAT PANEL DIFFUSER</span>
-                    <span style="font-size:11px;margin-top:4px;color:#0284c7;">均勻平場柔光板</span>
+                    <span style="font-size:11px;margin-top:4px;color:#0284c7;">平場柔光板</span>
                 </div>
             `;
             this.reticle.style.display = 'none';
             this.starIdentifier.style.display = 'none';
-            this.calibrationBanner.innerHTML = `<span>【平場模式 · 均勻柔光罩已開啟】按空白鍵快速曝光，記錄光學暗角與鏡片塵埃 [3]</span>`;
+            this.calibrationBanner.innerHTML = `<span>平場 · 柔光罩 · 按空白鍵曝光</span>`;
             this.calibrationBanner.className = 'calibration-banner flat-mode visible';
             this.calibrationBanner.style.display = 'block';
         } else {
@@ -347,7 +347,7 @@ export class TelescopeHUD {
             this.exposureProgress.style.width = '0%';
             this.toggleExposureBtn.className = 'shutter-btn';
             const frameLabel = activeFrame === 'light' ? '開始曝光' : activeFrame === 'dark' ? '拍攝暗場' : activeFrame === 'flat' ? '拍攝平場' : '拍攝偏壓';
-            this.toggleExposureBtn.innerHTML = `<span>${frameLabel} [空白鍵]</span>`;
+            this.toggleExposureBtn.innerHTML = `<span>${frameLabel}</span>`;
         }
     }
 

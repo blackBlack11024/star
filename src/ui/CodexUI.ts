@@ -115,13 +115,13 @@ export class CodexUI {
 
         this.container.innerHTML = `
         <div class="codex-header">
-            <h2>梅西耶觀測圖鑑 & 任務日誌</h2>
+            <h2>觀測圖鑑</h2>
             <button class="close-btn" id="codex-close-btn" title="關閉圖鑑 [ESC]">&times;</button>
         </div>
         <div class="codex-tabs">
-            <button class="codex-tab ${this.currentTab === 0 ? 'active' : ''}" id="codex-tab-0">梅西耶深空天體 (${unlockedDSOCount}/${DEEP_SKY_OBJECTS.length})</button>
-            <button class="codex-tab ${this.currentTab === 1 ? 'active' : ''}" id="codex-tab-1">太陽系行星 (${unlockedPlanetCount}/${SOLAR_SYSTEM_TARGETS.length})</button>
-            <button class="codex-tab ${this.currentTab === 2 ? 'active' : ''}" id="codex-tab-2">主線任務 (${completedQuestIds.length}/${QUESTS.length})</button>
+            <button class="codex-tab ${this.currentTab === 0 ? 'active' : ''}" id="codex-tab-0">深空天體 ${unlockedDSOCount}/${DEEP_SKY_OBJECTS.length}</button>
+            <button class="codex-tab ${this.currentTab === 1 ? 'active' : ''}" id="codex-tab-1">太陽系 ${unlockedPlanetCount}/${SOLAR_SYSTEM_TARGETS.length}</button>
+            <button class="codex-tab ${this.currentTab === 2 ? 'active' : ''}" id="codex-tab-2">任務 ${completedQuestIds.length}/${QUESTS.length}</button>
         </div>
         <div class="codex-body ${this.currentTab === 2 ? 'quest-mode' : ''}" id="codex-body"></div>
         `;
@@ -204,15 +204,15 @@ export class CodexUI {
                         ${vis.isCurrentlyVisible ? `目前空中可見 (仰角 ${Math.round(vis.currentAltitude)}°)` : `最佳時段: ${vis.bestTimeStr}`}
                     </div>
                     ${dso.starHoppingGuide ? `<div class="codex-guide-text"><strong>尋星導引：</strong>${dso.starHoppingGuide}</div>` : ''}
-                    ${captured ? `<div class="codex-dso-grade quality ${bestPhoto?.quality}">最高評級: ${bestPhoto?.quality}級 (${bestPhoto?.score}分 · 價值 $${bestPhoto?.sellPrice})</div>` : '<div class="codex-dso-lock-icon">未觀測解鎖</div>'}
+                    ${captured ? `<div class="codex-dso-grade quality ${bestPhoto?.quality}">最高評級: ${bestPhoto?.quality}級 (${bestPhoto?.score}分 · 價值 $${bestPhoto?.sellPrice})</div>` : '<div class="codex-dso-lock-icon">未觀測</div>'}
                 </div>
                 <div class="codex-card-actions">
                     <button class="codex-track-btn ${isTracking ? 'active' : ''}" id="btn-track-${dso.id}">
-                        ${isTracking ? '追蹤中 (點擊取消)' : '設為望遠鏡尋星目標'}
+                        ${isTracking ? '追蹤中' : '設為目標'}
                     </button>
                     ${captured && bestPhoto 
-                        ? `<button class="codex-view-btn" id="btn-view-${dso.id}">查看相片 (${matches.length}張)</button>` 
-                        : `<button class="codex-view-btn ref-btn" id="btn-ref-${dso.id}" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">觀測參考照</button>`}
+                        ? `<button class="codex-view-btn" id="btn-view-${dso.id}">查看 (${matches.length})</button>` 
+                        : `<button class="codex-view-btn ref-btn" id="btn-ref-${dso.id}" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">參考影像</button>`}
                 </div>
             `;
 
@@ -244,10 +244,10 @@ export class CodexUI {
                     e.stopPropagation();
                     if (isTracking) {
                         gameStore.getState().setCustomTrackedDso(null);
-                        document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已取消追蹤 ${dso.id}`, type: 'info' } }));
+                        document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已取消`, type: 'info' } }));
                     } else {
                         gameStore.getState().setCustomTrackedDso(dso.id);
-                        document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已將 ${dso.id} ${dso.commonName} 設為尋星目標！進入望遠鏡將啟用指針導引`, type: 'success' } }));
+                        document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已鎖定 ${dso.id}`, type: 'success' } }));
                     }
                     this.render();
                 };
@@ -304,15 +304,15 @@ export class CodexUI {
                     <div class="codex-dso-name">${p.commonName} · ${p.name}</div>
                     <div class="codex-dso-meta">${p.type} &bull; 視星等 ${p.magnitude}</div>
                     <div class="codex-guide-text" style="color:#cbd5e1; margin:6px 0;">${p.desc}</div>
-                    ${captured ? `<div class="codex-dso-grade quality ${bestPhoto?.quality}">最高評級: ${bestPhoto?.quality}級 (${bestPhoto?.score}分 · 價值 $${bestPhoto?.sellPrice})</div>` : '<div class="codex-dso-lock-icon">未拍攝收錄</div>'}
+                    ${captured ? `<div class="codex-dso-grade quality ${bestPhoto?.quality}">最高評級: ${bestPhoto?.quality}級 (${bestPhoto?.score}分 · 價值 $${bestPhoto?.sellPrice})</div>` : '<div class="codex-dso-lock-icon">未拍攝</div>'}
                 </div>
                 <div class="codex-card-actions">
                     <button class="codex-track-btn ${isTracking ? 'active' : ''}" id="btn-track-planet-${p.id}">
-                        ${isTracking ? '追蹤中 (點擊取消)' : '設為望遠鏡尋星目標'}
+                        ${isTracking ? '追蹤中' : '設為目標'}
                     </button>
                     ${captured && bestPhoto 
-                        ? `<button class="codex-view-btn" id="btn-view-planet-${p.id}">查看相片 (${matches.length}張)</button>` 
-                        : `<button class="codex-view-btn ref-btn" id="btn-ref-planet-${p.id}" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">觀測參考照</button>`}
+                        ? `<button class="codex-view-btn" id="btn-view-planet-${p.id}">查看 (${matches.length})</button>` 
+                        : `<button class="codex-view-btn ref-btn" id="btn-ref-planet-${p.id}" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3);">參考影像</button>`}
                 </div>
             `;
 
@@ -344,10 +344,10 @@ export class CodexUI {
                     e.stopPropagation();
                     if (isTracking) {
                         gameStore.getState().setCustomTrackedDso(null);
-                        document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已取消追蹤 ${p.commonName}`, type: 'info' } }));
+                        document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已取消`, type: 'info' } }));
                     } else {
                         gameStore.getState().setCustomTrackedDso(p.id);
-                        document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已將 ${p.commonName} 設為尋星目標！進入望遠鏡將啟用指針導引`, type: 'success' } }));
+                        document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已鎖定 ${p.commonName}`, type: 'success' } }));
                     }
                     this.render();
                 };
@@ -398,7 +398,7 @@ export class CodexUI {
                 <div style="padding:14px 18px; background:rgba(30,41,59,0.8); border-bottom:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <span style="background:rgba(56,189,248,0.2); color:#38bdf8; font-size:11px; padding:2px 8px; border-radius:4px; margin-right:8px; font-weight:700;">${category}</span>
-                        <strong style="font-size:16px; color:#f8fafc;">${title} · 官方觀測參考影像</strong>
+                        <strong style="font-size:16px; color:#f8fafc;">${title}</strong>
                     </div>
                     <button class="close-btn" id="ref-modal-close" style="background:none; border:none; color:#cbd5e1; font-size:24px; cursor:pointer;">&times;</button>
                 </div>
@@ -409,7 +409,7 @@ export class CodexUI {
                     <div style="font-size:12px; color:#38bdf8; font-weight:500;">${coords}</div>
                     <div style="font-size:13px; line-height:1.6; color:#cbd5e1;">${desc}</div>
                     <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
-                        <button id="ref-modal-track" style="background:#38bdf8; color:#020617; border:none; padding:8px 18px; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;">設為尋星目標並前往望遠鏡</button>
+                        <button id="ref-modal-track" style="background:#38bdf8; color:#020617; border:none; padding:8px 18px; border-radius:6px; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;">前往望遠鏡觀測</button>
                     </div>
                 </div>
             </div>
@@ -434,7 +434,7 @@ export class CodexUI {
                 gameStore.getState().setCustomTrackedDso(targetId);
                 gameStore.getState().setGameMode(GameMode.Telescope);
                 document.dispatchEvent(new CustomEvent('show-notification', {
-                    detail: { message: `已鎖定 ${title}！進入望遠鏡並啟用尋星導引`, type: 'success' }
+                    detail: { message: `已鎖定 ${title}`, type: 'success' }
                 }));
             };
         }
@@ -454,7 +454,7 @@ export class CodexUI {
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
                     <div>
-                        <div class="quest-status">${done ? '[已完成]' : available ? '[進行中]' : '[未解鎖]'}</div>
+                        <div class="quest-status">${done ? '已完成' : available ? '進行中' : '未解鎖'}</div>
                         <div class="quest-chapter">第 ${quest.chapter} 章 · ${quest.title}</div>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.06); padding:4px 10px; border-radius:16px;">
@@ -466,12 +466,12 @@ export class CodexUI {
                 ${done || available ? `
                     <div class="quest-objectives">
                         <div style="font-size:11px; color:#64748b; margin-bottom:4px;">任務目標：</div>
-                        ${quest.objectives.map(o => `<div class="quest-obj ${done ? 'done' : ''}">${done ? '[完成]' : '[進行]'} ${o.description}</div>`).join('')}
+                        ${quest.objectives.map(o => `<div class="quest-obj ${done ? 'done' : ''}">${done ? '完成 ' : '· '}${o.description}</div>`).join('')}
                     </div>
                 ` : ''}
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; border-top:1px solid rgba(255,255,255,0.08); padding-top:8px;">
                     <div class="quest-reward">獎勵: ${quest.rewards.money ? `$${quest.rewards.money}` : ''}${quest.rewards.unlockLocation ? ` · 解鎖新地點` : ''}</div>
-                    ${done || available ? `<button class="quest-replay-btn" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:4px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:all 0.2s;">聆聽劇情對話</button>` : ''}
+                    ${done || available ? `<button class="quest-replay-btn" style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; padding:4px 12px; border-radius:6px; font-size:12px; cursor:pointer; transition:all 0.2s;">重播對話</button>` : ''}
                 </div>
             `;
 

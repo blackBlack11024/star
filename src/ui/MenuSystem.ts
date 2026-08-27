@@ -83,23 +83,23 @@ export class MenuSystem {
                 <h3>遊戲核心玩法循環</h3>
                 <div class="guide-step-card">
                     <strong>1. 走向望遠鏡觀星：</strong>
-                    出生點正前方圓台就是望遠鏡。走上前按下 <span class="key-hint">E</span> 鍵即可直接進入望遠鏡觀星目鏡視角。
+                    走向觀測台圓台，按 <span class="key-hint">E</span> 進入目鏡視角。
                 </div>
                 <div class="guide-step-card">
                     <strong>2. 尋找與識別天體：</strong>
-                    在望遠鏡中，使用 <strong>滑鼠左鍵拖曳</strong> 或 <strong>方向鍵</strong> 轉動赤道儀瞄準星空。瞄準到天體時，頂部會顯示如 <em>M31 仙女座星系</em>、<em>天狼星</em>。使用 <strong>滑鼠滾輪</strong> 可大幅度放大拉近視角。使用 <strong>滑鼠右鍵拖曳</strong> 可進行超精細微調。
+                    滑鼠左鍵拖曳或方向鍵轉動鏡筒，瞄準目標後頂部顯示天體名稱。滾輪放大，右鍵拖曳微調。按 <span class="key-hint">F</span> 開啟尋星儀，可自動 GoTo 導向目標。
                 </div>
                 <div class="guide-step-card">
                     <strong>3. 拍攝天體照片：</strong>
-                    按下 <span class="key-hint">Space 空白鍵</span> 開始曝光。深空星雲與暗星系建議長曝光 <strong>15秒 ~ 60秒</strong>，曝光越足色彩越鮮豔、評級（S/A/B）越高！
+                    按 <span class="key-hint">Space</span> 開始曝光。深空天體建議 15 ~ 60 秒，曝光越長評級越高（SSS / S / A / B 等）。
                 </div>
                 <div class="guide-step-card">
                     <strong>4. 進入工作室賣照片賺錢：</strong>
-                    按 <span class="key-hint">Esc</span> 退出望遠鏡，走向左後方的小木屋按下 <span class="key-hint">F</span> 進入工作室，一鍵出售相片賺取豐厚報酬！
+                    按 <span class="key-hint">Esc</span> 退出，走向木屋按 <span class="key-hint">F</span> 進入工作室出售相片賺錢。
                 </div>
                 <div class="guide-step-card">
                     <strong>5. 升級裝備與解鎖全球勝地：</strong>
-                    在工作室中升級口徑更大的望遠鏡（可看清暗弱星雲），並按 <span class="key-hint">L</span> 解鎖夏威夷茂納凱亞、智利阿塔卡馬等 6 大世界頂級暗空公園！
+                    在工作室升級望遠鏡，按 <span class="key-hint">L</span> 解鎖夏威夷茂納凱亞、智利阿塔卡馬等世界暗空地點。
                 </div>
             `;
         } else if (index === 1) {
@@ -114,15 +114,16 @@ export class MenuSystem {
                         <tr><td><span class="key-hint">W</span> <span class="key-hint">A</span> <span class="key-hint">S</span> <span class="key-hint">D</span></td><td>前後左右移動角色（點擊畫面鎖定滑鼠視角）</td><td>第一人稱漫遊</td></tr>
                         <tr><td><span class="key-hint">Shift</span> + 移動</td><td>奔跑加速</td><td>第一人稱漫遊</td></tr>
                         <tr><td><span class="key-hint">按住滑鼠右鍵</span></td><td>手持 8x42 雙筒望遠鏡（7° 廣重視野巡天）</td><td>第一人稱漫遊</td></tr>
-                        <tr><td><span class="key-hint">E</span></td><td>靠近望遠鏡時進入 / 望遠鏡模式下切換曝光秒數</td><td>全域</td></tr>
-                        <tr><td><span class="key-hint">F</span></td><td>靠近小木屋時進入工作室（照片庫、燈箱查看與商店）</td><td>漫遊模式</td></tr>
+                        <tr><td><span class="key-hint">E</span></td><td>進入望遠鏡 / 拍照</td><td>全域</td></tr>
+                        <tr><td><span class="key-hint">F</span></td><td>進入工作室</td><td>漫遊模式</td></tr>
+                        <tr><td><span class="key-hint">F</span></td><td>開啟尋星儀 (支援 GoTo 自動導向)</td><td>望遠鏡模式</td></tr>
                         <tr><td><span class="key-hint">G</span></td><td>開啟「觀測圖鑑 & 任務劇情日誌」</td><td>全域</td></tr>
                         <tr><td><span class="key-hint">滑鼠移動 / 方向鍵</span></td><td>水平 (方位角) 與仰角指向星空（附電機音效）</td><td>望遠鏡模式</td></tr>
                         <tr><td><span class="key-hint">滑鼠右鍵拖曳</span></td><td>0.25x 精細微調鎖定目標</td><td>望遠鏡模式</td></tr>
                         <tr><td><span class="key-hint">滑鼠滾輪</span></td><td>光學變焦縮放（Zoom In / Zoom Out）</td><td>望遠鏡模式</td></tr>
                         <tr><td><span class="key-hint">Space (空白鍵)</span></td><td>自由長曝光（點擊開始，再次點擊或按空白鍵完成）</td><td>望遠鏡模式</td></tr>
                         <tr><td><span class="key-hint">Esc</span></td><td>退出望遠鏡 / 退出工作室返回漫遊</td><td>全域</td></tr>
-                        <tr><td><span class="key-hint">1</span> ~ <span class="key-hint">5</span> / <span class="key-hint">P</span></td><td>時間流速 (1x / 10x / 60x / 300x / 1000x / 暫停)</td><td>全域</td></tr>
+                        <tr><td><span class="key-hint">1</span> ~ <span class="key-hint">4</span> / <span class="key-hint">V</span></td><td>場次切換 (亮場/暗場/平場/偏壓)，V 循環</td><td>望遠鏡模式</td></tr>
                         <tr><td><span class="key-hint">R</span> 或 <span class="key-hint">T</span></td><td>開啟「時間控制與時空倒流中心」</td><td>全域</td></tr>
                         <tr><td><span class="key-hint">L</span></td><td>開啟「全球觀測地點選擇器」</td><td>全域</td></tr>
                         <tr><td><span class="key-hint">C</span></td><td>開啟 / 關閉 20+ 星座連線</td><td>全域</td></tr>
@@ -135,15 +136,14 @@ export class MenuSystem {
         } else if (index === 2) {
             // 觀星與長曝光技巧
             content.innerHTML = `
-                <h3>為什麼需要「長曝光 (Long Exposure)」？</h3>
-                <p>人類肉眼在夜間感光能力有限，許多深空天體（如梅西耶星雲、暗星系旋臂）在即時目鏡中看起來只是微弱的灰白色霧狀塊。</p>
+                <h3>為什麼要長曝光？</h3>
+                <p>肉眼感光有限，深空天體在目鏡中往往只是灰白霧狀。長曝光讓感光元件持續積累光子，才能顯現出星雲的色彩與細節。</p>
                 <div class="guide-step-card">
-                    <strong>光子累積疊加機制：</strong>
-                    在望遠鏡中按下空白鍵開始長曝光時，光學感光元件會持續收集光子，原本暗淡的星雲會逐漸顯現出鮮豔的粉紅發射線（H-alpha）與藍色反射星雲色彩！
+                    按空白鍵開始長曝光，暗淡星雲會逐漸呈現出發射線的粉紅與反射星雲的藍色。
                 </div>
                 <div class="guide-step-card">
                     <strong>照片品質評級與重複拍攝懲罰：</strong>
-                    照片會根據 <strong>曝光充足度 + 當前天氣 + 地點光害 + 目標難度</strong> 自動評分（S / A / B / C / D 級）。<br>
+                    照片會根據 <strong>曝光充足度 + 當前天氣 + 地點光害 + 目標難度</strong> 自動評分（SSS / S / A / B / C 級）。<br>
                     <strong>注意：</strong>同一個天體重複拍攝，市場收購價會隨次數遞減（第1張 100%、第2張 60%、第3張 25%、第4張起飽和 $0）。多探索不同天體才是發家致富之道！
                 </div>
             `;
@@ -164,8 +164,8 @@ export class MenuSystem {
                     </tbody>
                 </table>
                 <h3 style="margin-top:16px;">快速發家致富秘訣</h3>
-                <p>1. 初始階段先在合歡山拍攝 <strong>M31 仙女座星系</strong> 與 <strong>M42 獵戶星雲</strong>（長曝光 30s 可獲 A/S 級照片，每張 $300~$600）。</p>
-                <p>2. 賺取 $500 後立即前往工作室升級 <strong>Tier 2 牛頓反射鏡</strong>，進光量提升 6 倍，可拍攝更多暗淡梅西耶星雲！</p>
+                <p>1. 初期先拍 <strong>M31 仙女座星系</strong>和 <strong>M42 獵戶星雲</strong>，長曝光 30 秒可得 S 或 A 級，每張 $300~$600。</p>
+                <p>2. 存到 $500 立即升級 <strong>Tier 2 牛頓反射鏡</strong>，進光量提升 6 倍，可觀測更多暗弱天體。</p>
             `;
         }
     }

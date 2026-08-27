@@ -191,19 +191,18 @@ export class FinderUI {
         this.container.innerHTML = `
             <div class="finder-header">
                 <div class="finder-title-row">
-                    <span class="finder-badge">ELECTRONIC FINDER SCOPE</span>
-                    <h3>電子尋星儀系統</h3>
+                    <h3>尋星儀</h3>
                     <span class="finder-goto-tag ${hasGoto ? 'active' : ''}">
-                        ${hasGoto ? 'GoTo 自動導星系統 [就緒]' : '手動導星模式 (未配備 GoTo)'}
+                        ${hasGoto ? 'GoTo 就緒' : '手動模式'}
                     </span>
-                    <button class="close-btn" id="finder-close-btn" title="關閉 [ESC]">&times;</button>
+                    <button class="close-btn" id="finder-close-btn" title="關閉">&times;</button>
                 </div>
                 <div class="finder-search-bar">
-                    <input type="text" id="finder-search-input" placeholder="搜尋天體編號或名稱 (如 M42, 木星, 仙女座...)" value="${this.searchQuery}"/>
+                    <input type="text" id="finder-search-input" placeholder="輸入編號或名稱…" value="${this.searchQuery}"/>
                 </div>
                 <div class="finder-category-tabs">
-                    <button class="finder-tab ${this.currentCategory === 'all' ? 'active' : ''}" data-cat="all">全部天體</button>
-                    <button class="finder-tab ${this.currentCategory === 'in_fov' ? 'active' : ''}" data-cat="in_fov">當前視野內</button>
+                    <button class="finder-tab ${this.currentCategory === 'all' ? 'active' : ''}" data-cat="all">全部</button>
+                    <button class="finder-tab ${this.currentCategory === 'in_fov' ? 'active' : ''}" data-cat="in_fov">視野內</button>
                     <button class="finder-tab ${this.currentCategory === 'planet' ? 'active' : ''}" data-cat="planet">行星</button>
                     <button class="finder-tab ${this.currentCategory === 'nebula' ? 'active' : ''}" data-cat="nebula">星雲</button>
                     <button class="finder-tab ${this.currentCategory === 'galaxy' ? 'active' : ''}" data-cat="galaxy">星系</button>
@@ -211,10 +210,10 @@ export class FinderUI {
                 </div>
             </div>
             <div class="finder-list" id="finder-items-list">
-                ${filtered.length === 0 ? '<div class="finder-empty">未搜尋到相符的天體目標</div>' : ''}
+                ${filtered.length === 0 ? '<div class="finder-empty">無符合結果</div>' : ''}
                 ${filtered.map(t => {
                     const isTracking = currentTrackedId === t.id || currentTrackedId === t.name;
-                    const altStr = t.currentAlt >= 0 ? `空中仰角 +${Math.round(t.currentAlt)}°` : `地平線下 (${Math.round(t.currentAlt)}°)`;
+                    const altStr = t.currentAlt >= 0 ? `仰角 +${Math.round(t.currentAlt)}°` : `地平線下`;
                     const altColor = t.isVisibleSky ? '#34d399' : '#94a3b8';
                     const distStr = t.angularDist.toFixed(1);
 
@@ -234,15 +233,15 @@ export class FinderUI {
                             </div>
                             <div class="finder-card-right">
                                 <div class="finder-dist-box">
-                                    <span class="f-dist-label">角距離</span>
+                                    <span class="f-dist-label">偏角</span>
                                     <span class="f-dist-val">${distStr}°</span>
                                 </div>
                                 <div class="finder-card-btns">
                                     <button class="f-btn track-btn ${isTracking ? 'active' : ''}" data-id="${t.id}" data-name="${t.name}">
-                                        ${isTracking ? '取消鎖定' : '鎖定導引'}
+                                        ${isTracking ? '取消' : '鎖定'}
                                     </button>
                                     <button class="f-btn goto-btn ${hasGoto ? 'ready' : 'disabled'}" data-id="${t.id}" data-ra="${t.ra}" data-dec="${t.dec}" data-name="${t.commonName || t.name}">
-                                        ${hasGoto ? 'GoTo 導向' : '需 GoTo 儀'}
+                                        ${hasGoto ? 'GoTo' : '未配備'}
                                     </button>
                                 </div>
                             </div>
@@ -332,10 +331,10 @@ export class FinderUI {
         });
 
         list.innerHTML = `
-            ${filtered.length === 0 ? '<div class="finder-empty">未搜尋到相符的天體目標</div>' : ''}
+            ${filtered.length === 0 ? '<div class="finder-empty">無符合結果</div>' : ''}
             ${filtered.map(t => {
                 const isTracking = currentTrackedId === t.id || currentTrackedId === t.name;
-                const altStr = t.currentAlt >= 0 ? `空中仰角 +${Math.round(t.currentAlt)}°` : `地平線下 (${Math.round(t.currentAlt)}°)`;
+                const altStr = t.currentAlt >= 0 ? `仰角 +${Math.round(t.currentAlt)}°` : `地平線下`;
                 const altColor = t.isVisibleSky ? '#34d399' : '#94a3b8';
                 const distStr = t.angularDist.toFixed(1);
 
@@ -355,15 +354,15 @@ export class FinderUI {
                         </div>
                         <div class="finder-card-right">
                             <div class="finder-dist-box">
-                                <span class="f-dist-label">角距離</span>
+                                <span class="f-dist-label">偏角</span>
                                 <span class="f-dist-val">${distStr}°</span>
                             </div>
                             <div class="finder-card-btns">
                                 <button class="f-btn track-btn ${isTracking ? 'active' : ''}" data-id="${t.id}" data-name="${t.name}">
-                                    ${isTracking ? '取消鎖定' : '鎖定導引'}
+                                    ${isTracking ? '取消' : '鎖定'}
                                 </button>
                                 <button class="f-btn goto-btn ${hasGoto ? 'ready' : 'disabled'}" data-id="${t.id}" data-ra="${t.ra}" data-dec="${t.dec}" data-name="${t.commonName || t.name}">
-                                    ${hasGoto ? 'GoTo 導向' : '需 GoTo 儀'}
+                                    ${hasGoto ? 'GoTo' : '未配備'}
                                 </button>
                             </div>
                         </div>
@@ -388,12 +387,12 @@ export class FinderUI {
                 if (current === id || current === name) {
                     state.setCustomTrackedDso(null);
                     document.dispatchEvent(new CustomEvent('show-notification', {
-                        detail: { message: '已取消尋星鎖定', type: 'info' }
+                        detail: { message: '已取消', type: 'info' }
                     }));
                 } else {
                     state.setCustomTrackedDso(id);
                     document.dispatchEvent(new CustomEvent('show-notification', {
-                        detail: { message: `已鎖定目標: ${id}！鏡筒準星將顯示導向指針`, type: 'success' }
+                        detail: { message: `已鎖定 ${id}`, type: 'success' }
                     }));
                     this.hide();
                 }
@@ -408,7 +407,7 @@ export class FinderUI {
                 const hasGoto = (gameStore.getState().accessories || []).some((a: any) => a.id === 'mount_goto' && a.owned);
                 if (!hasGoto) {
                     document.dispatchEvent(new CustomEvent('show-notification', {
-                        detail: { message: '尚未裝備「GoTo 電子自動尋星系統」，請先至工作室商店購買升級！', type: 'warning' }
+                        detail: { message: '需先在工作室購買 GoTo 系統', type: 'warning' }
                     }));
                     return;
                 }

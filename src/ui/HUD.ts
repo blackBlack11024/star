@@ -192,7 +192,7 @@ export class HUD {
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
         verBadge.textContent = 'v1.5.0';
-        verBadge.title = '觀星模擬器 v1.5.0 (電子尋星儀系統 · GoTo 自動導星 · 圖鑑相片檢視)';
+        verBadge.title = 'v1.5.0';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
@@ -519,11 +519,11 @@ export class HUD {
                 const state = gameStore.getState();
                 const vis = calculateTargetVisibility(dso, state.currentLocation.latitude, state.currentLocation.longitude, state.currentTime);
                 if (vis.isCurrentlyVisible) {
-                    timeAdvice = `<div class="qt-time-badge visible">目前空中可見 (仰角 ${Math.round(vis.currentAltitude)}°) · 最佳觀測中</div>`;
+                    timeAdvice = `<div class="qt-time-badge visible">目前可見 · 仰角 ${Math.round(vis.currentAltitude)}°</div>`;
                 } else if (vis.riseTimeStr) {
-                    timeAdvice = `<div class="qt-time-badge waiting">預計 ${vis.riseTimeStr} 升起 · 最佳時段 ${vis.bestTimeStr}（按 R/T 快轉）</div>`;
+                    timeAdvice = `<div class="qt-time-badge waiting">${vis.riseTimeStr} 升起 · 最佳 ${vis.bestTimeStr}</div>`;
                 } else {
-                    timeAdvice = `<div class="qt-time-badge waiting">最佳觀測時段：${vis.bestTimeStr}（按 R/T 調整時間）</div>`;
+                    timeAdvice = `<div class="qt-time-badge waiting">最佳觀測：${vis.bestTimeStr}</div>`;
                 }
             }
         }
@@ -551,10 +551,10 @@ export class HUD {
                 </div>
             </div>
             <div class="qt-objectives">
-                ${(activeQuest.objectives || []).slice(0, 2).map((o: any) => `<div class="qt-obj">○ ${o.description}</div>`).join('')}
+                ${(activeQuest.objectives || []).slice(0, 2).map((o: any) => `<div class="qt-obj">· ${o.description}</div>`).join('')}
             </div>
             ${timeAdvice}
-            <div class="qt-hint">點擊聆聽角色尋星對話 [G]</div>
+            <div class="qt-hint">點擊重播角色對話</div>
         `;
     }
 
