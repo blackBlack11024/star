@@ -17,6 +17,7 @@ export class TelescopeHUD {
     private toggleExposureBtn: HTMLButtonElement;
     private frameTypeButtons: Map<string, HTMLButtonElement> = new Map();
     private calibrationBanner: HTMLElement;
+    private eyepiecePhysicalMask: HTMLElement;
     private currentIdentifiedTarget: any = null;
     private unsubscribe: () => void;
     private idleTimer: number | null = null;
@@ -28,6 +29,10 @@ export class TelescopeHUD {
         this.container = document.createElement('div');
         this.container.className = 'telescope-overlay';
         this.container.style.display = 'none';
+
+        this.eyepiecePhysicalMask = document.createElement('div');
+        this.eyepiecePhysicalMask.className = 'eyepiece-physical-mask hidden';
+        this.container.appendChild(this.eyepiecePhysicalMask);
 
         this.vignette = document.createElement('div');
         this.vignette.className = 'telescope-vignette';
@@ -250,18 +255,51 @@ export class TelescopeHUD {
         });
 
         if (activeFrame === 'dark') {
+            this.eyepiecePhysicalMask.className = 'eyepiece-physical-mask mask-dark';
+            this.eyepiecePhysicalMask.innerHTML = `
+                <div class="mask-cap-emboss">
+                    <span style="font-size:32px;margin-bottom:6px;">🔒</span>
+                    <span>LENS CAP ON</span>
+                    <span style="font-size:11px;margin-top:4px;color:#f87171;">鏡頭蓋已蓋上 (全黑)</span>
+                </div>
+            `;
+            this.reticle.style.display = 'none';
+            this.starIdentifier.style.display = 'none';
             this.calibrationBanner.innerHTML = `<span>⬛ 【暗場模式 · 鏡頭蓋已蓋上】按空白鍵開始曝光，記錄感光元件熱噪點與壞點 [2]</span>`;
             this.calibrationBanner.className = 'calibration-banner dark-mode visible';
             this.calibrationBanner.style.display = 'block';
-        } else if (activeFrame === 'flat') {
-            this.calibrationBanner.innerHTML = `<span>⬜ 【平場模式 · 均勻柔光罩已開啟】按空白鍵快速曝光，記錄光學暗角與鏡片塵埃 [3]</span>`;
-            this.calibrationBanner.className = 'calibration-banner flat-mode visible';
-            this.calibrationBanner.style.display = 'block';
         } else if (activeFrame === 'bias') {
+            this.eyepiecePhysicalMask.className = 'eyepiece-physical-mask mask-dark';
+            this.eyepiecePhysicalMask.innerHTML = `
+                <div class="mask-cap-emboss">
+                    <span style="font-size:32px;margin-bottom:6px;">⚡</span>
+                    <span>FAST SHUTTER BIAS</span>
+                    <span style="font-size:11px;margin-top:4px;color:#38bdf8;">極速快門讀出底噪 (全黑)</span>
+                </div>
+            `;
+            this.reticle.style.display = 'none';
+            this.starIdentifier.style.display = 'none';
             this.calibrationBanner.innerHTML = `<span>🔲 【偏壓模式 · 極速快門讀出】按空白鍵 1/1000s 快速記錄晶片底噪 [4]</span>`;
             this.calibrationBanner.className = 'calibration-banner bias-mode visible';
             this.calibrationBanner.style.display = 'block';
+        } else if (activeFrame === 'flat') {
+            this.eyepiecePhysicalMask.className = 'eyepiece-physical-mask mask-flat';
+            this.eyepiecePhysicalMask.innerHTML = `
+                <div class="mask-flat-emboss">
+                    <span style="font-size:32px;margin-bottom:6px;">💡</span>
+                    <span>FLAT PANEL DIFFUSER</span>
+                    <span style="font-size:11px;margin-top:4px;color:#0284c7;">均勻平場柔光板</span>
+                </div>
+            `;
+            this.reticle.style.display = 'none';
+            this.starIdentifier.style.display = 'none';
+            this.calibrationBanner.innerHTML = `<span>⬜ 【平場模式 · 均勻柔光罩已開啟】按空白鍵快速曝光，記錄光學暗角與鏡片塵埃 [3]</span>`;
+            this.calibrationBanner.className = 'calibration-banner flat-mode visible';
+            this.calibrationBanner.style.display = 'block';
         } else {
+            this.eyepiecePhysicalMask.className = 'eyepiece-physical-mask hidden';
+            this.eyepiecePhysicalMask.innerHTML = '';
+            this.reticle.style.display = 'block';
             this.calibrationBanner.style.display = 'none';
             this.calibrationBanner.className = 'calibration-banner';
         }

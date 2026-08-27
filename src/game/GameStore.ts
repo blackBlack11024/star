@@ -308,7 +308,7 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   sellPhoto: (photoId) => {
     const s = get();
     const photo = s.photos.find((p) => p.id === photoId);
-    if (!photo || photo.sold) return 0;
+    if (!photo || photo.sold || (photo.frameType && photo.frameType !== 'light')) return 0;
     set({
       money: s.money + photo.sellPrice,
       photos: s.photos.map((p) => (p.id === photoId ? { ...p, sold: true } : p)),
@@ -318,12 +318,13 @@ export const gameStore = createStore<GameState>()((set, get) => ({
 
   sellAllPhotos: () => {
     const s = get();
-    const unsold = s.photos.filter((p) => !p.sold);
+    // Only sell actual celestial photos, NEVER sell calibration frames!
+    const unsold = s.photos.filter((p) => !p.sold && (!p.frameType || p.frameType === 'light'));
     const total = unsold.reduce((sum, p) => sum + p.sellPrice, 0);
     if (total === 0) return 0;
     set({
       money: s.money + total,
-      photos: s.photos.map((p) => ({ ...p, sold: true })),
+      photos: s.photos.map((p) => ((!p.frameType || p.frameType === 'light') ? { ...p, sold: true } : p)),
     });
     return total;
   },

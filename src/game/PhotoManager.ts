@@ -62,13 +62,19 @@ export class PhotoManager {
                 locationId: state.currentLocation?.id || 'hehuanshan',
                 score: 85,
                 quality: PhotoQuality.A,
-                sellPrice: 50,
+                sellPrice: 0,
                 sold: false,
                 timestamp: new Date(),
                 frameType,
             };
 
             state.addPhoto(calibPhoto);
+            document.dispatchEvent(new CustomEvent('show-notification', {
+                detail: {
+                    message: `✅ 已記錄 ${calibNames[frameType]}！此為疊圖校準專用數據，不可出售。`,
+                    type: 'info'
+                }
+            }));
             document.dispatchEvent(new CustomEvent('photo-captured', { detail: { photo: calibPhoto, targetInfo } }));
             return calibPhoto;
         }

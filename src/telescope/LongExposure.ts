@@ -88,13 +88,14 @@ export class LongExposure {
           
           vec4 accumulated = texture2D(uAccumulatedFrame, vUv);
           
-          // Additive photon accumulation with trail persistence:
-          // Moving stars leave streaks (peak blending), while stationary deep sky objects integrate photons
-          vec4 photonSum = accumulated + current * uIntegrationWeight;
-          vec4 streakPeak = max(accumulated, current);
-          vec4 result = mix(photonSum, streakPeak, 0.45);
+          // Realistic Astrophotography Star Trail & Long Exposure Integration:
+          // Maximum/Lighten blending keeps dark sky velvety black while stars paint streaks when moving.
+          // Running average integrates stationary faint deep-sky nebulae smoothly without blowout.
+          vec4 peak = max(accumulated, current);
+          vec4 smoothAvg = mix(accumulated, current, 1.0 / uSampleCount);
+          vec4 result = max(peak * 0.98, smoothAvg);
           
-          gl_FragColor = min(result, vec4(2.5, 2.5, 2.5, 1.0));
+          gl_FragColor = min(result, vec4(1.0, 1.0, 1.0, 1.0));
         }
       `
     });
@@ -170,9 +171,15 @@ export class LongExposure {
       this.prevDec = currentDec;
     }
     
-    // 1. Render main scene to frameTarget
+    // 1. Render to frameTarget
     this.renderer.setRenderTarget(this.frameTarget);
-    this.renderer.render(mainScene, mainCamera);
+    if (this.currentFrameType === 'dark' || this.currentFrameType === 'bias' || this.currentFrameType === 'flat') {
+      // Shutter closed (lens cap on) or flat diffuser active: do not render night sky stars!
+      this.renderer.clearColor();
+      this.renderer.clear();
+    } else {
+      this.renderer.render(mainScene, mainCamera);
+    }
     
     // 2. Blend frameTarget into accumulation ping-pong target
     const currentAccumTarget = this.bufferIdx === 0 ? this.rtA : this.rtB;
@@ -270,9 +277,8 @@ export class LongExposure {
     const imgData = tempCtx.createImageData(this.width, this.height);
     
     // Astronomical Photon Accumulation & Non-linear Asinh Stretch Curve:
-    // Short exposure (<5s): Faint signals are very dim, dark background has subtle CMOS read noise.
-    // Long exposure (15-60s+): Faint nebulae / galaxy arms emerge with rich HDR colors!
-    const exposureFactor = Math.min(2.8, Math.log10(elapsed + 1.0) * 1.35 + 0.35);
+    // Keeps velvety black night sky background while stars and nebulae shine crisply
+    const exposureFactor = Math.min(1.35, Math.log10(elapsed + 1.0) * 0.4 + 0.75);
     const hasMotionBlur = this.totalDrift > 0.25;
     
     for (let y = 0; y < this.height; y++) {
@@ -290,9 +296,9 @@ export class LongExposure {
         b *= exposureFactor;
         
         // Non-linear Asinh tone mapping for deep sky astrophotography
-        // Preserves bright core stars while dramatically boosting faint emission nebulae
+        // Preserves bright pinpoint stars and star streaks while naturally revealing faint nebulae
         const asinhStretch = (val: number) => {
-          const stretch = Math.asinh(val * 4.0) / Math.asinh(4.0);
+          const stretch = Math.asinh(val * 2.5) / Math.asinh(2.5);
           return Math.min(1.0, Math.max(0.0, stretch));
         };
         
@@ -301,8 +307,8 @@ export class LongExposure {
         let finalB = asinhStretch(b) * 255;
         
         // If exposure was very short (< 3s), add slight sensor shot noise
-        if (elapsed < 3.0 && finalR < 40 && finalG < 40 && finalB < 40) {
-          const noise = (Math.random() - 0.5) * 8 * (3.0 - elapsed);
+        if (elapsed < 3.0 && finalR < 35 && finalG < 35 && finalB < 35) {
+          const noise = (Math.random() - 0.5) * 5 * (3.0 - elapsed);
           finalR = Math.max(0, finalR + noise);
           finalG = Math.max(0, finalG + noise);
           finalB = Math.max(0, finalB + noise);
@@ -317,13 +323,8 @@ export class LongExposure {
     
     tempCtx.putImageData(imgData, 0, 0);
     
-    // Draw onto result canvas
+    // Draw directly onto result canvas (natural star streaks already recorded without blowout)
     ctx.drawImage(tempCanvas, 0, 0, outW, outH);
-    
-    // If telescope was moved significantly during exposure, bake directional star trails (殘影 / 拖尾)
-    if (hasMotionBlur) {
-      this.applyMotionBlurEffect(ctx, outW, outH, this.totalDrift);
-    }
     
     return {
       elapsedSeconds: elapsed,
@@ -331,25 +332,6 @@ export class LongExposure {
       hasMotionBlur,
       dataUrl: this.resultCanvas.toDataURL('image/jpeg', 0.90),
     };
-  }
-
-  /** Apply directional streak motion blur when telescope moves during exposure */
-  private applyMotionBlurEffect(ctx: CanvasRenderingContext2D, w: number, h: number, drift: number) {
-    const streakLength = Math.min(48, Math.max(8, drift * 35));
-    const passes = 6;
-    
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.28;
-    
-    for (let i = 1; i <= passes; i++) {
-      const offset = (i / passes) * streakLength;
-      // Slight directional jitter reflecting hand slew or mount drift
-      ctx.drawImage(ctx.canvas, offset, offset * 0.3);
-      ctx.drawImage(ctx.canvas, -offset * 0.6, -offset * 0.2);
-    }
-    
-    ctx.restore();
   }
 
   /** Generate realistic Dark frame: lens cap on, thermal noise + hot pixels */

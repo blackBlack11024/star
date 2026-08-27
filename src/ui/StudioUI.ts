@@ -83,7 +83,7 @@ export class StudioUI {
             const tB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
             return tB - tA;
         });
-        const unsoldPhotos = allPhotos.filter((p: any) => !p.sold);
+        const unsoldPhotos = allPhotos.filter((p: any) => !p.sold && (!p.frameType || p.frameType === 'light'));
         const totalValue = unsoldPhotos.reduce((sum: number, p: any) => sum + (p.sellPrice || p.price || 0), 0);
 
         const topBar = document.createElement('div');
@@ -93,15 +93,15 @@ export class StudioUI {
         topBar.style.marginBottom = '16px';
 
         const statsText = document.createElement('div');
-        statsText.textContent = `未出售照片: ${unsoldPhotos.length} 張 (總價值: $${totalValue})`;
+        statsText.textContent = `未出售天體照片: ${unsoldPhotos.length} 張 (總價值: $${totalValue})`;
 
         const sellAllBtn = document.createElement('button');
         sellAllBtn.className = 'buy-btn';
-        sellAllBtn.textContent = `全部出售 ($${totalValue})`;
+        sellAllBtn.textContent = `全部出售天體 ($${totalValue})`;
         sellAllBtn.disabled = unsoldPhotos.length === 0;
         sellAllBtn.onclick = () => {
             const earned = state.sellAllPhotos();
-            document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已出售全部照片，獲得 $${earned}`, type: 'success' } }));
+            document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已出售全部天體照片，獲得 $${earned}`, type: 'success' } }));
             this.renderGallery(gameStore.getState());
         };
 
@@ -125,8 +125,9 @@ export class StudioUI {
         grid.className = 'photo-grid';
 
         allPhotos.forEach((photo: any) => {
+            const isCalib = photo.frameType && photo.frameType !== 'light';
             const card = document.createElement('div');
-            card.className = `photo-card ${photo.sold ? 'sold' : ''}`;
+            card.className = `photo-card ${photo.sold ? 'sold' : ''} ${isCalib ? 'calib-card' : ''}`;
             
             const thumb = document.createElement('img');
             thumb.className = 'photo-thumb';
@@ -158,7 +159,7 @@ export class StudioUI {
                 blurBadge.textContent = `晃動殘影`;
                 title.appendChild(blurBadge);
             }
-            if (photo.frameType && photo.frameType !== 'light') {
+            if (isCalib) {
                 const calBadge = document.createElement('span');
                 calBadge.className = 'calib-tag';
                 calBadge.textContent = photo.frameType === 'dark' ? '暗場' : photo.frameType === 'flat' ? '平場' : '偏壓';
@@ -177,20 +178,25 @@ export class StudioUI {
 
             const price = document.createElement('div');
             price.className = 'photo-price';
-            price.textContent = photo.sold ? '已出售' : `$${photo.sellPrice || photo.price || 0}`;
+            
+            if (isCalib) {
+                price.innerHTML = `<span style="font-size:11px;color:#94a3b8;font-weight:600;">🛠️ 疊圖校準數據 (專用資產)</span>`;
+                footer.appendChild(price);
+            } else {
+                price.textContent = photo.sold ? '已出售' : `$${photo.sellPrice || photo.price || 0}`;
+                footer.appendChild(price);
 
-            footer.appendChild(price);
-
-            if (!photo.sold) {
-                const sellBtn = document.createElement('button');
-                sellBtn.className = 'photo-sell-btn';
-                sellBtn.textContent = '出售';
-                sellBtn.onclick = () => {
-                    const earned = state.sellPhoto(photo.id);
-                    document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已售出照片，獲得 $${earned}`, type: 'success' } }));
-                    this.renderGallery(gameStore.getState());
-                };
-                footer.appendChild(sellBtn);
+                if (!photo.sold) {
+                    const sellBtn = document.createElement('button');
+                    sellBtn.className = 'photo-sell-btn';
+                    sellBtn.textContent = '出售';
+                    sellBtn.onclick = () => {
+                        const earned = state.sellPhoto(photo.id);
+                        document.dispatchEvent(new CustomEvent('show-notification', { detail: { message: `已售出照片，獲得 $${earned}`, type: 'success' } }));
+                        this.renderGallery(gameStore.getState());
+                    };
+                    footer.appendChild(sellBtn);
+                }
             }
 
             info.appendChild(title);
