@@ -241,6 +241,7 @@ export class PlayerController {
           document.dispatchEvent(new CustomEvent('frame-type-changed', { detail: types[nextIdx] }));
           return;
         }
+        case 'KeyQ':
         case 'KeyL': {
           state.toggleTelescopeLock();
           return;

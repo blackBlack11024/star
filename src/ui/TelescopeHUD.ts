@@ -50,7 +50,7 @@ export class TelescopeHUD {
         this.lockBadge = document.createElement('div');
         this.lockBadge.className = 'telescope-lock-badge';
         this.lockBadge.style.display = 'none';
-        this.lockBadge.textContent = '視角已鎖定 · 按 L 解除';
+        this.lockBadge.textContent = '視角已鎖定 · 按 Q 解除';
         this.container.appendChild(this.lockBadge);
 
         this.infoPanel = document.createElement('div');
@@ -135,8 +135,8 @@ export class TelescopeHUD {
         const lockAngleBtn = document.createElement('button');
         lockAngleBtn.className = 'telescope-finder-btn';
         lockAngleBtn.id = 'telescope-lock-btn';
-        lockAngleBtn.innerHTML = `<span>鎖定視角</span><kbd>L</kbd>`;
-        lockAngleBtn.title = '鎖定 / 解鎖鏡筒指向角度 [L]';
+        lockAngleBtn.innerHTML = `<span>鎖定視角</span><kbd>Q</kbd>`;
+        lockAngleBtn.title = '鎖定 / 解鎖鏡筒指向角度 [Q]';
         lockAngleBtn.onclick = (e) => {
             e.stopPropagation();
             gameStore.getState().toggleTelescopeLock();
@@ -158,7 +158,7 @@ export class TelescopeHUD {
 
         const hints = document.createElement('div');
         hints.className = 'keyboard-hints';
-        hints.textContent = '空白鍵 曝光 · L 鎖定視角 · 1-4 場次 · V 循環 · 滾輪 變焦 · ESC 退出';
+        hints.textContent = '空白鍵 曝光 · Q 鎖定視角 · 1-4 場次 · V 循環 · 滾輪 變焦 · ESC 退出';
 
         this.infoPanel.appendChild(readouts);
         this.infoPanel.appendChild(controlsRow);
@@ -252,13 +252,13 @@ export class TelescopeHUD {
         const lockBtn = document.getElementById('telescope-lock-btn');
         if (lockBtn) {
             if (state.isTelescopeLocked) {
-                lockBtn.innerHTML = `<span>解鎖視角</span><kbd>L</kbd>`;
+                lockBtn.innerHTML = `<span>解鎖視角</span><kbd>Q</kbd>`;
                 lockBtn.style.borderColor = 'rgba(251, 191, 36, 0.8)';
                 lockBtn.style.color = '#fbbf24';
                 lockBtn.style.background = 'rgba(251, 191, 36, 0.15)';
                 this.lockBadge.style.display = 'block';
             } else {
-                lockBtn.innerHTML = `<span>鎖定視角</span><kbd>L</kbd>`;
+                lockBtn.innerHTML = `<span>鎖定視角</span><kbd>Q</kbd>`;
                 lockBtn.style.borderColor = '';
                 lockBtn.style.color = '';
                 lockBtn.style.background = '';

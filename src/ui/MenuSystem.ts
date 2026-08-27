@@ -1,5 +1,6 @@
 import { gameStore } from '../game/GameStore';
 import { LOCATIONS } from '../data/locations';
+import { GameMode } from '../types';
 
 export class MenuSystem {
     private locationModal: HTMLElement;
@@ -172,8 +173,15 @@ export class MenuSystem {
 
     private setupKeyboardListeners() {
         window.addEventListener('keydown', (e) => {
-            const state = gameStore.getState() as any;
-            if (state.gameMode === 'studio') return;
+            const state = gameStore.getState();
+            if (state.gameMode === GameMode.Studio || state.gameMode === GameMode.Telescope) {
+                if (e.code === 'Escape') {
+                    if (this.guideModal.style.display !== 'none') this.hideGuide();
+                    if (this.locationModal.style.display !== 'none') this.hideLocationSelector();
+                    if (this.timeReversalPanel.style.display !== 'none') this.hideTimeReversal();
+                }
+                return;
+            }
 
             if (e.key.toLowerCase() === 'l') {
                 if (this.locationModal.style.display === 'none') {
