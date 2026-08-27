@@ -279,56 +279,42 @@ export class PlayerController {
     if (state.isTelescopeLocked) return;
 
     const fovFactor = state.currentFov / 60;
-    const step = 0.02 * fovFactor;
+    const stepDec = 0.5 * fovFactor;
+    const stepRa = (0.5 / 15) * fovFactor;
 
-    let deltaYaw = 0;
-    let deltaPitch = 0;
+    let deltaRa = 0;
+    let deltaDec = 0;
 
-    if (key === 'ArrowUp') deltaPitch += step;
-    if (key === 'ArrowDown') deltaPitch -= step;
-    if (key === 'ArrowLeft') deltaYaw += step;
-    if (key === 'ArrowRight') deltaYaw -= step;
+    if (key === 'ArrowUp') deltaDec += stepDec;
+    if (key === 'ArrowDown') deltaDec -= stepDec;
+    if (key === 'ArrowLeft') deltaRa -= stepRa;
+    if (key === 'ArrowRight') deltaRa += stepRa;
 
-    this.slewTelescopeByDelta(deltaYaw, deltaPitch);
+    this.slewEquatorial(deltaRa, deltaDec);
     document.dispatchEvent(new CustomEvent('telescope-slew'));
   }
 
-  private slewTelescopeByDelta(deltaYaw: number, deltaPitch: number) {
+  /** Slew telescope along equatorial mount axes (RA and Dec) with meridian pole-crossing */
+  private slewEquatorial(deltaRa: number, deltaDec: number) {
     const state = gameStore.getState();
-    if (state.isTelescopeLocked || !this.celestialSphere) return;
+    if (state.isTelescopeLocked) return;
 
-    let w = this.celestialSphere.getRaDecToVector(state.telescopeRa, state.telescopeDec);
-    w.applyMatrix4(this.celestialSphere.group.matrixWorld).normalize();
+    let ra = state.telescopeRa + deltaRa;
+    let dec = state.telescopeDec + deltaDec;
 
-    // 1. Pitch up/down along camera's right horizontal axis
-    if (Math.abs(deltaPitch) > 0.00001) {
-      let right = new THREE.Vector3().crossVectors(w, new THREE.Vector3(0, 1, 0)).normalize();
-      if (right.lengthSq() < 0.001) right.set(1, 0, 0);
-
-      const qPitch = new THREE.Quaternion().setFromAxisAngle(right, deltaPitch);
-      w.applyQuaternion(qPitch);
+    // Authentic equatorial mount pole-crossing (Meridian flip across celestial poles)
+    if (dec > 90) {
+      dec = 180 - dec;
+      ra = (ra + 12) % 24;
+    } else if (dec < -90) {
+      dec = -180 - dec;
+      ra = (ra + 12) % 24;
     }
 
-    // 2. Yaw left/right around world vertical axis (pan across azimuth)
-    if (Math.abs(deltaYaw) > 0.00001) {
-      const qYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaYaw);
-      w.applyQuaternion(qYaw);
-    }
+    if (ra < 0) ra += 24;
+    if (ra >= 24) ra %= 24;
 
-    // 3. Horizon safety clamp (never point below +2° above horizon, never past zenith 89.5°)
-    const currentAltRad = Math.asin(Math.max(-1, Math.min(1, w.y)));
-    const clampedAltRad = Math.max(0.035, Math.min(Math.PI / 2 - 0.01, currentAltRad));
-    const cosAlt = Math.cos(clampedAltRad);
-    const horizLen = Math.sqrt(w.x * w.x + w.z * w.z);
-    if (horizLen > 0.0001) {
-      w.x = (w.x / horizLen) * cosAlt;
-      w.z = (w.z / horizLen) * cosAlt;
-    }
-    w.y = Math.sin(clampedAltRad);
-    w.normalize();
-
-    const coords = this.celestialSphere.vectorToRaDec(w);
-    state.setTelescopePointing(coords.ra, coords.dec);
+    state.setTelescopePointing(ra, dec);
   }
 
   private onKeyUp(event: KeyboardEvent) {
@@ -368,11 +354,12 @@ export class PlayerController {
         // Right-click: Micro precision slew (0.25x); Normal: 1.0x
         const speedMultiplier = event.buttons === 2 ? 0.25 : 1.0;
         
-        // Natural camera look: move mouse up -> look up toward sky; move mouse right -> pan right
-        const deltaYaw = -event.movementX * 0.0012 * fovFactor * speedMultiplier;
-        const deltaPitch = -event.movementY * 0.0012 * fovFactor * speedMultiplier;
+        // Authentic equatorial mount slew:
+        // Moving mouse UP/DOWN tilts along Dec axis (赤緯); moving mouse LEFT/RIGHT slews along RA axis (赤經)
+        const deltaRa = -event.movementX * (0.025 / 15) * fovFactor * speedMultiplier;
+        const deltaDec = -event.movementY * 0.025 * fovFactor * speedMultiplier;
 
-        this.slewTelescopeByDelta(deltaYaw, deltaPitch);
+        this.slewEquatorial(deltaRa, deltaDec);
 
         if (Math.abs(event.movementX) > 2 || Math.abs(event.movementY) > 2) {
           document.dispatchEvent(new CustomEvent('telescope-slew'));
