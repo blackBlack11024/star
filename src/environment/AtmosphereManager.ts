@@ -108,12 +108,16 @@ export class AtmosphereManager {
             }
         } else {
             // Twilight & Night: gradually extinguish atmosphere scattering
-            const nightFactor = Math.max(0.0, Math.min(1.0, (-sunElevDeg) / 12.0));
+            const nightFactor = Math.max(0.0, Math.min(1.0, (-sunElevDeg) / 10.0));
             // Move sun vector below ground so sky shader doesn't create bright horizon
             uniforms['sunPosition'].value.set(0, -1000, 0);
-            uniforms['turbidity'].value = Math.max(0.01, 2.0 * (1.0 - nightFactor));
-            uniforms['rayleigh'].value = Math.max(0.001, 1.0 * (1.0 - nightFactor));
-            uniforms['mieCoefficient'].value = Math.max(0.0001, 0.003 * (1.0 - nightFactor));
+            uniforms['turbidity'].value = Math.max(0.0, 2.0 * (1.0 - nightFactor));
+            uniforms['rayleigh'].value = Math.max(0.0, 1.0 * (1.0 - nightFactor));
+            uniforms['mieCoefficient'].value = Math.max(0.0, 0.003 * (1.0 - nightFactor));
+
+            // When deep into night (astronomical twilight, sun below -10 deg), turn off Preetham sky mesh
+            // so the scene renders true pure black space (scene.background 0x010206) without residual grey haze.
+            this.sky.visible = sunElevDeg > -10.0;
 
             this.sunLight.intensity = 0;
             this.ambientLight.color.setHex(0x060c18);
@@ -132,6 +136,10 @@ export class AtmosphereManager {
         }
 
         return sunElevation;
+    }
+
+    public setSkyVisible(visible: boolean) {
+        this.sky.visible = visible;
     }
 
     public dispose() {

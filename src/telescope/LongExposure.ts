@@ -223,9 +223,14 @@ export class LongExposure {
     this.blendMaterial.uniforms.uIntegrationWeight.value = integrationWeight;
     this.blendMaterial.uniforms.uStarTrailMode.value = isStarTrailMode ? 1.0 : 0.0;
     
+    const prevToneMapping = this.renderer.toneMapping;
+    this.renderer.toneMapping = THREE.NoToneMapping;
+
     this.renderer.setRenderTarget(nextAccumTarget);
     this.renderer.render(this.blendScene, this.blendCamera);
     this.renderer.setRenderTarget(null);
+
+    this.renderer.toneMapping = prevToneMapping;
     
     this.bufferIdx = 1 - this.bufferIdx;
   }
@@ -316,15 +321,39 @@ export class LongExposure {
     const imgData = tempCtx.createImageData(this.width, this.height);
     
     const hasMotionBlur = this.totalDrift > 0.25;
+
+    // Astrophotography Background Calibration & Black Point Alignment
+    // Samples darkest pixels across image to eliminate artificial uniform skyglow/gain haze
+    const samples: number[] = [];
+    const sampleStep = Math.max(1, Math.floor((this.width * this.height) / 2000));
+    for (let i = 0; i < buffer.length; i += sampleStep * 4) {
+      const lum = buffer[i] * 0.299 + buffer[i + 1] * 0.587 + buffer[i + 2] * 0.114;
+      samples.push(lum);
+    }
+    samples.sort((a, b) => a - b);
+    const bgLuma = samples[Math.floor(samples.length * 0.15)] || 0;
+    // Subtract uniform diffuse skyglow background (up to 80 DN), keeping celestial sky deep neutral velvet black
+    const blackCut = Math.min(80, Math.floor(bgLuma * 0.88));
+    const stretch = blackCut < 240 ? 255 / (255 - blackCut) : 1.0;
     
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
         const srcIdx = (y * this.width + x) * 4;
         const dstIdx = ((this.height - 1 - y) * this.width + x) * 4;
         
-        imgData.data[dstIdx] = buffer[srcIdx];
-        imgData.data[dstIdx + 1] = buffer[srcIdx + 1];
-        imgData.data[dstIdx + 2] = buffer[srcIdx + 2];
+        let r = buffer[srcIdx];
+        let g = buffer[srcIdx + 1];
+        let b = buffer[srcIdx + 2];
+
+        if (blackCut > 0) {
+          r = Math.min(255, Math.max(0, r - blackCut) * stretch);
+          g = Math.min(255, Math.max(0, g - blackCut) * stretch);
+          b = Math.min(255, Math.max(0, b - blackCut) * stretch);
+        }
+
+        imgData.data[dstIdx] = Math.round(r);
+        imgData.data[dstIdx + 1] = Math.round(g);
+        imgData.data[dstIdx + 2] = Math.round(b);
         imgData.data[dstIdx + 3] = 255;
       }
     }
