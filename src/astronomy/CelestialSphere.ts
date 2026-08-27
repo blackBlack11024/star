@@ -3,6 +3,7 @@ import * as THREE from 'three';
 export class CelestialSphere {
     private scene: THREE.Scene;
     public group: THREE.Group;
+    private currentLst: number = 0;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
@@ -22,12 +23,17 @@ export class CelestialSphere {
         
         const lst = (gmst_adj + longitude / 15) % 24;
         const lst_adj = lst < 0 ? lst + 24 : lst;
+        this.currentLst = lst_adj;
         
         const lstRad = lst_adj * Math.PI / 12;
         const latRad = latitude * Math.PI / 180;
         
         this.group.rotation.set(0, 0, 0);
         this.group.setRotationFromEuler(new THREE.Euler((Math.PI / 2) - latRad, 0, -lstRad, 'ZXY'));
+    }
+
+    public getLst(): number {
+        return this.currentLst;
     }
 
     public getRaDecToVector(raHours: number, decDegrees: number): THREE.Vector3 {

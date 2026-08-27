@@ -128,6 +128,9 @@ interface SavedState {
   weatherVolume?: number;
   sfxVolume?: number;
   isMuted?: boolean;
+  telescopeRa?: number;
+  telescopeDec?: number;
+  telescopeFov?: number;
 }
 
 function loadSavedData(): Partial<SavedState> | null {
@@ -167,6 +170,9 @@ export function autoSaveState(state: GameState) {
         weatherVolume: state.weatherVolume,
         sfxVolume: state.sfxVolume,
         isMuted: state.isMuted,
+        telescopeRa: state.telescopeRa,
+        telescopeDec: state.telescopeDec,
+        telescopeFov: state.currentFov,
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
     } catch (e) {
@@ -196,11 +202,11 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   weather: WeatherState.Clear,
   weatherTimer: 300,
 
-  telescopeRa: 0,
-  telescopeDec: 45,
+  telescopeRa: savedData?.telescopeRa ?? 0,
+  telescopeDec: savedData?.telescopeDec ?? 45,
   telescopeAzimuth: 180,
   telescopeAltitude: 45,
-  currentFov: 60,
+  currentFov: savedData?.telescopeFov ?? 20,
   isExposing: false,
   exposureElapsed: 0,
   exposureProgress: 0,

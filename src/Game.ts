@@ -103,6 +103,7 @@ export class Game {
   private animationFrameId = 0;
   private savedWalkPos = new THREE.Vector3(0, 1.7, 0);
   private savedWalkRot = new THREE.Euler();
+  private savedTelescopeFov = 20.0;
   private lastIdentifiedTarget: any = null;
 
   constructor() {
@@ -219,6 +220,7 @@ export class Game {
 
     // ---- Wire up interactions ----
     this.setupInteractions();
+    this.savedTelescopeFov = gameStore.getState().currentFov || 20.0;
 
     progress(1.0, '初始化完成！');
   }
@@ -326,6 +328,7 @@ export class Game {
 
     // ---- World objects ----
     this.telescopeModel.update(this.camera.position);
+    this.telescopeModel.updatePointing(state.telescopeRa, state.telescopeDec, loc.latitude, this.celestialSphere.getLst());
 
     // ---- Player controller & Binoculars smooth zoom ----
     this.playerController.update(deltaTime);
@@ -577,13 +580,25 @@ export class Game {
       this.telescopeModel.setVisible(false);
       this.terrain.setVisible(true);
       this.studio.setVisible(false);
+
+      // Preserve telescope magnification / FOV
+      const targetFov = this.savedTelescopeFov || gameStore.getState().currentFov || 20.0;
+      gameStore.getState().setFov(targetFov);
+      this.camera.fov = targetFov;
+      this.camera.updateProjectionMatrix();
+
       this.telescopeHUD.show();
     } else if (from === GameMode.Telescope) {
+      // Remember current telescope magnification before exiting
+      this.savedTelescopeFov = gameStore.getState().currentFov;
       this.camera.position.copy(this.savedWalkPos);
       this.camera.rotation.copy(this.savedWalkRot);
+
+      // Restore camera FOV to 60 for Walk mode
       this.camera.fov = 60;
       this.camera.updateProjectionMatrix();
-      gameStore.getState().setFov(60);
+
+      // Keep telescope's saved magnification in store and savedTelescopeFov (do NOT call setFov(60))
       this.telescopeModel.setVisible(true);
       this.terrain.setVisible(true);
       this.studio.setVisible(true);
