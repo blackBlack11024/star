@@ -29,7 +29,11 @@ export class CelestialSphere {
         const latRad = latitude * Math.PI / 180;
         
         this.group.rotation.set(0, 0, 0);
-        this.group.setRotationFromEuler(new THREE.Euler((Math.PI / 2) - latRad, 0, -lstRad, 'ZXY'));
+        // Mathematically exact celestial orientation:
+        // Diurnal rotation around polar axis Y by (90° - LST)
+        // Latitude tilt around world X towards North by -(90° - lat)
+        // North celestial pole permanently locks at North (-Z) at altitude = latitude across all global sites
+        this.group.setRotationFromEuler(new THREE.Euler(-(Math.PI / 2 - latRad), (Math.PI / 2) - lstRad, 0, 'XYZ'));
         this.group.matrixAutoUpdate = true;
         this.group.updateMatrixWorld(true);
     }
