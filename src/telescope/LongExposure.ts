@@ -264,7 +264,7 @@ export class LongExposure {
       return {
         elapsedSeconds: elapsed,
         totalDrift: this.totalDrift,
-        hasMotionBlur: this.totalDrift > 0.25,
+        hasMotionBlur: this.blendMaterial.uniforms.uStarTrailMode.value > 0.5 ? false : this.totalDrift > 0.25,
         dataUrl: '',
       };
     }
@@ -318,9 +318,9 @@ export class LongExposure {
     tempCanvas.width = this.width;
     tempCanvas.height = this.height;
     const tempCtx = tempCanvas.getContext('2d')!;
+    const isStarTrail = this.blendMaterial.uniforms.uStarTrailMode.value > 0.5;
+    const hasMotionBlur = isStarTrail ? false : this.totalDrift > 0.25;
     const imgData = tempCtx.createImageData(this.width, this.height);
-    
-    const hasMotionBlur = this.totalDrift > 0.25;
 
     // Astrophotography Background Calibration & Black Point Alignment
     // Samples darkest pixels across image to eliminate artificial uniform skyglow/gain haze

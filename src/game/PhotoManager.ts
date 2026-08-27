@@ -173,7 +173,20 @@ export class PhotoManager {
             finalTargetType = TargetType.SpecialEvent;
         }
 
-        const isUnknownSky = !targetInfo || !targetInfo.name || targetInfo.name.includes('未知');
+        const isStarTrailPhoto = hasAcc('camera_startrail') && expSec >= 15;
+        if (isStarTrailPhoto) {
+            usedEquipmentTags.push('同心圓星軌');
+            accessoryScoreBonus += 20;
+            accessoryPriceMultiplier *= 1.4;
+            if (finalTargetName === '未知星野' || finalTargetName.includes('未知')) {
+                finalTargetName = '璀璨同心圓星軌光跡';
+                finalTargetType = TargetType.SpecialEvent;
+            } else {
+                finalTargetName = `${finalTargetName} (星軌)`;
+            }
+        }
+
+        const isUnknownSky = (!targetInfo || !targetInfo.name || targetInfo.name.includes('未知')) && !isStarTrailPhoto;
         const qualityScore = this.calculateQuality(targetInfo, state, expSec, hasMotionBlur, driftAmount, accessoryScoreBonus);
         const quality = this.getQualityGrade(qualityScore);
         let basePrice = this.calculatePrice(quality, finalTargetType);
