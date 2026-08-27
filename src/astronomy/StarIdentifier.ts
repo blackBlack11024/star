@@ -51,7 +51,7 @@ export class StarIdentifier {
         const dist = this.angularDistance(telescopeRa, telescopeDec, p.ra, p.dec);
         if (dist <= radius) {
           results.push({
-            name: `${p.name} · ${p.features}`,
+            name: p.name,
             type: TargetType.Planet,
             magnitude: p.magnitude,
             angularDistance: dist,
