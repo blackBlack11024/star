@@ -42,7 +42,7 @@ export class StudioUI {
         tabContainer.className = 'studio-tabs';
         
         this.tabs = [];
-        ['照片庫', '望遠鏡升級', '配件商店', '★ 疊圖處理工坊'].forEach((name, index) => {
+        ['照片庫', '望遠鏡升級', '配件商店', '疊圖處理工坊'].forEach((name, index) => {
             const tab = document.createElement('button');
             tab.className = `studio-tab ${index === 0 ? 'active' : ''}`;
             tab.textContent = name;
@@ -115,8 +115,7 @@ export class StudioUI {
             const empty = document.createElement('div');
             empty.className = 'empty-state';
             empty.innerHTML = `
-                <div style="font-size:32px;margin-bottom:8px">📷</div>
-                <div style="font-size:16px;color:#94a3b8">尚無天體照片</div>
+                <div style="font-size:16px;color:#94a3b8;font-weight:600;">尚無天體照片</div>
                 <div style="font-size:13px;color:#64748b;margin-top:4px">使用望遠鏡（按 E）對準星空，按下空白鍵即可開始長曝光拍攝。（暗場／平場／偏壓校準檔案存放於疊圖工坊）</div>
             `;
             this.contentArea.appendChild(empty);
@@ -150,7 +149,7 @@ export class StudioUI {
             if (photo.isStacked) {
                 const badge = document.createElement('span');
                 badge.className = 'stacked-badge';
-                badge.textContent = `★ ${photo.stackedCount || 2}張疊圖`;
+                badge.textContent = `${photo.stackedCount || 2}張疊圖`;
                 title.appendChild(badge);
             }
             if (photo.hasMotionBlur) {
@@ -321,7 +320,7 @@ export class StudioUI {
     }
 
     // =========================================================================
-    // ★ 疊圖處理工坊 (Astrophotography Stacking Lab)
+    // 疊圖處理工坊 (Astrophotography Stacking Lab)
     // =========================================================================
     private renderStackingLab(state: any) {
         const photos: Photo[] = state.photos || [];
@@ -347,7 +346,7 @@ export class StudioUI {
         if (lightFrames.length === 0) {
             labContainer.innerHTML = `
                 <div class="empty-state">
-                    <div style="font-size:36px;margin-bottom:8px">🔭 ★ 疊圖處理工坊</div>
+                    <div style="font-size:24px;margin-bottom:8px;font-weight:700;color:#fff;">疊圖處理工坊</div>
                     <div style="font-size:16px;color:#94a3b8;font-weight:600;">尚無可供疊合的亮場底片</div>
                     <div style="font-size:13px;color:#64748b;margin-top:8px;max-width:520px;line-height:1.6;">
                         在真實天文攝影中，拍攝多張同一目標的亮場（Light），並搭配<strong>暗場（按 2 蓋鏡頭蓋）</strong>、<strong>平場（按 3 柔光罩）</strong>、<strong>偏壓（按 4 快門底噪）</strong>，即可在中位數疊圖中消除熱噪點、鏡頭暗角與晃動星軌，合成出震撼的 <strong>SSS 級大師典藏神作</strong>！
@@ -382,21 +381,21 @@ export class StudioUI {
                 <label class="calib-slot-item ${darkFrames.length > 0 ? 'available' : 'empty'}">
                     <input type="checkbox" id="calib-dark-chk" ${darkFrames.length > 0 ? 'checked' : 'disabled'}>
                     <div class="calib-slot-info">
-                        <div class="calib-slot-name">⬛ 暗場槽 (Dark Frame)</div>
+                        <div class="calib-slot-name">暗場槽 (Dark Frame)</div>
                         <div class="calib-slot-desc">已擁有 ${darkFrames.length} 張 · 扣除熱噪聲與壞點</div>
                     </div>
                 </label>
                 <label class="calib-slot-item ${flatFrames.length > 0 ? 'available' : 'empty'}">
                     <input type="checkbox" id="calib-flat-chk" ${flatFrames.length > 0 ? 'checked' : 'disabled'}>
                     <div class="calib-slot-info">
-                        <div class="calib-slot-name">⬜ 平場槽 (Flat Frame)</div>
+                        <div class="calib-slot-name">平場槽 (Flat Frame)</div>
                         <div class="calib-slot-desc">已擁有 ${flatFrames.length} 張 · 修正邊緣暗角與灰塵</div>
                     </div>
                 </label>
                 <label class="calib-slot-item ${biasFrames.length > 0 ? 'available' : 'empty'}">
                     <input type="checkbox" id="calib-bias-chk" ${biasFrames.length > 0 ? 'checked' : 'disabled'}>
                     <div class="calib-slot-info">
-                        <div class="calib-slot-name">🔲 偏壓槽 (Bias Frame)</div>
+                        <div class="calib-slot-name">偏壓槽 (Bias Frame)</div>
                         <div class="calib-slot-desc">已擁有 ${biasFrames.length} 張 · 消除感光晶片讀出底噪</div>
                     </div>
                 </label>
@@ -409,7 +408,7 @@ export class StudioUI {
             </div>
 
             <button class="stack-execute-btn" id="btn-execute-stack">
-                <span>▶ 開始星點對齊與天文校準疊圖</span>
+                <span>開始星點對齊與天文校準疊圖</span>
             </button>
         `;
 
@@ -434,10 +433,10 @@ export class StudioUI {
                     <img id="stack-after-img" class="stack-slider-img after" src="" alt="疊圖後"/>
                     <img id="stack-before-img" class="stack-slider-img before" src="" alt="疊圖前"/>
                     <div class="stack-slider-line" id="stack-slider-line">
-                        <div class="stack-slider-handle">⮂ ⮃</div>
+                        <div class="stack-slider-handle">&lt;|&gt;</div>
                     </div>
-                    <div class="slider-side-tag tag-left">◀ 疊圖前單張 (未處理)</div>
-                    <div class="slider-side-tag tag-right">疊圖後大師 (已降噪) ▶</div>
+                    <div class="slider-side-tag tag-left">疊圖前單張 (未處理)</div>
+                    <div class="slider-side-tag tag-right">疊圖後大師 (已降噪)</div>
                 </div>
             </div>
 
@@ -497,7 +496,7 @@ export class StudioUI {
             calibFill.style.width = `${score}%`;
 
             if (score >= 100) {
-                calibText.innerHTML = `<span style="color:#34d399;font-weight:700;">★ 100% 完整天文校準 · 解鎖 SSS 級「典藏傑作」</span>`;
+                calibText.innerHTML = `<span style="color:#34d399;font-weight:700;">100% 完整天文校準 · 解鎖 SSS 級「典藏傑作」</span>`;
             } else if (score >= 80) {
                 calibText.innerHTML = `<span style="color:#38bdf8;">高度校準 · 最高 S 級大作</span>`;
             } else {
@@ -531,7 +530,7 @@ export class StudioUI {
                             <span class="flag-val">$${p.sellPrice}</span>
                         </div>
                     </div>
-                    <button class="stack-light-del" title="刪除此張底片" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;border-radius:4px;padding:3px 7px;font-size:11px;cursor:pointer;margin-left:6px;">🗑️</button>
+                    <button class="stack-light-del" title="刪除此張底片" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;border-radius:4px;padding:3px 7px;font-size:11px;cursor:pointer;margin-left:6px;">刪除</button>
                 `;
 
                 const chk = item.querySelector('input') as HTMLInputElement;
@@ -676,7 +675,7 @@ export class StudioUI {
             lastStackedResult = {
                 id: `master_stacked_${Date.now()}`,
                 imageDataUrl: stackedDataUrl,
-                targetName: `${selectedTarget} [★大師級疊圖]`,
+                targetName: `${selectedTarget} [大師級疊圖]`,
                 targetType,
                 exposureSeconds: totalExp,
                 telescopeLevel: state.telescopeLevel || 1,
@@ -702,7 +701,7 @@ export class StudioUI {
             sliderContainer.style.display = 'block';
             sliderBeforeImg.src = currentLights[0].imageDataUrl;
             sliderAfterImg.src = stackedDataUrl;
-            vpBadge.textContent = '★ 疊圖前後對比';
+            vpBadge.textContent = '疊圖前後對比';
 
             btnModeSlider.onclick = () => {
                 btnModeSlider.classList.add('active');
@@ -713,7 +712,7 @@ export class StudioUI {
                 sliderBeforeImg.style.clipPath = `polygon(0 0, 50% 0, 50% 100%, 0 100%)`;
                 sliderLine.style.display = 'block';
                 sliderLine.style.left = '50%';
-                vpBadge.textContent = '★ 疊圖前後拉桿對比 (左:疊圖前 / 右:疊圖後)';
+                vpBadge.textContent = '疊圖前後拉桿對比 (左:疊圖前 / 右:疊圖後)';
             };
 
             btnModeStacked.onclick = () => {
@@ -723,7 +722,7 @@ export class StudioUI {
                 sliderContainer.style.display = 'none';
                 previewImg.src = stackedDataUrl;
                 previewImg.style.display = 'block';
-                vpBadge.textContent = '★ 疊圖後大師作品 (已降噪消除殘影)';
+                vpBadge.textContent = '疊圖後大師作品 (已降噪消除殘影)';
             };
 
             btnModeOriginal.onclick = () => {
@@ -765,14 +764,14 @@ export class StudioUI {
             // Report
             resultReport.innerHTML = `
                 <div style="font-size:15px;font-weight:700;color:${isUnknownTarget ? '#94a3b8' : '#38bdf8'};margin-bottom:6px;">
-                    ${isUnknownTarget ? '⚠️ 未知空白星野疊圖完成' : (masterQuality === PhotoQuality.SSS ? '🎉 ★ SSS級 天文台典藏神作！' : '🎉 S級 大師作品！')}
+                    ${isUnknownTarget ? '未知空白星野疊圖完成' : (masterQuality === PhotoQuality.SSS ? 'SSS級 天文台典藏神作！' : 'S級 大師作品！')}
                 </div>
                 <div style="font-size:12px;color:#cbd5e1;line-height:1.5;">
                     ${isUnknownTarget 
                         ? `空白星野缺乏顯著深空天體，疊圖已消除底噪，但市場收購價較低。建議瞄準梅西耶星雲或太陽系行星拍攝！<br/>` 
                         : `疊加素材: ${count} 張亮場（總曝光 ${totalExp.toFixed(1)}s） · 校準: ${isFullCalib ? '完整四場校準 (Dark+Flat+Bias)' : '部分校準'}<br/>`
                     }
-                    評分變更: <strong>${avgScore.toFixed(0)}分 ➔ ${masterScore}分</strong> · 評估價值: <strong style="color:#fbbf24;">$${masterPrice}</strong>
+                    評分變更: <strong>${avgScore.toFixed(0)}分 -> ${masterScore}分</strong> · 評估價值: <strong style="color:#fbbf24;">$${masterPrice}</strong>
                 </div>
             `;
             resultActions.style.display = 'block';

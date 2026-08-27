@@ -36,31 +36,31 @@ export const CHARACTERS: Record<string, QuestCharacter> = {
   chen: {
     name: '陳伯',
     role: '合歡山老氣象員 · 前天文台技師',
-    avatarIcon: '👴',
+    avatarIcon: '',
     color: '#fbbf24',
   },
   lin: {
     name: '星際旅人 Lin',
     role: '天文攝影論壇版主 · 巡天愛好者',
-    avatarIcon: '🌌',
+    avatarIcon: '',
     color: '#38bdf8',
   },
   director: {
     name: '張弘道館長',
     role: '國家天文台名譽台長',
-    avatarIcon: '🔭',
+    avatarIcon: '',
     color: '#a855f7',
   },
   sophie: {
     name: '蘇菲主編',
     role: '《國際天文攝影》亞洲特刊總編',
-    avatarIcon: '📸',
+    avatarIcon: '',
     color: '#ec4899',
   },
   alan: {
     name: '艾倫研究員',
     role: '跨國深空巡天計畫通訊員',
-    avatarIcon: '🛰️',
+    avatarIcon: '',
     color: '#34d399',
   },
 };

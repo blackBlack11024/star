@@ -71,7 +71,7 @@ export class PhotoManager {
             state.addPhoto(calibPhoto);
             document.dispatchEvent(new CustomEvent('show-notification', {
                 detail: {
-                    message: `✅ 已記錄 ${calibNames[frameType]}！此為疊圖校準專用數據，不可出售。`,
+                    message: `已記錄 ${calibNames[frameType]}！此為疊圖校準專用數據，不可出售。`,
                     type: 'info'
                 }
             }));
@@ -120,7 +120,7 @@ export class PhotoManager {
         if (hasMotionBlur) {
             document.dispatchEvent(new CustomEvent('show-notification', {
                 detail: {
-                    message: `⚠️ 鏡筒在曝光中移動！星點產生拖尾殘影，清晰度下降（可至工作室「疊圖工坊」修復）`,
+                    message: `鏡筒在曝光中移動！星點產生拖尾殘影，清晰度下降（可至工作室「疊圖工坊」修復）`,
                     type: 'warning'
                 }
             }));
