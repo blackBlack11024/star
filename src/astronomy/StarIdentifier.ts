@@ -40,9 +40,24 @@ export class StarIdentifier {
   }
 
   /** Find all named objects within the telescope's field of view above the horizon. */
-  public findObjectsInFov(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere, planets?: PlanetData[]): IdentifiedObject[] {
+  public findObjectsInFov(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere, planets?: PlanetData[], spaceStation?: any): IdentifiedObject[] {
     const results: IdentifiedObject[] = [];
     const radius = fovDegrees / 2;
+
+    // 0. Space Station (Top Priority)
+    if (spaceStation && spaceStation.isVisible) {
+      const dist = this.angularDistance(telescopeRa, telescopeDec, spaceStation.ra, spaceStation.dec);
+      if (dist <= radius) {
+        results.push({
+          name: spaceStation.name,
+          type: TargetType.SpecialEvent,
+          magnitude: spaceStation.magnitude,
+          angularDistance: dist,
+          ra: spaceStation.ra,
+          dec: spaceStation.dec,
+        });
+      }
+    }
 
     // 1. Solar System Planets (High Priority)
     if (planets) {
@@ -101,15 +116,18 @@ export class StarIdentifier {
   }
 
   /** Identify the closest/brightest object near the center crosshair. */
-  public identify(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere, planets?: PlanetData[]): IdentifiedObject | null {
+  public identify(telescopeRa: number, telescopeDec: number, fovDegrees: number, celestialSphere?: CelestialSphere, planets?: PlanetData[], spaceStation?: any): IdentifiedObject | null {
     if (!this.isAboveHorizon(telescopeRa, telescopeDec, celestialSphere)) {
       return null;
     }
-    const objects = this.findObjectsInFov(telescopeRa, telescopeDec, fovDegrees, celestialSphere, planets);
+    const objects = this.findObjectsInFov(telescopeRa, telescopeDec, fovDegrees, celestialSphere, planets, spaceStation);
     if (objects.length === 0) return null;
 
-    // Prioritize Planets/Moon and DSOs over faint background point stars
+    // Prioritize Special Events (ISS), Planets/Moon, and DSOs over faint background point stars
     objects.sort((a, b) => {
+      // 0. Special Events (ISS) have top priority
+      if (a.type === TargetType.SpecialEvent && b.type !== TargetType.SpecialEvent) return -1;
+      if (b.type === TargetType.SpecialEvent && a.type !== TargetType.SpecialEvent) return 1;
       // 1. If one is a Planet / Moon and within targeting range, strongly prioritize it
       if (a.type === TargetType.Planet && b.type !== TargetType.Planet) return -1;
       if (b.type === TargetType.Planet && a.type !== TargetType.Planet) return 1;

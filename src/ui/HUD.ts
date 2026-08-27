@@ -191,8 +191,8 @@ export class HUD {
         verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
-        verBadge.textContent = 'v1.5.0';
-        verBadge.title = 'v1.5.0';
+        verBadge.textContent = 'v1.6.0';
+        verBadge.title = 'v1.6.0';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);
@@ -214,6 +214,8 @@ export class HUD {
         const bottomRight = document.createElement('div');
         bottomRight.className = 'hud-panel bottom-right';
         bottomRight.innerHTML = `
+            <span><span class="key-tag">Z</span>平躺</span>
+            <span><span class="key-tag">X</span>指星筆</span>
             <span><span class="key-tag">Alt</span>游標</span>
             <span><span class="key-tag">C</span>星座</span>
             <span><span class="key-tag">L</span>地點</span>

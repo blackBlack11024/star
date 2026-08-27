@@ -154,6 +154,12 @@ export class TelescopeModel {
   public getPosition(): THREE.Vector3 {
     return this.group.position.clone();
   }
+
+  public getOpticalDirection(): THREE.Vector3 {
+    const dir = new THREE.Vector3(0, 1, 0);
+    dir.applyQuaternion(this.tubeGroup.quaternion);
+    return dir.normalize();
+  }
   
   public updatePointing(ra: number, dec: number, latitude: number, lst: number) {
     const ha = lst - ra;

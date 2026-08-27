@@ -38,6 +38,9 @@ import { StoryDialogue } from './ui/StoryDialogue';
 import { MenuSystem } from './ui/MenuSystem';
 import { FinderUI } from './ui/FinderUI';
 import { getTelescopeConfig } from './data/telescopes';
+import { LaserPointer } from './astronomy/LaserPointer';
+import { SpaceStation } from './astronomy/SpaceStation';
+import { MeteorSystem } from './environment/MeteorSystem';
 
 type ProgressCallback = (pct: number, text: string) => void;
 
@@ -55,6 +58,9 @@ export class Game {
   private starIdentifier!: StarIdentifier;
   private deepSkyObjects!: DeepSkyObjects;
   private planetarySystem!: PlanetarySystem;
+  private spaceStation!: SpaceStation;
+  private meteorSystem!: MeteorSystem;
+  private laserPointer!: LaserPointer;
 
   private atmosphere!: AtmosphereManager;
   private timeManager!: TimeManager;
@@ -189,6 +195,19 @@ export class Game {
     progress(0.65, '正在初始化控制器與雙筒望遠鏡...');
     this.playerController = new PlayerController(this.camera, this.renderer.domElement, this.scene);
     this.binocularsMode = new BinocularsMode(this.camera, this.renderer.domElement);
+
+    // ---- Space Station, Meteors & Laser Pointer ----
+    this.spaceStation = new SpaceStation(this.scene);
+    this.meteorSystem = new MeteorSystem(this.scene);
+    this.laserPointer = new LaserPointer(
+      this.scene,
+      this.camera,
+      this.starIdentifier,
+      () => this.planetarySystem.getPlanets(),
+      this.celestialSphere,
+      () => this.telescopeModel.getPosition(),
+      () => this.telescopeModel.getOpticalDirection()
+    );
 
     // ---- Telescope optics ----
     progress(0.7, '正在校準望遠鏡光學...');
@@ -334,6 +353,11 @@ export class Game {
     this.playerController.update(deltaTime);
     this.binocularsMode.update(deltaTime);
 
+    // ---- Space Station, Meteors & Laser Pointer ----
+    this.spaceStation.update(deltaTime, state.currentFov, loc.latitude, this.sunElevation);
+    this.meteorSystem.update(deltaTime, this.camera, this.sunElevation);
+    this.laserPointer.update();
+
     // ---- GoTo Auto-Slewing Interpolation ----
     if (this.isGoToSlewing) {
       const elapsed = performance.now() - this.goToStartTime;
@@ -395,9 +419,9 @@ export class Game {
       this.camera.updateProjectionMatrix();
       this.camera.updateMatrixWorld(true);
 
-      // Star & Planet identification (filtered by horizon)
+      // Star, Planet & Space Station identification (filtered by horizon)
       const identified = this.starIdentifier.identify(
-        state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere, planets
+        state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere, planets, this.spaceStation.getCurrentPassData()
       );
       this.lastIdentifiedTarget = identified;
 
@@ -548,7 +572,7 @@ export class Game {
         const planets = this.planetarySystem.getPlanets();
         const hudTarget = this.telescopeHUD.getCurrentIdentifiedTarget();
         const identified = hudTarget || this.lastIdentifiedTarget || this.starIdentifier.identify(
-          state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere, planets
+          state.telescopeRa, state.telescopeDec, state.currentFov, this.celestialSphere, planets, this.spaceStation.getCurrentPassData()
         );
         this.finishExposure(identified);
       }
@@ -639,10 +663,15 @@ export class Game {
     const targetName = identified?.name || '未知星野';
     const targetType = identified?.type || 'star_field';
 
+    const hasMeteor = this.meteorSystem.wasMeteorCaptured();
+    const targetPayload = identified
+      ? { ...identified, difficulty: (identified as any).difficulty || 1, hasMeteor }
+      : { name: targetName, type: targetType, difficulty: 1, hasMeteor };
+
     // Capture and score the photo with true accumulated data URL and drift metrics
     const photo = this.photoManager.capturePhoto(
       this.renderer, this.scene, this.camera,
-      identified ? { ...identified, difficulty: (identified as any).difficulty || 1 } : { name: targetName, type: targetType, difficulty: 1 },
+      targetPayload,
       result.elapsedSeconds,
       result.dataUrl,
       result.hasMotionBlur,

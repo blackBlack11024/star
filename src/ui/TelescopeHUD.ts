@@ -103,9 +103,32 @@ export class TelescopeHUD {
             document.dispatchEvent(new CustomEvent('toggle-finder-ui'));
         };
 
+        const laserMountBtn = document.createElement('button');
+        laserMountBtn.className = 'telescope-finder-btn';
+        laserMountBtn.id = 'laser-mount-btn';
+        laserMountBtn.innerHTML = `<span>安裝指星筆</span><kbd>X</kbd>`;
+        laserMountBtn.title = '安裝 / 取下指星筆 [X]';
+        laserMountBtn.onclick = (e) => {
+            e.stopPropagation();
+            const state = gameStore.getState();
+            const nextMounted = !state.isLaserPointerMounted;
+            state.setLaserPointerMounted(nextMounted);
+            if (nextMounted) {
+                state.setLaserPointerActive(false);
+                document.dispatchEvent(new CustomEvent('show-notification', {
+                    detail: { message: '已將指星筆安裝至望遠鏡鏡筒 · 綠色光柱正持續朝前方射出', type: 'success' }
+                }));
+            } else {
+                document.dispatchEvent(new CustomEvent('show-notification', {
+                    detail: { message: '已取下指星筆 · 指星筆已放回手中，可手持自由使用', type: 'info' }
+                }));
+            }
+        };
+
         controlsRow.appendChild(this.toggleExposureBtn);
         controlsRow.appendChild(frameSelector);
         controlsRow.appendChild(finderBtn);
+        controlsRow.appendChild(laserMountBtn);
 
         this.exposureBar = document.createElement('div');
         this.exposureBar.className = 'exposure-bar';
@@ -192,6 +215,19 @@ export class TelescopeHUD {
         this.frameTypeButtons.forEach((btn, key) => {
             btn.classList.toggle('active', key === activeFrame);
         });
+
+        const laserBtn = document.getElementById('laser-mount-btn');
+        if (laserBtn) {
+            if (state.isLaserPointerMounted) {
+                laserBtn.innerHTML = `<span>卸下指星筆</span><kbd>X</kbd>`;
+                laserBtn.style.borderColor = 'rgba(52, 211, 153, 0.6)';
+                laserBtn.style.color = '#34d399';
+            } else {
+                laserBtn.innerHTML = `<span>安裝指星筆</span><kbd>X</kbd>`;
+                laserBtn.style.borderColor = '';
+                laserBtn.style.color = '';
+            }
+        }
 
         if (activeFrame === 'dark') {
             this.eyepiecePhysicalMask.className = 'eyepiece-physical-mask mask-dark';

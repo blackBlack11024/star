@@ -25,10 +25,14 @@ export class PlayerController {
   private direction = new THREE.Vector3();
 
   private playerHeight = 1.7;
+  private currentHeight = 1.7;
+  private targetHeight = 1.7;
+  private isLyingDown = false;
   private walkSpeed = 5.0;
 
   private unsubscribe: () => void;
   private crosshair: HTMLElement;
+  private lieDownHint: HTMLElement;
   private telescopeModeOrigin = new THREE.Vector3();
 
   private exposureCycle = [5, 15, 30, 60, 120, 300];
@@ -46,6 +50,13 @@ export class PlayerController {
     this.crosshair = document.createElement('div');
     this.crosshair.className = 'crosshair';
     document.getElementById('ui-overlay')?.appendChild(this.crosshair);
+
+    // Lie Down Hint
+    this.lieDownHint = document.createElement('div');
+    this.lieDownHint.className = 'lie-down-hint';
+    this.lieDownHint.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(15,23,42,0.85);backdrop-filter:blur(8px);border:1px solid rgba(56,189,248,0.3);color:#e2e8f0;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:500;display:none;z-index:90;pointer-events:none;letter-spacing:0.05em;';
+    this.lieDownHint.textContent = '[Z] 起身 · [空白鍵] 起身 · [X] 指星筆';
+    document.getElementById('ui-overlay')?.appendChild(this.lieDownHint);
 
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onKeyUp = this.onKeyUp.bind(this);
@@ -180,7 +191,18 @@ export class PlayerController {
     }
 
     if (mode === GameMode.Walk) {
+      if (this.isLyingDown && (event.code === 'Space' || event.code === 'KeyW' || event.code === 'KeyA' || event.code === 'KeyS' || event.code === 'KeyD')) {
+        this.toggleLieDown();
+        return;
+      }
+
       switch (event.code) {
+        case 'KeyZ':
+          this.toggleLieDown();
+          break;
+        case 'KeyX':
+          this.toggleLaserPointer();
+          break;
         case 'KeyW': this.moveForward = true; break;
         case 'KeyA': this.moveLeft = true; break;
         case 'KeyS': this.moveBackward = true; break;
@@ -188,14 +210,19 @@ export class PlayerController {
         case 'ShiftLeft':
         case 'ShiftRight': this.isSprinting = true; break;
         case 'KeyE':
+          if (this.isLyingDown) this.toggleLieDown();
           state.setGameMode(GameMode.Telescope);
           break;
         case 'KeyF':
+          if (this.isLyingDown) this.toggleLieDown();
           state.setGameMode(GameMode.Studio);
           break;
       }
     } else if (mode === GameMode.Telescope) {
       switch (event.code) {
+        case 'KeyX':
+          this.toggleMountedLaser();
+          break;
         case 'Space':
         case 'KeyE':
           document.dispatchEvent(new CustomEvent('capture-photo'));
@@ -338,9 +365,97 @@ export class PlayerController {
     }
   }
 
+  public toggleLieDown() {
+    this.isLyingDown = !this.isLyingDown;
+    this.targetHeight = this.isLyingDown ? 0.25 : 1.7;
+    gameStore.getState().setLyingDown(this.isLyingDown);
+
+    if (this.isLyingDown) {
+      this.crosshair.style.display = 'none';
+      this.lieDownHint.style.display = 'block';
+      // Smoothly tilt camera up towards zenith (82 degrees = 1.43 rad)
+      const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+      euler.setFromQuaternion(this.camera.quaternion);
+      euler.x = 1.35; // Look up at zenith
+      this.camera.quaternion.setFromEuler(euler);
+
+      document.dispatchEvent(new CustomEvent('player-lie-down', { detail: { isLyingDown: true } }));
+      document.dispatchEvent(new CustomEvent('show-notification', {
+        detail: { message: '已平躺於草地，仰望天頂浩瀚星空', type: 'info' }
+      }));
+    } else {
+      this.crosshair.style.display = 'block';
+      this.lieDownHint.style.display = 'none';
+      const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+      euler.setFromQuaternion(this.camera.quaternion);
+      euler.x = 0.15; // Return to normal horizon view
+      this.camera.quaternion.setFromEuler(euler);
+      document.dispatchEvent(new CustomEvent('player-lie-down', { detail: { isLyingDown: false } }));
+    }
+  }
+
+  public toggleLaserPointer() {
+    const state = gameStore.getState();
+    if (state.isLaserPointerMounted) {
+      document.dispatchEvent(new CustomEvent('show-notification', {
+        detail: { message: '指星筆目前已架設於望遠鏡上，可至望遠鏡取下後手持使用', type: 'warning' }
+      }));
+      return;
+    }
+
+    const next = !state.isLaserPointerActive;
+    state.setLaserPointerActive(next);
+
+    if (next) {
+      // Unlock pointer lock so mouse cursor can point freely across screen!
+      if (this.controls.isLocked) {
+        this.controls.unlock();
+      }
+      document.dispatchEvent(new CustomEvent('show-notification', {
+        detail: { message: '已開啟 532nm 綠光指星筆 · 視角已固定，可移動滑鼠自由指星', type: 'success' }
+      }));
+    } else {
+      // Re-lock pointer for normal head look
+      if (!this.controls.isLocked && state.gameMode === GameMode.Walk) {
+        this.controls.lock();
+      }
+      document.dispatchEvent(new CustomEvent('show-notification', {
+        detail: { message: '已關閉指星筆', type: 'info' }
+      }));
+    }
+  }
+
+  public toggleMountedLaser() {
+    const state = gameStore.getState();
+    const nextMounted = !state.isLaserPointerMounted;
+    state.setLaserPointerMounted(nextMounted);
+
+    if (nextMounted) {
+      // If was handheld, turn off handheld
+      state.setLaserPointerActive(false);
+      document.dispatchEvent(new CustomEvent('show-notification', {
+        detail: { message: '已將指星筆安裝至望遠鏡尋星座 · 綠色光柱正持續朝鏡筒正前方射出', type: 'success' }
+      }));
+    } else {
+      document.dispatchEvent(new CustomEvent('show-notification', {
+        detail: { message: '已取下指星筆 · 指星筆已放回手中，可手持自由使用', type: 'info' }
+      }));
+    }
+    document.dispatchEvent(new CustomEvent('laser-mounted-changed', { detail: { isMounted: nextMounted } }));
+  }
+
   public update(deltaTime: number) {
+    // Smooth height adjustment for lie-down animation
+    this.currentHeight += (this.targetHeight - this.currentHeight) * Math.min(1, deltaTime * 6.0);
+    this.controls.getObject().position.y = this.currentHeight;
+
     const mode = gameStore.getState().gameMode;
     if (mode === GameMode.Walk && this.controls.isLocked) {
+      if (this.isLyingDown) {
+        this.velocity.set(0, 0, 0);
+        return;
+      }
+
       this.velocity.x -= this.velocity.x * 10.0 * deltaTime;
       this.velocity.z -= this.velocity.z * 10.0 * deltaTime;
 
@@ -355,8 +470,6 @@ export class PlayerController {
 
       this.controls.moveRight(-this.velocity.x * deltaTime);
       this.controls.moveForward(-this.velocity.z * deltaTime);
-
-      this.controls.getObject().position.y = this.playerHeight;
     }
   }
 
@@ -368,5 +481,6 @@ export class PlayerController {
     document.removeEventListener('wheel', this.onWheel);
     this.controls.disconnect();
     this.crosshair.remove();
+    this.lieDownHint.remove();
   }
 }

@@ -123,4 +123,22 @@ export const DEEP_SKY_OBJECTS: DeepSkyObjectData[] = [
     id: 'M4', name: 'M4', commonName: '天蠍座球狀星團', ra: 16.394, dec: -26.526, magnitude: 5.6, type: 'cluster', sizeArcmin: 36, difficulty: 1, basePrice: 150,
     starHoppingGuide: '極易尋找！先在南方天空找到天蠍座紅超巨星「心宿二（天蠍座心臟）」，往西側僅 1.3 度處即可看到鬆散的球狀星團。'
   },
+
+  // --- Southern Hemisphere Specialties (南天瑰寶) ---
+  {
+    id: 'LMC', name: 'LMC', commonName: '大麥哲倫星系 Large Magellanic Cloud', ra: 5.394, dec: -69.756, magnitude: 0.9, type: 'galaxy', sizeArcmin: 650, difficulty: 2, basePrice: 380,
+    starHoppingGuide: '南半球肉眼震撼可見！位於劍魚座與山案座交界，如一朵漂浮在南天的燦爛星雲光斑，是銀河系最大的伴星系。'
+  },
+  {
+    id: 'SMC', name: 'SMC', commonName: '小麥哲倫星系 Small Magellanic Cloud', ra: 0.887, dec: -72.828, magnitude: 2.7, type: 'galaxy', sizeArcmin: 300, difficulty: 2, basePrice: 320,
+    starHoppingGuide: '位於杜鵑座南側，緊鄰全天第二亮的杜鵑座 47 球狀星團，肉眼可見的南天矮星系。'
+  },
+  {
+    id: 'NGC3372', name: 'NGC 3372', commonName: '船底座大星雲 Carina Nebula', ra: 10.750, dec: -59.867, magnitude: 3.0, type: 'nebula', sizeArcmin: 120, difficulty: 2, basePrice: 350,
+    starHoppingGuide: '南天最磅礡的發射星雲，面積為獵戶座大星雲的四倍！中心包含瀕臨超新星爆發的極超巨星海山二（Eta Carinae）。'
+  },
+  {
+    id: 'NGC5139', name: 'NGC 5139', commonName: '半人馬座 Omega 球狀星團', ra: 13.447, dec: -47.478, magnitude: 3.9, type: 'cluster', sizeArcmin: 36, difficulty: 1, basePrice: 300,
+    starHoppingGuide: '全天最明亮、質量最大的巨型球狀星團，包含上百萬顆恆星，肉眼看去如同一顆朦朧的 4 等星。'
+  }
 ];

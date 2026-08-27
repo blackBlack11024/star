@@ -27,6 +27,17 @@ export interface GameState {
   photos: Photo[];
   equipTelescope: (level: number) => boolean;
   toggleEquipAccessory: (accessoryId: string) => void;
+  unlockAccessory: (accessoryId: string) => void;
+
+  // ---- Stargazing Stance & Laser Pointer ----
+  isLyingDown: boolean;
+  setLyingDown: (lying: boolean) => void;
+  isLaserPointerActive: boolean;
+  setLaserPointerActive: (active: boolean) => void;
+  isLaserPointerMounted: boolean;
+  setLaserPointerMounted: (mounted: boolean) => void;
+  laserPointedTarget: any | null;
+  setLaserPointedTarget: (target: any | null) => void;
 
   // ---- Mode ----
   gameMode: GameMode;
@@ -208,6 +219,15 @@ export const gameStore = createStore<GameState>()((set, get) => ({
 
   gameMode: GameMode.Walk,
 
+  isLyingDown: false,
+  setLyingDown: (lying) => set({ isLyingDown: lying }),
+  isLaserPointerActive: false,
+  setLaserPointerActive: (active) => set({ isLaserPointerActive: active }),
+  isLaserPointerMounted: false,
+  setLaserPointerMounted: (mounted) => set({ isLaserPointerMounted: mounted }),
+  laserPointedTarget: null,
+  setLaserPointedTarget: (target) => set({ laserPointedTarget: target }),
+
   weather: WeatherState.Clear,
   weatherTimer: 300,
 
@@ -376,6 +396,16 @@ export const gameStore = createStore<GameState>()((set, get) => ({
     updated[accIdx] = { ...acc, owned: true, equipped: true };
     set({ money: s.money - acc.price, accessories: updated });
     return true;
+  },
+
+  unlockAccessory: (accessoryId) => {
+    const s = get();
+    const accIdx = s.accessories.findIndex((a) => a.id === accessoryId);
+    if (accIdx === -1) return;
+    const acc = s.accessories[accIdx];
+    const updated = [...s.accessories];
+    updated[accIdx] = { ...acc, owned: true, equipped: true };
+    set({ accessories: updated });
   },
 
   toggleEquipAccessory: (accessoryId) => {

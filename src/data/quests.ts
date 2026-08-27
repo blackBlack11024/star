@@ -10,9 +10,9 @@ export interface QuestCharacter {
 }
 
 export interface QuestObjective {
-  type: 'capture_any' | 'capture_target' | 'capture_count' | 'quality_min';
-  targetId?: string;    // DSO id like 'M42'
-  targetType?: string;  // 'messier', 'galaxy', etc.
+  type: 'capture_any' | 'capture_target' | 'capture_count' | 'quality_min' | 'laser_point_target' | 'mount_laser' | 'lie_down' | 'capture_meteor';
+  targetId?: string;    // DSO id, star/planet name, or special event
+  targetType?: string;  // 'messier', 'galaxy', 'planet', 'special_event'
   count?: number;       // number of photos needed
   minQuality?: string;  // 'A', 'S' etc.
   description: string;
@@ -28,7 +28,7 @@ export interface Quest {
   storySummary: string;
   starHoppingTip?: string;   // Star-hopping observation guide from character
   objectives: QuestObjective[];
-  rewards: { money?: number; unlockLocation?: string; telescopeDiscount?: number };
+  rewards: { money?: number; unlockLocation?: string; unlockAccessory?: string; telescopeDiscount?: number };
   prerequisiteQuestId?: string;
 }
 
@@ -229,7 +229,156 @@ export const QUESTS: Quest[] = [
       { type: 'capture_target', targetId: 'M81', description: '拍攝 M81 波德星系' },
       { type: 'capture_target', targetId: 'M104', description: '拍攝 M104 草帽星系' },
     ],
-    rewards: { money: 5000 },
+    rewards: { money: 1500, unlockAccessory: 'laser_pointer' },
     prerequisiteQuestId: 'ch2_nebula_expert',
+  },
+
+  // =========================================================================
+  // CHAPTER 4: 太陽系近鄰與行星之王 (Planets of the Solar System)
+  // =========================================================================
+  {
+    id: 'ch4_jupiter',
+    chapter: 4,
+    title: '指星者的啟蒙：太陽系巨擘',
+    character: CHARACTERS.chen,
+    introDialogue: [
+      '陳伯從隨身背包裡拿出一個精緻的金屬圓筒，遞到你手裡：',
+      '「孩子，你在深空巡天的成就令人驚嘆。這支 532nm 專業綠光指星筆是我當年隨考察隊在青藏高原用的，現在送給你！」',
+      '「【指星筆操作教學】：在站立或平躺時，按下 X 鍵可開啟指星筆，視角會鎖定，你可以自由移動滑鼠指向夜空中的任何天體，辨識它的名字與方位！」',
+      '「今晚太陽系的行星之王——木星正在夜空中閃耀，它是全天最明亮的星體之一。先用指星筆找到它，再用望遠鏡進行高倍率拍攝！」'
+    ],
+    completeDialogue: [
+      '陳伯看著螢幕上木星平行的雲帶與四顆伽利略衛星，讚嘆不已：',
+      '「乾淨俐落！行星攝影講求極短曝光與高解析度。這枚 2x 巴羅增倍鏡送給你，能讓你的鏡筒放大倍率翻倍！」'
+    ],
+    storySummary: '獲贈 532nm 綠光指星筆，在夜空中指星定位並成功拍攝木星大氣雲帶，獲贈 2x 巴羅鏡。',
+    starHoppingTip: '【陳伯傳授】：按 X 開啟指星筆，移動滑鼠指向黃道附近的超亮星體「木星」。望遠鏡曝光時間需控制在 1-2 秒內避免過曝！',
+    objectives: [
+      { type: 'laser_point_target', targetId: '木星', description: '按 X 開啟指星筆，在夜空中指向「木星 Jupiter」' },
+      { type: 'capture_target', targetId: '木星', minQuality: 'A', description: '操作望遠鏡拍攝「木星 Jupiter」（評級 A 級以上）' },
+    ],
+    rewards: { money: 400, unlockAccessory: 'eyepiece_barlow' },
+    prerequisiteQuestId: 'ch3_galaxy_cluster',
+  },
+  {
+    id: 'ch4_saturn_mars',
+    chapter: 4,
+    title: '環帶與極冠：前進南半球阿塔卡馬',
+    character: CHARACTERS.lin,
+    introDialogue: [
+      '【論壇私訊】星際旅人 Lin：「看到你拍的木星了！但想要拍下土星的卡西尼環縫和火星極冠，在北半球可不容易。」',
+      '「秋冬季土星在北半球仰角偏低，近地表熱氣流會把影像擾動得像水底看花。」',
+      '「如果能前往南半球——智利阿塔卡馬沙漠（Atacama Desert），那裡海拔兩千多公尺、年降雨量趨近於零，土星與火星將直升天頂！拍完這兩顆行星，我就幫你申請阿塔卡馬特許通行證！」'
+    ],
+    completeDialogue: [
+      '【論壇私訊】星際旅人 Lin：「不可思議！土星環薄如刀刃，火星白色的乾冰極冠清晰無比！」',
+      '「智利阿塔卡馬暗空保護區的通行證已經正式核發給你！按 L 鍵打開地點清單，前往地表觀星天花板吧！」'
+    ],
+    storySummary: '拍攝土星光環與火星極冠，克服視寧度考驗，獲得南半球智利阿塔卡馬沙漠通行許可。',
+    starHoppingTip: '【Lin 傳授】：土星與火星亮度高，建議搭配巴羅鏡 2x，曝光 0.5-2.5 秒即可凝固大氣波動。完成後可按 L 切換至阿塔卡馬！',
+    objectives: [
+      { type: 'capture_target', targetId: '土星', description: '拍攝「土星 Saturn」的壯麗光環' },
+      { type: 'capture_target', targetId: '火星', description: '拍攝「火星 Mars」的橘紅地表與極冠' },
+    ],
+    rewards: { money: 800, unlockLocation: 'atacama' },
+    prerequisiteQuestId: 'ch4_jupiter',
+  },
+
+  // =========================================================================
+  // CHAPTER 5: 掠過天際的人造奇蹟 (The Space Station Intercept)
+  // =========================================================================
+  {
+    id: 'ch5_mount_laser',
+    chapter: 5,
+    title: '鏡筒導引光柱：指星筆安裝試驗',
+    character: CHARACTERS.director,
+    introDialogue: [
+      '張弘道教授在阿塔卡馬沙漠的連線通訊中說道：',
+      '「阿塔卡馬的星空澄澈得像黑絲絨一般。但要在茫茫天幕中快速鎖定高速移動的目標，單靠肉眼是不夠的。」',
+      '「你知道指星筆不僅可以拿在手裡嗎？在望遠鏡模式下按下 X 鍵（或點擊操作列按鈕），可以將指星筆固定在鏡筒上！」',
+      '「固定後，鏡筒會向深空射出一道筆直的綠色光柱。在室外視角也能清晰看見望遠鏡正指向何方。先在望遠鏡上試著安裝一次吧！」'
+    ],
+    completeDialogue: [
+      '張教授讚許地說：「很好！光軸完全平行！這道貫穿夜空的綠色光柱將成為我們捕捉下一個極速目標的致勝關鍵！」'
+    ],
+    storySummary: '掌握望遠鏡鏡筒架設指星筆的技巧，綠色引導光柱成功貫穿夜空。',
+    starHoppingTip: '【張館長傳授】：按 E 進入望遠鏡視角，按 X（或點擊操作列的「指星筆」按鈕）即可安裝至鏡筒，再次按 X 可取下回手中。',
+    objectives: [
+      { type: 'mount_laser', description: '在望遠鏡視角按 X（或點擊面板）將指星筆安裝至鏡筒' },
+    ],
+    rewards: { money: 500 },
+    prerequisiteQuestId: 'ch4_saturn_mars',
+  },
+  {
+    id: 'ch5_iss_intercept',
+    chapter: 5,
+    title: '天際快客：國際太空站過境特寫',
+    character: CHARACTERS.alan,
+    introDialogue: [
+      '【緊急通訊】艾倫研究員：「雷達信號捕獲！國際太空站（ISS）即將以每秒 7.7 公里速度過境阿塔卡馬天頂！」',
+      '「【過境特徵】：它比全天任何恆星都要明亮（-3.5等），像一顆無聲滑行的金色流星，橫跨天際僅有 3-4 分鐘！」',
+      '「【操作要領】：利用鏡筒上的指星筆光柱快速追焦，切換至高放大倍率，在它掠過天頂的瞬間抓拍！若能在望遠鏡中解析出太陽能電池翼與實驗艙，這將是史詩級的作品！」'
+    ],
+    completeDialogue: [
+      '艾倫激動地在通訊頻道中高呼：「解析出來了！命運號實驗艙、中央桁架、八片巨大的金色太陽翼完全可辨！」',
+      '「這是民間天文攝影的天花板之作！國家天文台特批贈送你一台天文級製冷 CCD 相機，向你的追焦技術致敬！」'
+    ],
+    storySummary: '在阿塔卡馬荒漠成功追焦高速掠過天頂的國際太空站（ISS），清晰拍得太陽翼結構，獲贈製冷 CCD。',
+    starHoppingTip: '【艾倫傳授】：國際太空站過境時極為耀眼，若雷達顯示過境中，迅速轉動望遠鏡對準其移動軌跡，長曝光 1 秒左右即可捕捉！',
+    objectives: [
+      { type: 'capture_target', targetId: '國際太空站 ISS', description: '在太空站過境時精確追焦並拍下照片' },
+    ],
+    rewards: { money: 1200, unlockAccessory: 'camera_cooled' },
+    prerequisiteQuestId: 'ch5_mount_laser',
+  },
+
+  // =========================================================================
+  // CHAPTER 6: 草地上的流星雨與南天終局 (Meteors and the Southern Crown)
+  // =========================================================================
+  {
+    id: 'ch6_stargazing_lie_down',
+    chapter: 6,
+    title: '回歸初心：草地仰望英仙座流星雨',
+    character: CHARACTERS.sophie,
+    introDialogue: [
+      '【特刊邀約】蘇菲主編：「親愛的朋友，我們已經追逐了太多精密的深空數據。今晚，讓我們放下繁雜的長焦器材吧。」',
+      '「今晚是年度流星雨極大期，阿塔卡馬的天頂將有數十顆流星劃破長空。」',
+      '「【平躺操作】：走到空曠草地上，按下 Z 鍵平躺下來。視角將自然抬升仰望天頂，視野擴展到整片宇宙。靜靜欣賞流星，並用廣角鏡頭拍下一張帶有流星光軌的照片吧！」'
+    ],
+    completeDialogue: [
+      '蘇菲主編感性地回覆：「那道綠色的鎂元素光軌劃過銀河中心，靜謐而震撼。這才是人類仰望星空最初的心跳。」'
+    ],
+    storySummary: '按 Z 平躺於阿塔卡馬草地仰望天頂，捕捉劃過天際的流星光軌，重溫觀星的純粹感動。',
+    starHoppingTip: '【蘇菲傳授】：在室外按 Z 鍵即可平躺於草地仰望天頂，按空白鍵或 Z 鍵可隨時起身。深夜時分流星出現頻率最高！',
+    objectives: [
+      { type: 'lie_down', description: '在室外按 Z 平躺在草地上仰望天頂' },
+      { type: 'capture_meteor', description: '捕捉到一張伴隨流星光軌的夜空照片' },
+    ],
+    rewards: { money: 1000 },
+    prerequisiteQuestId: 'ch5_iss_intercept',
+  },
+  {
+    id: 'ch6_southern_wonders',
+    chapter: 6,
+    title: '南天之冠：大麥哲倫與海山二終局',
+    character: CHARACTERS.chen,
+    introDialogue: [
+      '陳伯、Lin、張館長、蘇菲與艾倫同時出現在通訊頻道中：',
+      '「朋友，看看南天的星空吧！那是北半球永遠無法窺見的宇宙奇觀——如雲霧般漂浮的大麥哲倫星系（LMC），以及孕育著瀕死極超巨星的船底座大星雲（NGC 3372）。」',
+      '「拍下這兩座南天瑰寶，為這趟跨越半個地球的追星旅程畫上完美的句點！全台天文同好與國際巡天隊正期待著你的終局謝幕！」'
+    ],
+    completeDialogue: [
+      '陳伯眼眶泛紅，所有人在頻道中為你鼓掌喝彩：',
+      '「從合歡山那台搖晃的 60mm 老折射鏡，到阿塔卡馬直擊大麥哲倫星系……你已經走過了天文攝影的最長道路。」',
+      '「這台最新量子效率 >90% 的旗艦級冷卻 CMOS 感光晶片贈送給你！【自由沙盒觀測模式】已全面解鎖，宇宙是你的畫布，繼續航行吧，星空旅人！」'
+    ],
+    storySummary: '在智利阿塔卡馬成功拍攝大麥哲倫星系與船底座海山二，全主線圓滿通關，獲贈旗艦級 CMOS 晶片並解鎖終極自由觀測模式。',
+    starHoppingTip: '【全體夥伴祝福】：大麥哲倫星系（LMC）在南天肉眼可見如一團星雲；船底座大星雲（NGC 3372）面積為獵戶座四倍，長曝光下呈現璀璨緋紅！',
+    objectives: [
+      { type: 'capture_target', targetId: 'LMC', description: '拍攝南天「LMC 大麥哲倫星系」' },
+      { type: 'capture_target', targetId: 'NGC3372', description: '拍攝南天「NGC 3372 船底座大星雲（海山二）」' },
+    ],
+    rewards: { money: 2500, unlockAccessory: 'camera_cmos' },
+    prerequisiteQuestId: 'ch6_stargazing_lie_down',
   },
 ];

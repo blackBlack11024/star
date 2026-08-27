@@ -146,11 +146,34 @@ export class PhotoManager {
             usedEquipmentTags.push('廣角目鏡');
         }
 
+        // 4. Special Events (ISS & Meteors)
+        let finalTargetName = targetInfo?.name || '未知星野';
+        let finalTargetType = targetInfo?.type || TargetType.StarField;
+
+        if (targetInfo?.hasMeteor) {
+            usedEquipmentTags.push('流星光軌');
+            accessoryScoreBonus += 15;
+            accessoryPriceMultiplier *= 1.4;
+            if (finalTargetName === '未知星野') {
+                finalTargetName = '英仙座流星雨 · 璀璨光軌';
+                finalTargetType = TargetType.SpecialEvent;
+            } else {
+                finalTargetName = `${finalTargetName} (伴隨流星光軌)`;
+            }
+        }
+
+        if (targetInfo?.id === 'iss' || finalTargetName.includes('太空站')) {
+            usedEquipmentTags.push('低地軌道特寫');
+            accessoryScoreBonus += 18;
+            accessoryPriceMultiplier *= 1.5;
+            finalTargetType = TargetType.SpecialEvent;
+        }
+
         const isUnknownSky = !targetInfo || !targetInfo.name || targetInfo.name.includes('未知');
         const qualityScore = this.calculateQuality(targetInfo, state, expSec, hasMotionBlur, driftAmount, accessoryScoreBonus);
         const quality = this.getQualityGrade(qualityScore);
-        let basePrice = this.calculatePrice(quality, targetInfo?.type || TargetType.StarField);
-        if (isUnknownSky) {
+        let basePrice = this.calculatePrice(quality, finalTargetType);
+        if (isUnknownSky && !targetInfo?.hasMeteor) {
             basePrice = Math.max(5, Math.min(25, Math.floor(basePrice * 0.25)));
         }
         const finalPrice = Math.floor(basePrice * penaltyFactor * accessoryPriceMultiplier);
@@ -158,8 +181,8 @@ export class PhotoManager {
         const photo: Photo = {
             id: `photo_${++this.photoIdCounter}_${Date.now()}`,
             imageDataUrl,
-            targetName: targetInfo?.name || '未知星野',
-            targetType: targetInfo?.type || TargetType.StarField,
+            targetName: finalTargetName,
+            targetType: finalTargetType,
             exposureSeconds: parseFloat(expSec.toFixed(1)),
             telescopeLevel: state.telescopeLevel || 1,
             weatherCondition: state.weather,
@@ -206,7 +229,7 @@ export class PhotoManager {
         driftAmount: number = 0,
         accessoryScoreBonus: number = 0
     ): number {
-        let score = 45;
+        let score = 20; // Balanced base score (down from 45)
 
         // Weather multiplier
         let weatherMult = 1.0;
@@ -216,102 +239,113 @@ export class PhotoManager {
 
         score *= weatherMult;
 
-        // Telescope bonus
+        // Telescope resolving power bonus (Tier 1: +3, Tier 5: +15, down from level * 8)
         const telLevel = state.telescopeLevel || 1;
-        score += telLevel * 8;
+        score += telLevel * 3;
 
         // Exposure signal-to-noise ratio curve
         const isPlanet = targetInfo?.type === TargetType.Planet;
         if (isPlanet) {
-            // Planets & Moon want short exposures (0.5s - 3s)
-            if (expSec <= 3.5) {
+            // Planets & Moon want short exposures (0.5s - 2.5s)
+            if (expSec <= 2.5) {
                 score += 20; // Crisp planetary surface features
+            } else if (expSec <= 4.0) {
+                score += 10;
             } else {
-                score -= Math.min(30, (expSec - 3.5) * 4); // Overexposure washing out planetary bands
+                score -= Math.min(25, (expSec - 2.5) * 5); // Overexposure washing out planetary bands
             }
         } else {
             // Deep Sky Objects need long photon integration
             if (expSec < 3.0) {
-                score -= 22; // Underexposed, faint clouds barely visible
+                score -= 15; // Underexposed, faint clouds barely visible
             } else if (expSec >= 15.0 && expSec <= 90.0) {
-                score += Math.min(28, Math.log2(expSec + 1) * 5.0); // Rich emission nebula colors
+                score += Math.min(25, 12 + Math.log2(expSec + 1) * 2.5); // Rich emission nebula colors
             } else {
-                score += 15;
+                score += 12;
             }
         }
 
-        // Difficulty bonus
+        // Difficulty bonus (scaled: 1 to 5)
         if (targetInfo?.difficulty) {
-            score += targetInfo.difficulty * 5;
+            score += Math.min(10, targetInfo.difficulty * 2);
         }
 
         // Motion blur penalty (鏡筒晃動拖尾與場旋殘影懲罰)
         if (hasMotionBlur) {
-            const blurPenalty = Math.min(55, Math.max(25, driftAmount * 35));
+            const blurPenalty = Math.min(45, Math.max(20, driftAmount * 25));
             score -= blurPenalty;
             // 拖尾或場旋照片在天文攝影中屬於失敗/脫焦影格，評級嚴格受限於 B 級（最高 62 分），不可評為 S 或 SSS 級
             score = Math.min(score, 62);
         }
 
         // Light pollution penalty (0 = dark, 1 = heavy)
-        const hasLpFilter = (state.accessories || []).some((a: any) => a.id === 'filter_light_pollution' && a.owned);
+        const hasLpFilter = (state.accessories || []).some((a: any) => a.id === 'filter_light_pollution' && a.owned && a.equipped !== false);
         const lp = state.currentLocation?.lightPollution ?? 0.05;
-        score -= hasLpFilter ? (lp * 5) : (lp * 20); // 75% light pollution filtered out!
+        score -= hasLpFilter ? (lp * 4) : (lp * 15);
 
-        // Accessory equipment bonus
-        score += accessoryScoreBonus;
+        // Accessory equipment bonus (capped at +12)
+        score += Math.min(12, accessoryScoreBonus * 0.5);
+
+        // Target Altitude (Seeing / Atmospheric Turbulance)
+        if (targetInfo?.altitude !== undefined) {
+            if (targetInfo.altitude < 20) {
+                score -= 10; // Low altitude atmospheric turbulence
+            } else if (targetInfo.altitude > 60) {
+                score += 8; // Zenith high seeing
+            }
+        }
 
         // If empty unknown sky background with no identified celestial targets
         const isUnknownSky = !targetInfo || !targetInfo.name || targetInfo.name.includes('未知');
         if (isUnknownSky) {
-            score = Math.min(38, Math.round(score * 0.5));
+            score = Math.min(35, Math.round(score * 0.4));
         }
 
-        return Math.max(10, Math.min(100, Math.round(score)));
+        return Math.max(5, Math.min(100, Math.round(score)));
     }
 
     private getQualityGrade(score: number): PhotoQuality {
         if (score >= 95) return PhotoQuality.SSS;
-        if (score >= 88) return PhotoQuality.S;
+        if (score >= 86) return PhotoQuality.S;
         if (score >= 72) return PhotoQuality.A;
-        if (score >= 50) return PhotoQuality.B;
-        if (score >= 32) return PhotoQuality.C;
+        if (score >= 55) return PhotoQuality.B;
+        if (score >= 40) return PhotoQuality.C;
         return PhotoQuality.D;
     }
 
     private calculatePrice(grade: PhotoQuality, type: TargetType): number {
         const priceTable: Record<string, Record<PhotoQuality, number>> = {
             [TargetType.StarField]: {
-                [PhotoQuality.D]: 5,
-                [PhotoQuality.C]: 15,
-                [PhotoQuality.B]: 40,
-                [PhotoQuality.A]: 80,
-                [PhotoQuality.S]: 150,
-                [PhotoQuality.SSS]: 300,
+                [PhotoQuality.D]: 2,
+                [PhotoQuality.C]: 5,
+                [PhotoQuality.B]: 12,
+                [PhotoQuality.A]: 25,
+                [PhotoQuality.S]: 45,
+                [PhotoQuality.SSS]: 80,
             },
             [TargetType.Planet]: {
-                [PhotoQuality.D]: 20,
-                [PhotoQuality.C]: 50,
-                [PhotoQuality.B]: 120,
-                [PhotoQuality.A]: 250,
-                [PhotoQuality.S]: 500,
-                [PhotoQuality.SSS]: 1000,
+                [PhotoQuality.D]: 5,
+                [PhotoQuality.C]: 15,
+                [PhotoQuality.B]: 35,
+                [PhotoQuality.A]: 75,
+                [PhotoQuality.S]: 140,
+                [PhotoQuality.SSS]: 240,
             },
             [TargetType.Messier]: {
-                [PhotoQuality.D]: 50,
-                [PhotoQuality.C]: 120,
-                [PhotoQuality.B]: 300,
-                [PhotoQuality.A]: 600,
-                [PhotoQuality.S]: 1200,
-                [PhotoQuality.SSS]: 2500,
+                [PhotoQuality.D]: 10,
+                [PhotoQuality.C]: 30,
+                [PhotoQuality.B]: 70,
+                [PhotoQuality.A]: 150,
+                [PhotoQuality.S]: 300,
+                [PhotoQuality.SSS]: 520,
             },
             [TargetType.SpecialEvent]: {
-                [PhotoQuality.D]: 100,
-                [PhotoQuality.C]: 250,
-                [PhotoQuality.B]: 600,
-                [PhotoQuality.A]: 1200,
-                [PhotoQuality.S]: 2500,
-                [PhotoQuality.SSS]: 5000,
+                [PhotoQuality.D]: 25,
+                [PhotoQuality.C]: 60,
+                [PhotoQuality.B]: 140,
+                [PhotoQuality.A]: 280,
+                [PhotoQuality.S]: 500,
+                [PhotoQuality.SSS]: 850,
             }
         };
 

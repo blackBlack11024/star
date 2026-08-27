@@ -3,9 +3,36 @@ import { DEEP_SKY_OBJECTS } from '../data/deepSkyObjects';
 import { gameStore } from './GameStore';
 
 export class QuestManager {
+    private targetedHistory = new Set<string>();
+    private hasLainDown = false;
+    private hasMountedLaser = false;
+
     constructor() {
         document.addEventListener('photo-captured', (e: any) => {
             this.onPhotoCaptured(e.detail);
+        });
+
+        document.addEventListener('laser-pointed-target', (e: any) => {
+            const target = e.detail?.target;
+            if (target) {
+                this.targetedHistory.add((target.name || '').toLowerCase());
+                if (target.id) this.targetedHistory.add(target.id.toLowerCase());
+                this.checkAllQuests();
+            }
+        });
+
+        document.addEventListener('player-lie-down', (e: any) => {
+            if (e.detail?.isLyingDown) {
+                this.hasLainDown = true;
+                this.checkAllQuests();
+            }
+        });
+
+        document.addEventListener('laser-mounted-changed', (e: any) => {
+            if (e.detail?.isMounted) {
+                this.hasMountedLaser = true;
+                this.checkAllQuests();
+            }
         });
 
         // Check if any existing photos in album satisfy active or unlocked quests on startup
@@ -105,6 +132,25 @@ export class QuestManager {
                 const grades = ['D', 'C', 'B', 'A', 'S', 'SSS'];
                 return allPhotos.some((p: any) => grades.indexOf(p.quality) >= grades.indexOf(obj.minQuality || 'A'));
             }
+
+            case 'laser_point_target': {
+                const targetId = (obj.targetId || '').toLowerCase();
+                return Array.from(this.targetedHistory).some(t => t.includes(targetId));
+            }
+
+            case 'mount_laser': {
+                const state = gameStore.getState();
+                return state.isLaserPointerMounted || this.hasMountedLaser;
+            }
+
+            case 'lie_down': {
+                const state = gameStore.getState();
+                return state.isLyingDown || this.hasLainDown;
+            }
+
+            case 'capture_meteor': {
+                return allPhotos.some(p => (p.equipmentTags || []).includes('流星光軌') || (p.targetName || '').includes('流星'));
+            }
         }
         return false;
     }
@@ -115,6 +161,22 @@ export class QuestManager {
         
         if (quest.rewards.money) {
             state.addMoney(quest.rewards.money);
+        }
+
+        if (quest.rewards.unlockLocation) {
+            state.unlockLocation(quest.rewards.unlockLocation);
+            document.dispatchEvent(new CustomEvent('show-notification', {
+                detail: { message: `已解鎖新觀測聖地通行證！可按 L 鍵切換前往。`, type: 'success' }
+            }));
+        }
+
+        if (quest.rewards.unlockAccessory) {
+            state.unlockAccessory(quest.rewards.unlockAccessory);
+            const acc = (state.accessories || []).find(a => a.id === quest.rewards.unlockAccessory);
+            const accName = acc?.name || '專用天文器材';
+            document.dispatchEvent(new CustomEvent('show-notification', {
+                detail: { message: `獲贈重要器材：${accName}！已為您自動配備。`, type: 'success' }
+            }));
         }
 
         gameStore.setState({ completedQuestIds: completedIds } as any);
