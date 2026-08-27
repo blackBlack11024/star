@@ -125,6 +125,15 @@ export const ACCESSORIES: Accessory[] = [
     effects: { exposureGain: 2.0, noiseReduction: 0.7 },
     owned: false,
   },
+  {
+    id: 'camera_startrail',
+    name: '星軌專用相機',
+    type: 'camera',
+    description: '通關全部主線任務獲得的終極天文神機。配備無限光子堆疊晶片，可在長曝光模式下完美記錄同心圓星軌光跡，無衰減、無噪點，深空黑夜純淨深邃，星軌璀璨奪目！',
+    price: 3500,
+    effects: { starTrailMode: 1, exposureGain: 2.2, noiseReduction: 0.85 },
+    owned: false,
+  },
   // Mount & Finder
   {
     id: 'laser_pointer',

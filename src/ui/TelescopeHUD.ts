@@ -14,6 +14,7 @@ export class TelescopeHUD {
     private toggleExposureBtn: HTMLButtonElement;
     private frameTypeButtons: Map<string, HTMLButtonElement> = new Map();
     private calibrationBanner: HTMLElement;
+    private lockBadge: HTMLElement;
     private eyepiecePhysicalMask: HTMLElement;
     private currentIdentifiedTarget: any = null;
     private unsubscribe: () => void;
@@ -45,6 +46,12 @@ export class TelescopeHUD {
         this.calibrationBanner = document.createElement('div');
         this.calibrationBanner.className = 'calibration-banner';
         this.calibrationBanner.style.display = 'none';
+
+        this.lockBadge = document.createElement('div');
+        this.lockBadge.className = 'telescope-lock-badge';
+        this.lockBadge.style.display = 'none';
+        this.lockBadge.textContent = '視角已鎖定 · 按 L 解除';
+        this.container.appendChild(this.lockBadge);
 
         this.infoPanel = document.createElement('div');
         this.infoPanel.className = 'telescope-info';
@@ -125,10 +132,21 @@ export class TelescopeHUD {
             }
         };
 
+        const lockAngleBtn = document.createElement('button');
+        lockAngleBtn.className = 'telescope-finder-btn';
+        lockAngleBtn.id = 'telescope-lock-btn';
+        lockAngleBtn.innerHTML = `<span>鎖定視角</span><kbd>L</kbd>`;
+        lockAngleBtn.title = '鎖定 / 解鎖鏡筒指向角度 [L]';
+        lockAngleBtn.onclick = (e) => {
+            e.stopPropagation();
+            gameStore.getState().toggleTelescopeLock();
+        };
+
         controlsRow.appendChild(this.toggleExposureBtn);
         controlsRow.appendChild(frameSelector);
         controlsRow.appendChild(finderBtn);
         controlsRow.appendChild(laserMountBtn);
+        controlsRow.appendChild(lockAngleBtn);
 
         this.exposureBar = document.createElement('div');
         this.exposureBar.className = 'exposure-bar';
@@ -140,7 +158,7 @@ export class TelescopeHUD {
 
         const hints = document.createElement('div');
         hints.className = 'keyboard-hints';
-        hints.textContent = '空白鍵 曝光 · 1-4 場次 · V 循環 · 滾輪 變焦 · ESC 退出';
+        hints.textContent = '空白鍵 曝光 · L 鎖定視角 · 1-4 場次 · V 循環 · 滾輪 變焦 · ESC 退出';
 
         this.infoPanel.appendChild(readouts);
         this.infoPanel.appendChild(controlsRow);
@@ -228,6 +246,23 @@ export class TelescopeHUD {
                 laserBtn.innerHTML = `<span>安裝指星筆</span><kbd>X</kbd>`;
                 laserBtn.style.borderColor = '';
                 laserBtn.style.color = '';
+            }
+        }
+
+        const lockBtn = document.getElementById('telescope-lock-btn');
+        if (lockBtn) {
+            if (state.isTelescopeLocked) {
+                lockBtn.innerHTML = `<span>解鎖視角</span><kbd>L</kbd>`;
+                lockBtn.style.borderColor = 'rgba(251, 191, 36, 0.8)';
+                lockBtn.style.color = '#fbbf24';
+                lockBtn.style.background = 'rgba(251, 191, 36, 0.15)';
+                this.lockBadge.style.display = 'block';
+            } else {
+                lockBtn.innerHTML = `<span>鎖定視角</span><kbd>L</kbd>`;
+                lockBtn.style.borderColor = '';
+                lockBtn.style.color = '';
+                lockBtn.style.background = '';
+                this.lockBadge.style.display = 'none';
             }
         }
 

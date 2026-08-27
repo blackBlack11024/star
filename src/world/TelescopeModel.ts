@@ -245,6 +245,12 @@ export class TelescopeModel {
 
     scene.add(this.group);
   }
+
+  public setMountedLaserVisible(visible: boolean) {
+    if (this.mountedLaserGroup) {
+      this.mountedLaserGroup.visible = visible;
+    }
+  }
   
   public isPlayerNear(playerPos: THREE.Vector3): boolean {
     return this.group.position.distanceTo(playerPos) < this.interactionDistance;

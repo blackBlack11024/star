@@ -179,58 +179,199 @@ html, body {
   margin-bottom: 8px;
 }
 
+/* ---- Integrated Top-Left HUD Panel ---- */
+.hud-panel.top-left.integrated-time-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 320px;
+  background: rgba(11, 19, 43, 0.84);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+}
+
+.time-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 7px;
+}
+
+.time-display-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
 .time-display {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: #ffffff;
+  color: #f8fafc;
   font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.time-display:hover {
+  color: #38bdf8;
 }
 
 .sun-phase {
-  font-size: 12px;
+  font-size: 11px;
   background: rgba(56, 189, 248, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  border: 1px solid rgba(56, 189, 248, 0.35);
   color: #38bdf8;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-/* Time Controls Buttons */
-.time-controls {
+.sun-phase:hover {
+  background: rgba(56, 189, 248, 0.28);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+.time-btn-now {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.time-btn-now:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #ffffff;
+}
+
+/* Row wrapper with category label */
+.hud-time-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: rgba(0, 0, 0, 0.35);
-  padding: 4px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 8px;
 }
 
-.time-btn {
+.hud-time-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  width: 26px;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+/* Button groups */
+.hud-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
   flex: 1;
-  background: transparent;
-  border: none;
+}
+
+/* Standard speed button */
+.hud-ctrl-btn {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: #94a3b8;
-  border-radius: 6px;
-  padding: 4px 6px;
+  border-radius: 5px;
+  padding: 4px 2px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: center;
+  user-select: none;
 }
 
-.time-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+.hud-ctrl-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #f1f5f9;
 }
 
-.time-btn.active {
+.hud-ctrl-btn.active {
   background: #0284c7;
+  border-color: #38bdf8;
   color: #ffffff;
-  box-shadow: 0 0 8px rgba(2, 132, 199, 0.6);
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.6);
+}
+
+/* Shuttle jump buttons */
+.hud-shuttle-btn {
+  flex: 1;
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  color: #cbd5e1;
+  border-radius: 5px;
+  padding: 3px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  user-select: none;
+}
+
+.hud-shuttle-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+}
+
+.hud-shuttle-btn:active {
+  transform: scale(0.96);
+}
+
+/* Preset pills */
+.hud-preset-btn {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  border-radius: 5px;
+  padding: 3px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  user-select: none;
+}
+
+.hud-preset-btn:hover {
+  background: rgba(251, 191, 36, 0.15);
+  border-color: rgba(251, 191, 36, 0.45);
+  color: #fbbf24;
+}
+
+.hud-preset-btn.more-btn {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.hud-preset-btn.more-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: #38bdf8;
+  color: #ffffff;
 }
 
 /* Money & Weather Badges */
@@ -2143,8 +2284,11 @@ html, body {
 }
 .lightbox-img-wrap { flex-shrink: 0; }
 .lightbox-img {
-  max-width: 60vw;
+  max-width: 65vw;
   max-height: 80vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   border-radius: 8px;
   display: block;
   border: 1px solid rgba(255,255,255,0.1);
@@ -2458,6 +2602,27 @@ html, body {
   background: rgba(30, 41, 59, 0.92);
   border: 1px solid rgba(56, 189, 248, 0.4);
   color: #7dd3fc;
+}
+
+.telescope-lock-badge {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  color: #fbbf24;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  animation: fadeIn 0.25s ease;
 }
 
 /* =============================================================

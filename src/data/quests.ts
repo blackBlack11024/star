@@ -371,15 +371,15 @@ export const QUESTS: Quest[] = [
     completeDialogue: [
       '陳伯眼眶泛紅，所有人在頻道中為你鼓掌喝彩：',
       '「從合歡山那台搖晃的 60mm 老折射鏡，到阿塔卡馬直擊大麥哲倫星系……你已經走過了天文攝影的最長道路。」',
-      '「這台最新量子效率 >90% 的旗艦級冷卻 CMOS 感光晶片贈送給你！【自由沙盒觀測模式】已全面解鎖，宇宙是你的畫布，繼續航行吧，星空旅人！」'
+      '「這台國家天文台特製的終極神機【星軌專用相機】贈送給你！配備無限光子堆疊晶片，可在長曝光模式下完美記錄同心圓星軌光跡，黑夜純黑不泛白，星軌璀璨流轉！【自由沙盒觀測模式】已全面解鎖，繼續航行吧，星空旅人！」'
     ],
-    storySummary: '在智利阿塔卡馬成功拍攝大麥哲倫星系與船底座海山二，全主線圓滿通關，獲贈旗艦級 CMOS 晶片並解鎖終極自由觀測模式。',
+    storySummary: '在智利阿塔卡馬成功拍攝大麥哲倫星系與船底座海山二，全主線圓滿通關，獲贈終極大獎「星軌專用相機」並解鎖自由觀測模式。',
     starHoppingTip: '【全體夥伴祝福】：大麥哲倫星系（LMC）在南天肉眼可見如一團星雲；船底座大星雲（NGC 3372）面積為獵戶座四倍，長曝光下呈現璀璨緋紅！',
     objectives: [
       { type: 'capture_target', targetId: 'LMC', description: '拍攝南天「LMC 大麥哲倫星系」' },
       { type: 'capture_target', targetId: 'NGC3372', description: '拍攝南天「NGC 3372 船底座大星雲（海山二）」' },
     ],
-    rewards: { money: 2500, unlockAccessory: 'camera_cmos' },
+    rewards: { money: 3000, unlockAccessory: 'camera_startrail' },
     prerequisiteQuestId: 'ch6_stargazing_lie_down',
   },
 ];

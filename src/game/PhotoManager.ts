@@ -95,7 +95,11 @@ export class PhotoManager {
         let accessoryPriceMultiplier = 1.0;
 
         // 1. Camera Sensor Upgrades
-        if (hasAcc('camera_cmos')) {
+        if (hasAcc('camera_startrail')) {
+            accessoryScoreBonus += 25;
+            accessoryPriceMultiplier *= 1.5;
+            usedEquipmentTags.push('星軌相機');
+        } else if (hasAcc('camera_cmos')) {
             accessoryScoreBonus += 20;
             accessoryPriceMultiplier *= 1.35;
             usedEquipmentTags.push('CMOS相機');

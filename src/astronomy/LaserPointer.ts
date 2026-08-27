@@ -213,6 +213,14 @@ export class LaserPointer {
     }
   }
 
+  public setVisibleForPhoto(visible: boolean) {
+    if (!visible) {
+      this.handheldBeamLine.visible = false;
+      this.targetDotSprite.visible = false;
+      this.labelElement.style.display = 'none';
+    }
+  }
+
   public dispose() {
     document.body.classList.remove('laser-active');
     this.handheldBeamLine.geometry.dispose();

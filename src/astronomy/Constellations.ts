@@ -86,6 +86,10 @@ export class Constellations {
         this.group.visible = visible;
     }
 
+    public isVisible(): boolean {
+        return this.group.visible;
+    }
+
     public dispose() {
         if (this.geometry) this.geometry.dispose();
         if (this.material) this.material.dispose();

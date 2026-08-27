@@ -443,6 +443,12 @@ export class Game {
         const expGain = this.telescopeOptics.getExposureGain();
         const driftMitigation = this.telescopeOptics.getMountDriftMitigation();
         const timeScale = state.timeScale || 1.0;
+
+        // Hide synthetic constellation lines and laser beams from astrophotography frames
+        this.prepareSceneForPhoto(true);
+
+        const isStarTrailMode = this.telescopeOptics.hasStarTrailMode();
+
         this.longExposure.accumulate(
           this.scene,
           this.camera,
@@ -452,8 +458,12 @@ export class Game {
           driftMitigation,
           hasEquatorialMount,
           timeScale,
-          state.currentFov
+          state.currentFov,
+          isStarTrailMode
         );
+
+        this.prepareSceneForPhoto(false);
+
         const elapsed = this.longExposure.getElapsedSeconds();
         state.updateExposureElapsed(elapsed);
       }
@@ -681,6 +691,8 @@ export class Game {
       : { name: targetName, type: targetType, difficulty: 1, hasMeteor };
 
     // Capture and score the photo with true accumulated data URL and drift metrics
+    this.prepareSceneForPhoto(true);
+
     const photo = this.photoManager.capturePhoto(
       this.renderer, this.scene, this.camera,
       targetPayload,
@@ -691,6 +703,8 @@ export class Game {
       state.currentFrameType || 'light'
     );
 
+    this.prepareSceneForPhoto(false);
+
     this.audioManager.playShutter();
     const typeNames: Record<string, string> = {
       dark: '暗場校準底片',
@@ -700,6 +714,21 @@ export class Game {
     };
     const label = typeNames[state.currentFrameType || 'light'] || '照片';
     this.hud.showNotification(`${label}已儲存: ${photo.targetName}（曝光 ${result.elapsedSeconds.toFixed(1)} 秒 · ${photo.quality}級）`, 'success');
+  }
+
+  private wasConstellationsVisibleBeforePhoto = false;
+  private prepareSceneForPhoto(isPhoto: boolean): void {
+    if (isPhoto) {
+      this.wasConstellationsVisibleBeforePhoto = this.constellations.isVisible();
+      this.constellations.setVisible(false);
+      this.laserPointer.setVisibleForPhoto(false);
+      this.telescopeModel.setMountedLaserVisible(false);
+    } else {
+      if (this.wasConstellationsVisibleBeforePhoto && gameStore.getState().showConstellations) {
+        this.constellations.setVisible(true);
+      }
+      this.telescopeModel.setMountedLaserVisible(gameStore.getState().isLaserPointerMounted);
+    }
   }
 
   /** Handle window resize. */

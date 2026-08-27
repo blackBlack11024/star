@@ -58,6 +58,9 @@ export interface GameState {
   exposureDuration: number;
   currentFrameType: FrameType;
   setFrameType: (type: FrameType) => void;
+  isTelescopeLocked: boolean;
+  toggleTelescopeLock: () => void;
+  setTelescopeLocked: (locked: boolean) => void;
 
   // ---- Time Reversal ----
   timeReversalCostPerHour: number;
@@ -244,6 +247,9 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   exposureDuration: 30,
   currentFrameType: 'light',
   setFrameType: (type) => set({ currentFrameType: type }),
+  isTelescopeLocked: false,
+  toggleTelescopeLock: () => set((s) => ({ isTelescopeLocked: !s.isTelescopeLocked })),
+  setTelescopeLocked: (locked) => set({ isTelescopeLocked: locked }),
 
   completedQuestIds: savedData?.completedQuestIds || [],
   discoveredTargets: savedData?.discoveredTargets || [],

@@ -864,14 +864,6 @@ export class StudioUI {
         useFlat: boolean,
         useBias: boolean
     ): Promise<string> {
-        const outW = 800;
-        const outH = 600;
-
-        const outCanvas = document.createElement('canvas');
-        outCanvas.width = outW;
-        outCanvas.height = outH;
-        const outCtx = outCanvas.getContext('2d')!;
-
         // Load images
         const loadedImgs: HTMLImageElement[] = await Promise.all(
             lights.map(l => new Promise<HTMLImageElement>((resolve) => {
@@ -881,6 +873,32 @@ export class StudioUI {
                 img.src = l.imageDataUrl;
             }))
         );
+
+        if (loadedImgs.length === 0) return '';
+
+        // Strictly preserve original photo aspect ratio and orientation (no squishing/stretching)
+        const srcW = loadedImgs[0].naturalWidth || 1280;
+        const srcH = loadedImgs[0].naturalHeight || 720;
+        const aspect = srcW / srcH;
+
+        // Cap maximum dimension to 1280 for fast pixel-level stacking computation while maintaining high fidelity
+        const maxDim = 1280;
+        let outW = srcW;
+        let outH = srcH;
+        if (outW > maxDim || outH > maxDim) {
+            if (outW >= outH) {
+                outW = maxDim;
+                outH = Math.round(maxDim / aspect);
+            } else {
+                outH = maxDim;
+                outW = Math.round(maxDim * aspect);
+            }
+        }
+
+        const outCanvas = document.createElement('canvas');
+        outCanvas.width = outW;
+        outCanvas.height = outH;
+        const outCtx = outCanvas.getContext('2d')!;
 
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = outW;

@@ -241,6 +241,10 @@ export class PlayerController {
           document.dispatchEvent(new CustomEvent('frame-type-changed', { detail: types[nextIdx] }));
           return;
         }
+        case 'KeyL': {
+          state.toggleTelescopeLock();
+          return;
+        }
         case 'ArrowUp':
         case 'ArrowDown':
         case 'ArrowLeft':
@@ -269,6 +273,8 @@ export class PlayerController {
 
   private handleTelescopeSlew(key: string) {
     const state = gameStore.getState();
+    if (state.isTelescopeLocked) return;
+
     const fovFactor = state.currentFov / 60;
     const delta = 0.5 * fovFactor;
     let ra = state.telescopeRa;
@@ -312,6 +318,9 @@ export class PlayerController {
     if (this.isAnyModalActive()) return;
     const mode = gameStore.getState().gameMode;
     if (mode === GameMode.Telescope) {
+      // If view is locked, ignore mouse movement
+      if (gameStore.getState().isTelescopeLocked) return;
+
       // Slew if pointer is locked or user is dragging mouse
       if (this.controls.isLocked || event.buttons > 0) {
         const state = gameStore.getState();

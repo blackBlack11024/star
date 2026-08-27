@@ -40,18 +40,21 @@ export class HUD {
         this.container = document.createElement('div');
         this.container.className = 'hud';
 
-        // 1. Top-left panel: Time, Sun Phase, Time Scale Buttons
+        // 1. Top-left panel: Integrated Date, Time, Reversal Shuttle & Presets
         const topLeft = document.createElement('div');
-        topLeft.className = 'hud-panel top-left';
+        topLeft.className = 'hud-panel top-left integrated-time-panel';
         
+        // Row 1: Date/Time header, Sun phase badge, and Real-time reset
         const timeRow = document.createElement('div');
-        timeRow.className = 'time-row';
+        timeRow.className = 'time-header-row';
+
+        const timeWrap = document.createElement('div');
+        timeWrap.className = 'time-display-wrap';
 
         this.timeDisplay = document.createElement('div');
         this.timeDisplay.className = 'time-display';
         this.timeDisplay.textContent = '--:--:--';
-        this.timeDisplay.style.cursor = 'pointer';
-        this.timeDisplay.title = '點擊開啟時間與倒流控制中心 [R]';
+        this.timeDisplay.title = '點擊開啟完整星曆時空穿梭面板 [R]';
         this.timeDisplay.onclick = () => {
             window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
         };
@@ -59,41 +62,51 @@ export class HUD {
         this.sunPhaseDisplay = document.createElement('div');
         this.sunPhaseDisplay.className = 'sun-phase';
         this.sunPhaseDisplay.textContent = '觀星夜';
-        this.sunPhaseDisplay.style.cursor = 'pointer';
+        this.sunPhaseDisplay.title = '目前天象相位 · 點擊開啟星曆面板 [R]';
         this.sunPhaseDisplay.onclick = () => {
             window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
         };
 
+        timeWrap.appendChild(this.timeDisplay);
+        timeWrap.appendChild(this.sunPhaseDisplay);
+
         const nowBtn = document.createElement('button');
-        nowBtn.className = 'time-btn';
+        nowBtn.className = 'time-btn-now';
         nowBtn.textContent = '現在';
         nowBtn.title = '一鍵重置至目前現實時間';
-        nowBtn.style.flex = 'none';
-        nowBtn.style.padding = '2px 8px';
         nowBtn.onclick = () => {
             gameStore.getState().resetToRealTime();
         };
 
-        timeRow.appendChild(this.timeDisplay);
-        timeRow.appendChild(this.sunPhaseDisplay);
+        timeRow.appendChild(timeWrap);
         timeRow.appendChild(nowBtn);
         topLeft.appendChild(timeRow);
 
-        const timeControls = document.createElement('div');
-        timeControls.className = 'time-controls';
+        // Row 2: Time Flow Speed Controls
+        const speedRow = document.createElement('div');
+        speedRow.className = 'hud-time-row';
+        const speedLabel = document.createElement('span');
+        speedLabel.className = 'hud-time-label';
+        speedLabel.textContent = '流速';
+        speedRow.appendChild(speedLabel);
+
+        const speedBtnGroup = document.createElement('div');
+        speedBtnGroup.className = 'hud-btn-group';
+
         const scales = [
             { label: '暫停', value: 0 },
             { label: '1x', value: 1 },
             { label: '10x', value: 10 },
             { label: '60x', value: 60 },
-            { label: '5m', value: 300 },
-            { label: '16m', value: 1000 }
+            { label: '5分', value: 300 },
+            { label: '16分', value: 1000 }
         ];
         
         scales.forEach(scale => {
             const btn = document.createElement('button');
-            btn.className = `time-btn ${scale.value === 1 ? 'active' : ''}`;
+            btn.className = `hud-ctrl-btn ${scale.value === 1 ? 'active' : ''}`;
             btn.textContent = scale.label;
+            btn.title = `設定流速為 ${scale.label}`;
             btn.onclick = () => {
                 if (scale.value === 0) {
                     gameStore.getState().toggleTimePause();
@@ -105,9 +118,87 @@ export class HUD {
                 }
             };
             this.timeButtons.push(btn);
-            timeControls.appendChild(btn);
+            speedBtnGroup.appendChild(btn);
         });
-        topLeft.appendChild(timeControls);
+        speedRow.appendChild(speedBtnGroup);
+        topLeft.appendChild(speedRow);
+
+        // Row 3: Integrated Time Shuttle & Reversal (即時倒流與跳轉)
+        const shuttleRow = document.createElement('div');
+        shuttleRow.className = 'hud-time-row';
+        const shuttleLabel = document.createElement('span');
+        shuttleLabel.className = 'hud-time-label';
+        shuttleLabel.textContent = '穿梭';
+        shuttleRow.appendChild(shuttleLabel);
+
+        const shuttleBtnGroup = document.createElement('div');
+        shuttleBtnGroup.className = 'hud-btn-group';
+
+        const shuttles = [
+            { label: '-1天', action: () => gameStore.getState().advanceTimeDays(-1), title: '時間倒流 1 天' },
+            { label: '-6時', action: () => gameStore.getState().reverseTime(6), title: '時間倒流 6 小時' },
+            { label: '-1時', action: () => gameStore.getState().reverseTime(1), title: '時間倒流 1 小時' },
+            { label: '+1時', action: () => gameStore.getState().advanceTimeHours(1), title: '時間快轉 1 小時' },
+            { label: '+6時', action: () => gameStore.getState().advanceTimeHours(6), title: '時間快轉 6 小時' },
+            { label: '+1天', action: () => gameStore.getState().advanceTimeDays(1), title: '時間快轉 1 天' }
+        ];
+
+        shuttles.forEach(s => {
+            const btn = document.createElement('button');
+            btn.className = 'hud-shuttle-btn';
+            btn.textContent = s.label;
+            btn.title = s.title;
+            btn.onclick = () => s.action();
+            shuttleBtnGroup.appendChild(btn);
+        });
+        shuttleRow.appendChild(shuttleBtnGroup);
+        topLeft.appendChild(shuttleRow);
+
+        // Row 4: Golden Observation Presets (一鍵切換黃金天象時段)
+        const presetsRow = document.createElement('div');
+        presetsRow.className = 'hud-time-row';
+        const presetsLabel = document.createElement('span');
+        presetsLabel.className = 'hud-time-label';
+        presetsLabel.textContent = '時刻';
+        presetsRow.appendChild(presetsLabel);
+
+        const presetsBtnGroup = document.createElement('div');
+        presetsBtnGroup.className = 'hud-btn-group';
+
+        const jumpToTime = (h: number, m: number) => {
+            const curr = new Date(gameStore.getState().currentTime);
+            curr.setHours(h, m, 0, 0);
+            gameStore.getState().setTime(curr);
+        };
+
+        const presets = [
+            { label: '黃昏', h: 18, m: 30, title: '跳轉至日落黃昏 (18:30)' },
+            { label: '初夜', h: 21, m: 0, title: '跳轉至初夜 (21:00)' },
+            { label: '深空', h: 1, m: 0, title: '跳轉至最佳深空觀測 (01:00)' },
+            { label: '黎明', h: 5, m: 30, title: '跳轉至黎明 (05:30)' },
+            { label: '正午', h: 12, m: 0, title: '跳轉至正午 (12:00)' },
+        ];
+
+        presets.forEach(p => {
+            const btn = document.createElement('button');
+            btn.className = 'hud-preset-btn';
+            btn.textContent = p.label;
+            btn.title = p.title;
+            btn.onclick = () => jumpToTime(p.h, p.m);
+            presetsBtnGroup.appendChild(btn);
+        });
+
+        const moreBtn = document.createElement('button');
+        moreBtn.className = 'hud-preset-btn more-btn';
+        moreBtn.textContent = '星曆';
+        moreBtn.title = '開啟完整穿梭星曆面板 [R]（自訂日期、年份與四季星空）';
+        moreBtn.onclick = () => {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }));
+        };
+        presetsBtnGroup.appendChild(moreBtn);
+
+        presetsRow.appendChild(presetsBtnGroup);
+        topLeft.appendChild(presetsRow);
 
         // 2. Top-right panel: Money, Weather, and Audio Toggle
         const topRight = document.createElement('div');
@@ -190,8 +281,8 @@ export class HUD {
         verBadge.style.background = 'rgba(56, 189, 248, 0.12)';
         verBadge.style.borderRadius = '6px';
         verBadge.style.border = '1px solid rgba(56, 189, 248, 0.3)';
-        verBadge.textContent = 'v1.6.12';
-        verBadge.title = 'v1.6.12';
+        verBadge.textContent = 'v1.7.0';
+        verBadge.title = 'v1.7.0';
 
         topRight.appendChild(this.moneyDisplay);
         topRight.appendChild(this.weatherDisplay);

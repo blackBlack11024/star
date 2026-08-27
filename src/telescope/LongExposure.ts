@@ -61,7 +61,8 @@ export class LongExposure {
         uAccumulatedFrame: { value: null },
         uSampleCount: { value: 1.0 },
         uExposureGain: { value: 1.0 },
-        uIntegrationWeight: { value: 0.08 }
+        uIntegrationWeight: { value: 0.08 },
+        uStarTrailMode: { value: 0.0 }
       },
       vertexShader: `
         varying vec2 vUv;
@@ -76,6 +77,7 @@ export class LongExposure {
         uniform float uSampleCount;
         uniform float uExposureGain;
         uniform float uIntegrationWeight;
+        uniform float uStarTrailMode;
         varying vec2 vUv;
         
         void main() {
@@ -87,10 +89,17 @@ export class LongExposure {
           }
           
           vec4 accumulated = texture2D(uAccumulatedFrame, vUv);
+
+          // Dedicated Star Trail Mode (Lighten / Max-Hold Blending):
+          // Deep sky background is never added or washed out, preserving deep velvety pure black.
+          // Moving stars trace continuous, brilliant circular arcs across the celestial sphere.
+          if (uStarTrailMode > 0.5) {
+            vec4 trailPeak = max(accumulated, current);
+            gl_FragColor = min(trailPeak, vec4(1.0, 1.0, 1.0, 1.0));
+            return;
+          }
           
-          // Realistic Astrophotography Star Trail & Long Exposure Integration:
-          // Maximum/Lighten blending keeps dark sky velvety black while stars paint streaks when moving.
-          // Running average integrates stationary faint deep-sky nebulae smoothly without blowout.
+          // Standard Astrophotography Long Exposure Integration:
           vec4 peak = max(accumulated, current);
           vec4 smoothAvg = mix(accumulated, current, 1.0 / uSampleCount);
           vec4 result = max(peak * 0.98, smoothAvg);
@@ -150,7 +159,8 @@ export class LongExposure {
     driftMitigation: number = 1.0,
     hasEquatorialMount: boolean = false,
     timeScale: number = 1.0,
-    currentFov: number = 60.0
+    currentFov: number = 60.0,
+    isStarTrailMode: boolean = false
   ) {
     if (!this.isExposingFlag) return;
     
@@ -211,6 +221,7 @@ export class LongExposure {
     this.blendMaterial.uniforms.uSampleCount.value = this.sampleCount;
     this.blendMaterial.uniforms.uExposureGain.value = gain;
     this.blendMaterial.uniforms.uIntegrationWeight.value = integrationWeight;
+    this.blendMaterial.uniforms.uStarTrailMode.value = isStarTrailMode ? 1.0 : 0.0;
     
     this.renderer.setRenderTarget(nextAccumTarget);
     this.renderer.render(this.blendScene, this.blendCamera);
@@ -226,9 +237,20 @@ export class LongExposure {
     const frameType = this.currentFrameType;
     const finalTarget = this.bufferIdx === 0 ? this.rtA : this.rtB;
     
-    // Target canvas for photography result
-    const outW = Math.min(1920, this.width);
-    const outH = Math.min(1080, this.height);
+    // Target canvas for photography result (strictly preserving camera aspect ratio)
+    const aspect = this.width / this.height;
+    let outW = this.width;
+    let outH = this.height;
+    const maxDim = 1920;
+    if (outW > maxDim || outH > maxDim) {
+      if (outW >= outH) {
+        outW = maxDim;
+        outH = Math.round(maxDim / aspect);
+      } else {
+        outH = maxDim;
+        outW = Math.round(maxDim * aspect);
+      }
+    }
     this.resultCanvas.width = outW;
     this.resultCanvas.height = outH;
     const ctx = this.resultCanvas.getContext('2d');
