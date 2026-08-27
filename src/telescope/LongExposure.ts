@@ -146,7 +146,8 @@ export class LongExposure {
     mainCamera: THREE.PerspectiveCamera,
     gain: number = 1.0,
     currentRa?: number,
-    currentDec?: number
+    currentDec?: number,
+    driftMitigation: number = 1.0
   ) {
     if (!this.isExposingFlag) return;
     
@@ -160,11 +161,12 @@ export class LongExposure {
         while (dRa < -180) dRa += 360;
         const dDec = currentDec - this.prevDec;
         const cosDec = Math.cos((currentDec * Math.PI) / 180);
-        const step = Math.sqrt(Math.pow(dRa * cosDec, 2) + Math.pow(dDec, 2));
+        const rawStep = Math.sqrt(Math.pow(dRa * cosDec, 2) + Math.pow(dDec, 2));
+        const effectiveStep = rawStep * driftMitigation;
         
-        if (step > 0.005) {
-          this.totalDrift += step;
-          this.maxDriftStep = Math.max(this.maxDriftStep, step);
+        if (effectiveStep > 0.005) {
+          this.totalDrift += effectiveStep;
+          this.maxDriftStep = Math.max(this.maxDriftStep, effectiveStep);
         }
       }
       this.prevRa = currentRa;

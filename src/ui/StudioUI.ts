@@ -158,6 +158,17 @@ export class StudioUI {
                 blurBadge.textContent = `晃動殘影`;
                 title.appendChild(blurBadge);
             }
+            if (photo.equipmentTags && photo.equipmentTags.length > 0) {
+                const eqContainer = document.createElement('div');
+                eqContainer.style.margin = '4px 0';
+                photo.equipmentTags.forEach((t: string) => {
+                    const tag = document.createElement('span');
+                    tag.className = 'equipment-tag';
+                    tag.textContent = t;
+                    eqContainer.appendChild(tag);
+                });
+                title.appendChild(eqContainer);
+            }
             const meta = document.createElement('div');
             meta.className = 'photo-meta';
             meta.innerHTML = `

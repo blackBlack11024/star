@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { gameStore } from '../game/GameStore';
 import { GameMode } from '../types';
+import { TelescopeOptics } from '../telescope/TelescopeOptics';
 
 /**
  * Handles all player input and camera control across game modes.
@@ -11,6 +12,7 @@ export class PlayerController {
   private canvas: HTMLCanvasElement;
   private scene: THREE.Scene;
   private controls: PointerLockControls;
+  private optics?: TelescopeOptics;
 
   private moveForward = false;
   private moveBackward = false;
@@ -295,13 +297,18 @@ export class PlayerController {
     }
   }
 
+  public setOptics(optics: TelescopeOptics) {
+    this.optics = optics;
+  }
+
   private onWheel(event: WheelEvent) {
     const state = gameStore.getState();
     if (state.gameMode === GameMode.Telescope) {
       event.preventDefault();
       let fov = state.currentFov;
       fov *= event.deltaY > 0 ? 1.1 : 0.9;
-      fov = Math.max(0.2, Math.min(60, fov));
+      const [minFov, maxFov] = this.optics ? this.optics.getEffectiveFovRange() : [0.2, 60];
+      fov = Math.max(minFov, Math.min(maxFov, fov));
       state.setFov(fov);
     }
   }

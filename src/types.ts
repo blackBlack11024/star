@@ -92,6 +92,7 @@ export interface Photo {
   calibratedWith?: { dark: boolean; flat: boolean; bias: boolean };
   hasMotionBlur?: boolean;
   driftAmount?: number;
+  equipmentTags?: string[];
 }
 
 export interface DeepSkyObjectData {

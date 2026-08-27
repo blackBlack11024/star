@@ -180,6 +180,7 @@ export class Game {
     // ---- Telescope optics ----
     progress(0.7, '正在校準望遠鏡光學...');
     this.telescopeOptics = new TelescopeOptics();
+    this.playerController.setOptics(this.telescopeOptics);
     this.longExposure = new LongExposure(
       this.renderer,
       window.innerWidth,
@@ -336,7 +337,9 @@ export class Game {
       // Long exposure accumulation
       if (state.isExposing) {
         // Render scene to offscreen target and accumulate with telescope drift tracking
-        this.longExposure.accumulate(this.scene, this.camera, 1.0, state.telescopeRa, state.telescopeDec);
+        const expGain = this.telescopeOptics.getExposureGain();
+        const driftMitigation = this.telescopeOptics.getMountDriftMitigation();
+        this.longExposure.accumulate(this.scene, this.camera, expGain, state.telescopeRa, state.telescopeDec, driftMitigation);
         const elapsed = this.longExposure.getElapsedSeconds();
         state.updateExposureElapsed(elapsed);
       }
@@ -520,7 +523,7 @@ export class Game {
     // Capture and score the photo with true accumulated data URL and drift metrics
     const photo = this.photoManager.capturePhoto(
       this.renderer, this.scene, this.camera,
-      { name: targetName, type: targetType, difficulty: 1 },
+      identified ? { ...identified, difficulty: (identified as any).difficulty || 1 } : { name: targetName, type: targetType, difficulty: 1 },
       result.elapsedSeconds,
       result.dataUrl,
       result.hasMotionBlur,

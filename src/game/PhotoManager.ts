@@ -86,14 +86,74 @@ export class PhotoManager {
         const penaltyFactor = getRepeatPenaltyFactor(targetId);
         targetPhotoCounts[targetId] = (targetPhotoCounts[targetId] || 0) + 1;
 
+        // Evaluate owned accessories
+        const accessories = state.accessories || [];
+        const hasAcc = (id: string) => accessories.some((a: any) => a.id === id && a.owned);
+
+        const usedEquipmentTags: string[] = [];
+        let accessoryScoreBonus = 0;
+        let accessoryPriceMultiplier = 1.0;
+
+        // 1. Camera Sensor Upgrades
+        if (hasAcc('camera_cmos')) {
+            accessoryScoreBonus += 20;
+            accessoryPriceMultiplier *= 1.35;
+            usedEquipmentTags.push('CMOS相機');
+        } else if (hasAcc('camera_cooled')) {
+            accessoryScoreBonus += 12;
+            accessoryPriceMultiplier *= 1.2;
+            usedEquipmentTags.push('製冷CCD');
+        }
+
+        // 2. Optical Filters
+        const targetName = targetInfo?.name || '';
+        const targetType = targetInfo?.type || '';
+        const isPlanet = targetType === TargetType.Planet;
+        const isNebula = targetType === 'nebula' || targetName.includes('星雲');
+        const isPlanetaryNebula = targetType === 'planetary_nebula' || targetName.includes('M57') || targetName.includes('M27');
+
+        if (hasAcc('filter_halpha') && isNebula) {
+            accessoryScoreBonus += 22;
+            accessoryPriceMultiplier *= 1.5;
+            usedEquipmentTags.push('H-alpha濾鏡');
+        }
+        if (hasAcc('filter_oiii') && isPlanetaryNebula) {
+            accessoryScoreBonus += 25;
+            accessoryPriceMultiplier *= 1.6;
+            usedEquipmentTags.push('OIII濾鏡');
+        }
+        if (hasAcc('filter_light_pollution')) {
+            usedEquipmentTags.push('光害濾鏡');
+        }
+
+        // 3. Mounts
+        if (hasAcc('mount_goto')) {
+            accessoryScoreBonus += 10;
+            usedEquipmentTags.push('GoTo導星');
+        } else if (hasAcc('mount_eq')) {
+            accessoryScoreBonus += 6;
+            usedEquipmentTags.push('赤道儀');
+        }
+
+        // 4. Eyepieces
+        if (hasAcc('eyepiece_barlow') && isPlanet) {
+            accessoryScoreBonus += 16;
+            accessoryPriceMultiplier *= 1.3;
+            usedEquipmentTags.push('巴羅鏡2x');
+        } else if (hasAcc('eyepiece_wide') && (targetType === 'cluster' || targetType === TargetType.StarField)) {
+            accessoryScoreBonus += 10;
+            accessoryPriceMultiplier *= 1.15;
+            usedEquipmentTags.push('廣角目鏡');
+        }
+
         const isUnknownSky = !targetInfo || !targetInfo.name || targetInfo.name.includes('未知');
-        const qualityScore = this.calculateQuality(targetInfo, state, expSec, hasMotionBlur, driftAmount);
+        const qualityScore = this.calculateQuality(targetInfo, state, expSec, hasMotionBlur, driftAmount, accessoryScoreBonus);
         const quality = this.getQualityGrade(qualityScore);
         let basePrice = this.calculatePrice(quality, targetInfo?.type || TargetType.StarField);
         if (isUnknownSky) {
             basePrice = Math.max(5, Math.min(25, Math.floor(basePrice * 0.25)));
         }
-        const finalPrice = Math.floor(basePrice * penaltyFactor);
+        const finalPrice = Math.floor(basePrice * penaltyFactor * accessoryPriceMultiplier);
 
         const photo: Photo = {
             id: `photo_${++this.photoIdCounter}_${Date.now()}`,
@@ -112,6 +172,7 @@ export class PhotoManager {
             frameType: 'light',
             hasMotionBlur,
             driftAmount: parseFloat(driftAmount.toFixed(2)),
+            equipmentTags: usedEquipmentTags,
         };
 
         state.addPhoto(photo);
@@ -142,7 +203,8 @@ export class PhotoManager {
         state: any,
         expSec: number = 5,
         hasMotionBlur: boolean = false,
-        driftAmount: number = 0
+        driftAmount: number = 0,
+        accessoryScoreBonus: number = 0
     ): number {
         let score = 45;
 
@@ -190,8 +252,12 @@ export class PhotoManager {
         }
 
         // Light pollution penalty (0 = dark, 1 = heavy)
+        const hasLpFilter = (state.accessories || []).some((a: any) => a.id === 'filter_light_pollution' && a.owned);
         const lp = state.currentLocation?.lightPollution ?? 0.05;
-        score -= lp * 20;
+        score -= hasLpFilter ? (lp * 5) : (lp * 20); // 75% light pollution filtered out!
+
+        // Accessory equipment bonus
+        score += accessoryScoreBonus;
 
         // If empty unknown sky background with no identified celestial targets
         const isUnknownSky = !targetInfo || !targetInfo.name || targetInfo.name.includes('未知');
