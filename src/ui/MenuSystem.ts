@@ -258,6 +258,16 @@ export class MenuSystem {
                 btn.textContent = '前往此處觀星';
                 btn.onclick = () => {
                     state.setLocation(loc);
+
+                    // Re-orient telescope directly at the local zenith of the new site
+                    // At any location: Zenith Dec = Latitude, Zenith RA = LST
+                    const d_j2000 = (state.currentTime.getTime() / 86400000.0 + 2440587.5) - 2451545.0;
+                    const gmst = (18.697374558 + 24.06570982441908 * d_j2000) % 24;
+                    const gmstAdj = gmst < 0 ? gmst + 24 : gmst;
+                    const lst = (gmstAdj + loc.longitude / 15) % 24;
+                    const lstAdj = lst < 0 ? lst + 24 : lst;
+
+                    state.setTelescopePointing(lstAdj, loc.latitude);
                     this.hideLocationSelector();
                 };
                 card.appendChild(btn);

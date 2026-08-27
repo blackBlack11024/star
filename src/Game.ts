@@ -323,6 +323,7 @@ export class Game {
     this.deepSkyObjects.update(currentCameraFov, isTelescope, effectiveLimitingMag);
     this.planetarySystem.update(gameTime, currentCameraFov, loc.latitude, loc.longitude);
     const planets = this.planetarySystem.getPlanets();
+    state.setPlanets(planets);
 
     // ---- Constellations ----
     this.constellations.update(this.sunElevation);
@@ -405,7 +406,16 @@ export class Game {
 
       // Transform celestial basis to world space
       const cMatrix = this.celestialSphere.group.matrixWorld;
-      const wForward = uForward.clone().transformDirection(cMatrix).normalize();
+      let wForward = uForward.clone().transformDirection(cMatrix).normalize();
+
+      // Horizon safety clamp: Never allow telescope optical axis to point underground
+      if (wForward.y < 0.05) {
+        wForward.y = 0.05;
+        wForward.normalize();
+        const safeCoords = this.celestialSphere.vectorToRaDec(wForward);
+        state.setTelescopePointing(safeCoords.ra, safeCoords.dec);
+      }
+
       const wRight = uRight.clone().transformDirection(cMatrix).normalize();
       const wUp = uUp.clone().transformDirection(cMatrix).normalize();
 

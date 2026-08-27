@@ -121,6 +121,8 @@ export interface GameState {
   // ---- Quest & Codex ----
   customTrackedDsoId: string | null;
   setCustomTrackedDso: (id: string | null) => void;
+  planets: any[];
+  setPlanets: (planets: any[]) => void;
   completedQuestIds: string[];
   discoveredTargets: string[];
   resetSaveData: () => void;
@@ -432,6 +434,8 @@ export const gameStore = createStore<GameState>()((set, get) => ({
   toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
   customTrackedDsoId: null,
   setCustomTrackedDso: (id) => set({ customTrackedDsoId: id }),
+  planets: [],
+  setPlanets: (planets) => set({ planets }),
 
   resetSaveData: () => {
     try {

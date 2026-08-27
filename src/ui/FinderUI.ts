@@ -1,5 +1,6 @@
 import { gameStore } from '../game/GameStore';
 import { DEEP_SKY_OBJECTS } from '../data/deepSkyObjects';
+import { BRIGHT_STARS } from '../data/brightStars';
 import { SOLAR_SYSTEM_TARGETS } from './CodexUI';
 import { GameMode } from '../types';
 import { calculateTargetVisibility } from '../astronomy/AstroTimeCalc';
@@ -8,7 +9,7 @@ export interface FinderTargetItem {
     id: string;
     name: string;
     commonName: string;
-    type: 'planet' | 'nebula' | 'galaxy' | 'cluster' | 'planetary_nebula';
+    type: 'planet' | 'star' | 'nebula' | 'galaxy' | 'cluster' | 'planetary_nebula';
     typeName: string;
     ra: number;
     dec: number;
@@ -89,23 +90,20 @@ export class FinderUI {
 
         const results: FinderTargetItem[] = [];
 
-        // 1. Planets
-        for (const p of SOLAR_SYSTEM_TARGETS) {
-            // Estimate rough RA/Dec for planets based on store if available
-            const pState = (state as any).planets?.find((pl: any) => pl.name.toLowerCase().includes(p.name.toLowerCase()));
-            const pRa = pState?.ra ?? 0;
-            const pDec = pState?.dec ?? 0;
-            const dist = this.calcAngularDistance(curRa, curDec, pRa, pDec);
-            const vis = calculateTargetVisibility({ ra: pRa, dec: pDec } as any, lat, lon, time);
+        // 1. Real-time Solar System Planets
+        const livePlanets = state.planets || [];
+        for (const p of livePlanets) {
+            const dist = this.calcAngularDistance(curRa, curDec, p.ra, p.dec);
+            const vis = calculateTargetVisibility({ ra: p.ra, dec: p.dec } as any, lat, lon, time);
 
             results.push({
                 id: p.id,
-                name: p.name,
-                commonName: p.commonName,
+                name: p.nameEn || p.id,
+                commonName: p.name,
                 type: 'planet',
-                typeName: p.type,
-                ra: pRa,
-                dec: pDec,
+                typeName: '行星',
+                ra: p.ra,
+                dec: p.dec,
                 magnitude: p.magnitude,
                 angularDist: dist,
                 currentAlt: vis.currentAltitude,
@@ -113,7 +111,26 @@ export class FinderUI {
             });
         }
 
-        // 2. DSOs
+        // Fallback planets if live array not populated yet
+        if (livePlanets.length === 0) {
+            for (const p of SOLAR_SYSTEM_TARGETS) {
+                results.push({
+                    id: p.id,
+                    name: p.name,
+                    commonName: p.commonName,
+                    type: 'planet',
+                    typeName: p.type,
+                    ra: 0,
+                    dec: 0,
+                    magnitude: p.magnitude,
+                    angularDist: 0,
+                    currentAlt: 30,
+                    isVisibleSky: true
+                });
+            }
+        }
+
+        // 2. Deep Sky Objects (DSOs)
         const typeNames: Record<string, string> = {
             galaxy: '星系',
             nebula: '發射星雲',
@@ -134,6 +151,31 @@ export class FinderUI {
                 ra: dso.ra,
                 dec: dso.dec,
                 magnitude: dso.magnitude,
+                angularDist: dist,
+                currentAlt: vis.currentAltitude,
+                isVisibleSky: vis.isCurrentlyVisible
+            });
+        }
+
+        // 3. Bright Stars & Constellation Nav Stars
+        for (const star of BRIGHT_STARS) {
+            const dist = this.calcAngularDistance(curRa, curDec, star.ra, star.dec);
+            const vis = calculateTargetVisibility({ ra: star.ra, dec: star.dec } as any, lat, lon, time);
+
+            const parts = star.name.split('·').map(s => s.trim());
+            const commonName = parts.length > 1 ? parts[1] : parts[0];
+            const bayerName = parts[0];
+            const id = star.hip ? `HIP ${star.hip}` : star.name;
+
+            results.push({
+                id,
+                name: bayerName,
+                commonName,
+                type: 'star',
+                typeName: '恆星',
+                ra: star.ra,
+                dec: star.dec,
+                magnitude: star.mag,
                 angularDist: dist,
                 currentAlt: vis.currentAltitude,
                 isVisibleSky: vis.isCurrentlyVisible
@@ -203,6 +245,7 @@ export class FinderUI {
                 <div class="finder-category-tabs">
                     <button class="finder-tab ${this.currentCategory === 'all' ? 'active' : ''}" data-cat="all">全部</button>
                     <button class="finder-tab ${this.currentCategory === 'in_fov' ? 'active' : ''}" data-cat="in_fov">視野內</button>
+                    <button class="finder-tab ${this.currentCategory === 'star' ? 'active' : ''}" data-cat="star">恆星</button>
                     <button class="finder-tab ${this.currentCategory === 'planet' ? 'active' : ''}" data-cat="planet">行星</button>
                     <button class="finder-tab ${this.currentCategory === 'nebula' ? 'active' : ''}" data-cat="nebula">星雲</button>
                     <button class="finder-tab ${this.currentCategory === 'galaxy' ? 'active' : ''}" data-cat="galaxy">星系</button>
@@ -240,8 +283,8 @@ export class FinderUI {
                                     <button class="f-btn track-btn ${isTracking ? 'active' : ''}" data-id="${t.id}" data-name="${t.name}">
                                         ${isTracking ? '取消' : '鎖定'}
                                     </button>
-                                    <button class="f-btn goto-btn ${hasGoto ? 'ready' : 'disabled'}" data-id="${t.id}" data-ra="${t.ra}" data-dec="${t.dec}" data-name="${t.commonName || t.name}">
-                                        ${hasGoto ? 'GoTo' : '未配備'}
+                                    <button class="f-btn goto-btn ${hasGoto ? 'ready' : 'manual'}" data-id="${t.id}" data-ra="${t.ra}" data-dec="${t.dec}" data-name="${t.commonName || t.name}">
+                                        ${hasGoto ? 'GoTo' : '導引'}
                                     </button>
                                 </div>
                             </div>
@@ -361,8 +404,8 @@ export class FinderUI {
                                 <button class="f-btn track-btn ${isTracking ? 'active' : ''}" data-id="${t.id}" data-name="${t.name}">
                                     ${isTracking ? '取消' : '鎖定'}
                                 </button>
-                                <button class="f-btn goto-btn ${hasGoto ? 'ready' : 'disabled'}" data-id="${t.id}" data-ra="${t.ra}" data-dec="${t.dec}" data-name="${t.commonName || t.name}">
-                                    ${hasGoto ? 'GoTo' : '未配備'}
+                                <button class="f-btn goto-btn ${hasGoto ? 'ready' : 'manual'}" data-id="${t.id}" data-ra="${t.ra}" data-dec="${t.dec}" data-name="${t.commonName || t.name}">
+                                    ${hasGoto ? 'GoTo' : '導引'}
                                 </button>
                             </div>
                         </div>
@@ -387,12 +430,12 @@ export class FinderUI {
                 if (current === id || current === name) {
                     state.setCustomTrackedDso(null);
                     document.dispatchEvent(new CustomEvent('show-notification', {
-                        detail: { message: '已取消', type: 'info' }
+                        detail: { message: '已取消鎖定', type: 'info' }
                     }));
                 } else {
                     state.setCustomTrackedDso(id);
                     document.dispatchEvent(new CustomEvent('show-notification', {
-                        detail: { message: `已鎖定 ${id}`, type: 'success' }
+                        detail: { message: `已鎖定 ${id}：請依照目鏡上方的導引箭頭轉動望遠鏡`, type: 'success' }
                     }));
                     this.hide();
                 }
@@ -405,16 +448,19 @@ export class FinderUI {
             btn.addEventListener('click', (e: any) => {
                 e.stopPropagation();
                 const hasGoto = (gameStore.getState().accessories || []).some((a: any) => a.id === 'mount_goto' && a.owned);
-                if (!hasGoto) {
-                    document.dispatchEvent(new CustomEvent('show-notification', {
-                        detail: { message: '需先在工作室購買 GoTo 系統', type: 'warning' }
-                    }));
-                    return;
-                }
-
+                const id = btn.getAttribute('data-id') || '';
+                const targetName = btn.getAttribute('data-name') || id;
                 const ra = parseFloat(btn.getAttribute('data-ra') || '0');
                 const dec = parseFloat(btn.getAttribute('data-dec') || '0');
-                const targetName = btn.getAttribute('data-name') || '';
+
+                if (!hasGoto) {
+                    gameStore.getState().setCustomTrackedDso(id);
+                    document.dispatchEvent(new CustomEvent('show-notification', {
+                        detail: { message: `已鎖定 ${targetName}：請依照目鏡上方的導引箭頭手動轉動望遠鏡`, type: 'info' }
+                    }));
+                    this.hide();
+                    return;
+                }
 
                 document.dispatchEvent(new CustomEvent('goto-target', {
                     detail: { ra, dec, targetName }
