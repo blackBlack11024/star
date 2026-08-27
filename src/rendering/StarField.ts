@@ -117,13 +117,21 @@ export class StarField {
                 float twinkle = 0.85 + 0.15 * sin(uTime * aTwinkleSpeed + position.x * 0.1);
                 vTwinkle = twinkle;
                 
-                // Magnitude-based size scaling (apparent magnitude scale)
-                // Mag -1 (Sirius) -> size ~ 8.0px, Mag 2 -> ~5.2px, Mag 4+ -> ~2.5px
-                float magFactor = clamp((7.5 - aMagnitude) / 6.5, 0.25, 1.6);
+                // Magnitude-based exponential visual scaling (Pogson's law perception)
+                // Sirius (-1.46) -> visualFactor ~ 4.8x (blazing radiant beacon)
+                // Mag 0 (Vega/Rigel) -> ~2.8x, Mag 2 (Polaris) -> ~1.4x, Mag 4+ -> ~0.7x
+                float magDiff = clamp(3.2 - aMagnitude, -2.0, 5.5);
+                float visualFactor = pow(2.512, magDiff * 0.26);
+                
+                // Extra optical glare & bloom for 0th & negative magnitude stars (Sirius -1.46, Canopus -0.72)
+                if (aMagnitude < 1.0) {
+                    visualFactor += (1.0 - aMagnitude) * 0.75;
+                }
+                
                 float fovZoom = pow(clamp(60.0 / max(uCurrentFov, 0.4), 1.0, 50.0), 0.35);
                 
-                float ptSize = uBaseSize * magFactor * fovZoom * uPixelRatio * twinkle * magExtinction;
-                gl_PointSize = clamp(ptSize, 1.6, 22.0);
+                float ptSize = uBaseSize * visualFactor * fovZoom * uPixelRatio * twinkle * magExtinction;
+                gl_PointSize = clamp(ptSize, 1.8, 36.0);
             }
         `;
 
@@ -148,18 +156,36 @@ export class StarField {
                 float dist = length(coord);
                 if (dist > 1.0) discard;
                 
-                // Gaussian Airy disk profile with crisp core and soft halo
-                float core = exp(-dist * dist * 3.2);
-                float halo = max(0.0, 1.0 - dist) * 0.3;
-                float alpha = (core + halo) * horizonFade * magAlpha;
+                // Gaussian Airy disk profile with crisp core and soft radiant halo
+                float distSq = dist * dist;
+                float core = exp(-distSq * 4.2);
+                float halo = max(0.0, 1.0 - dist);
+                
+                // Luminosity and corona glow scaled by star magnitude
+                // Super-bright stars (Sirius, Canopus, Vega) have intense radiant halos
+                float starGlow = clamp((3.5 - vMagnitude) * 0.45, 0.2, 3.2);
+                if (vMagnitude < 0.5) {
+                    starGlow += (0.5 - vMagnitude) * 1.8;
+                }
+                
+                float alpha = (core * 1.2 + halo * 0.45 * starGlow) * horizonFade * magAlpha;
+                alpha = min(1.0, alpha);
                 
                 // Daylight extinction based on sun elevation in degrees
                 float sunElevDeg = uSunElevation * 57.2957795;
                 float daylight = smoothstep(-12.0, 0.0, sunElevDeg);
                 alpha *= max(0.0, 1.0 - daylight * 0.98);
                 
-                // Bright stars have brilliant luminous core
-                vec3 finalColor = mix(vColor, vec3(1.0), (1.0 - dist) * clamp((3.5 - vMagnitude) * 0.25, 0.0, 0.7));
+                // Brilliant saturated white-hot core for bright stars (especially Sirius & 1st mag stars)
+                float coreSaturation = clamp((3.0 - vMagnitude) * 0.35, 0.0, 1.0) * exp(-distSq * 6.0);
+                vec3 finalColor = mix(vColor, vec3(1.0), coreSaturation);
+                
+                // Delicate optical diamond diffraction cross-sparkle for negative-magnitude stars (Sirius -1.46, Canopus -0.72)
+                if (vMagnitude < 0.0) {
+                    float crossSpike = max(exp(-abs(coord.x) * 16.0) * exp(-abs(coord.y) * 2.0),
+                                          exp(-abs(coord.y) * 16.0) * exp(-abs(coord.x) * 2.0));
+                    alpha = max(alpha, crossSpike * 0.7 * (0.0 - vMagnitude) * horizonFade * magAlpha);
+                }
                 
                 gl_FragColor = vec4(finalColor * vTwinkle, alpha);
             }
