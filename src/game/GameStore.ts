@@ -182,7 +182,7 @@ export function autoSaveState(state: GameState) {
         telescopeLevel: state.telescopeLevel,
         unlockedTelescopeLevels: state.unlockedTelescopeLevels,
         accessories: state.accessories,
-        photos: (state.photos || []).slice(0, 40), // save latest 40 photos to prevent localStorage quota issues
+        photos: (state.photos || []).slice(-30), // strictly save the 30 most recent photos
         unlockedLocations: state.unlockedLocations,
         completedQuestIds: state.completedQuestIds || [],
         discoveredTargets: state.discoveredTargets || [],
@@ -196,11 +196,29 @@ export function autoSaveState(state: GameState) {
         telescopeDec: state.telescopeDec,
         telescopeFov: state.currentFov,
       };
-      localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
+
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
+      } catch (quotaErr) {
+        // If localStorage 5MB limit is reached, progressively keep fewer recent photos to guarantee save integrity
+        console.warn('[Storage] Quota exceeded, trimming photos to preserve latest save...');
+        try {
+          dataToSave.photos = (dataToSave.photos || []).slice(-15);
+          localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
+        } catch (e2) {
+          try {
+            dataToSave.photos = (dataToSave.photos || []).slice(-6);
+            localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
+          } catch (e3) {
+            dataToSave.photos = (dataToSave.photos || []).slice(-2);
+            localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
+          }
+        }
+      }
     } catch (e) {
       console.warn('[Storage] Auto-save error:', e);
     }
-  }, 400);
+  }, 300);
 }
 
 const savedData = loadSavedData();

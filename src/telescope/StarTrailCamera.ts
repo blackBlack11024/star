@@ -329,13 +329,28 @@ export class StarTrailCamera {
     const buffer = new Uint8Array(this.width * this.height * 4);
     this.renderer.readRenderTargetPixels(finalTarget, 0, 0, this.width, this.height, buffer);
 
-    const canvas = document.createElement('canvas');
-    canvas.width = this.width;
-    canvas.height = this.height;
-    const ctx = canvas.getContext('2d');
+    // Optimize export canvas resolution (max 1280px) to produce crisp ~120KB images that easily fit into localStorage
+    const aspect = this.width / this.height;
+    let exportW = this.width;
+    let exportH = this.height;
+    const maxDim = 1280;
+    if (exportW > maxDim || exportH > maxDim) {
+      if (exportW >= exportH) {
+        exportW = maxDim;
+        exportH = Math.round(maxDim / aspect);
+      } else {
+        exportH = maxDim;
+        exportW = Math.round(maxDim * aspect);
+      }
+    }
 
-    if (ctx && this.sampleCount > 3) {
-      const imgData = ctx.createImageData(this.width, this.height);
+    const rawCanvas = document.createElement('canvas');
+    rawCanvas.width = this.width;
+    rawCanvas.height = this.height;
+    const rawCtx = rawCanvas.getContext('2d');
+
+    if (rawCtx && this.sampleCount >= 1) {
+      const imgData = rawCtx.createImageData(this.width, this.height);
       for (let y = 0; y < this.height; y++) {
         for (let x = 0; x < this.width; x++) {
           const srcIdx = (y * this.width + x) * 4;
@@ -346,9 +361,20 @@ export class StarTrailCamera {
           imgData.data[dstIdx + 3] = 255;
         }
       }
-      ctx.putImageData(imgData, 0, 0);
+      rawCtx.putImageData(imgData, 0, 0);
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      let dataUrl: string;
+      if (exportW === this.width && exportH === this.height) {
+        dataUrl = rawCanvas.toDataURL('image/jpeg', 0.88);
+      } else {
+        const scaledCanvas = document.createElement('canvas');
+        scaledCanvas.width = exportW;
+        scaledCanvas.height = exportH;
+        const scaledCtx = scaledCanvas.getContext('2d');
+        scaledCtx?.drawImage(rawCanvas, 0, 0, exportW, exportH);
+        dataUrl = scaledCanvas.toDataURL('image/jpeg', 0.88);
+      }
+
       const locName = state.currentLocation?.name || '合歡山';
       const elapsed = (performance.now() - this.startTime) / 1000;
       const weather = state.weather;
@@ -411,6 +437,13 @@ export class StarTrailCamera {
       };
 
       state.addPhoto(photo);
+
+      // Notify other systems (Codex, Quests, Studio)
+      document.dispatchEvent(
+        new CustomEvent('photo-captured', {
+          detail: { photo, targetInfo: { name: photo.targetName, type: 'special_event' } }
+        })
+      );
 
       document.dispatchEvent(
         new CustomEvent('show-notification', {

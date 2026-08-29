@@ -62,6 +62,12 @@ export class StudioUI {
         overlay.appendChild(this.container);
 
         this.unsubscribe = gameStore.subscribe((state) => this.update(state));
+
+        document.addEventListener('photo-captured', () => {
+            if (this.container.style.display === 'flex' && this.currentTabIndex === 0) {
+                this.renderGallery(gameStore.getState());
+            }
+        });
     }
 
     private switchTab(index: number) {
@@ -1015,13 +1021,20 @@ export class StudioUI {
         return outCanvas.toDataURL('image/jpeg', 0.94);
     }
 
+    private lastPhotosCount = 0;
+
     public update(state: any) {
         this.headerMoney.textContent = `$${state.money}`;
+        const photosCount = (state.photos || []).length;
+
         if (state.gameMode === GameMode.Studio && this.container.style.display === 'none') {
             this.show();
         } else if (state.gameMode !== GameMode.Studio && this.container.style.display === 'flex') {
             this.hide();
+        } else if (state.gameMode === GameMode.Studio && this.container.style.display === 'flex' && this.currentTabIndex === 0 && photosCount !== this.lastPhotosCount) {
+            this.renderGallery(state);
         }
+        this.lastPhotosCount = photosCount;
     }
 
     public show() {
