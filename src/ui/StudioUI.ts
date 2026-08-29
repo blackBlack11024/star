@@ -84,6 +84,7 @@ export class StudioUI {
     }
 
     private renderGallery(state: any) {
+        this.contentArea.innerHTML = '';
         // Filter out calibration frames: Photo gallery is strictly for celestial sky targets
         const celestialPhotos = [...(state.photos || [])]
             .filter((p: any) => !p.frameType || p.frameType === 'light')
@@ -253,6 +254,7 @@ export class StudioUI {
     }
 
     private renderTelescopes(state: any) {
+        this.contentArea.innerHTML = '';
         const list = document.createElement('div');
         list.className = 'shop-list';
 
@@ -324,6 +326,7 @@ export class StudioUI {
     }
 
     private renderAccessories(state: any) {
+        this.contentArea.innerHTML = '';
         const list = document.createElement('div');
         list.className = 'shop-list';
 
@@ -413,6 +416,7 @@ export class StudioUI {
     // 疊圖處理工坊 (Astrophotography Stacking Lab)
     // =========================================================================
     private renderStackingLab(state: any) {
+        this.contentArea.innerHTML = '';
         const photos: Photo[] = state.photos || [];
         
         // Filter into Lights and Calibration Frames
