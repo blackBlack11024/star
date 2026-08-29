@@ -189,7 +189,7 @@ export class Game {
 
     // ---- World ----
     progress(0.55, '正在建構觀測場景...');
-    this.terrain = new Terrain(this.scene);
+    this.terrain = new Terrain(this.scene, gameStore.getState().currentLocation);
     this.telescopeModel = new TelescopeModel(this.scene);
     this.studio = new Studio(this.scene);
 
@@ -538,6 +538,9 @@ export class Game {
       }
       if (state.sfxVolume !== prevState.sfxVolume) {
         this.audioManager.setCategory('sfx', state.sfxVolume);
+      }
+      if (state.currentLocation?.id !== prevState.currentLocation?.id) {
+        this.terrain.updateLocation(state.currentLocation);
       }
     });
 

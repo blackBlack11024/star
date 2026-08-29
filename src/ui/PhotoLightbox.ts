@@ -1,3 +1,5 @@
+import { PhotoExporter } from '../game/PhotoExporter';
+
 export class PhotoLightbox {
     private overlay: HTMLElement;
     private currentPhotos: any[] = [];
@@ -84,8 +86,20 @@ export class PhotoLightbox {
             <div class="lb-row"><span class="lb-label">拍攝天氣</span><span>${weatherLabels[photo.weatherCondition] || photo.weatherCondition}</span></div>
             <div class="lb-row"><span class="lb-label">拍攝時間</span><span>${timestamp.toLocaleString('zh-TW')}</span></div>
             <div class="lb-row"><span class="lb-label">市場售價</span><span>${photo.sold ? '已售出' : (photo.sellPrice === 0 ? '市場飽和 $0' : `$${photo.sellPrice}`)}</span></div>
-            <div class="lb-nav-hint">${this.currentIndex + 1} / ${this.currentPhotos.length} · ← → 切換照片 · ESC 關閉</div>
+            <div class="lb-export-actions" style="margin-top: 14px; display: flex; gap: 8px;">
+                <button id="lb-btn-raw" style="flex: 1; padding: 7px 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 6px; color: #38bdf8; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">下載原始照片</button>
+                <button id="lb-btn-plate" style="flex: 1.2; padding: 7px 10px; background: rgba(245, 158, 11, 0.18); border: 1px solid rgba(245, 158, 11, 0.5); border-radius: 6px; color: #fbbf24; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;">匯出天文展覽銘牌</button>
+            </div>
+            <div class="lb-nav-hint" style="margin-top: 10px;">${this.currentIndex + 1} / ${this.currentPhotos.length} · ← → 切換照片 · ESC 關閉</div>
         `;
+
+        this.overlay.querySelector('#lb-btn-raw')?.addEventListener('click', () => {
+            PhotoExporter.downloadRawPhoto(photo);
+        });
+
+        this.overlay.querySelector('#lb-btn-plate')?.addEventListener('click', () => {
+            PhotoExporter.downloadExhibitionPlate(photo);
+        });
     }
 
     public dispose() {

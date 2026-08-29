@@ -1,6 +1,7 @@
 import { gameStore } from '../game/GameStore';
 import { GameMode, Photo, PhotoQuality, TargetType } from '../types';
 import { TELESCOPE_CONFIGS } from '../data/telescopes';
+import { PhotoExporter } from '../game/PhotoExporter';
 
 export class StudioUI {
     private container: HTMLElement;
@@ -215,6 +216,23 @@ export class StudioUI {
                 this.renderGallery(gameStore.getState());
             };
             footer.appendChild(delBtn);
+
+            const exportBtn = document.createElement('button');
+            exportBtn.className = 'photo-export-btn';
+            exportBtn.textContent = '匯出';
+            exportBtn.style.background = 'rgba(56, 189, 248, 0.15)';
+            exportBtn.style.border = '1px solid rgba(56, 189, 248, 0.35)';
+            exportBtn.style.color = '#38bdf8';
+            exportBtn.style.borderRadius = '4px';
+            exportBtn.style.padding = '4px 8px';
+            exportBtn.style.fontSize = '12px';
+            exportBtn.style.cursor = 'pointer';
+            exportBtn.title = '下載此照片之專業天文展覽銘牌';
+            exportBtn.onclick = (e) => {
+                e.stopPropagation();
+                PhotoExporter.downloadExhibitionPlate(photo);
+            };
+            footer.appendChild(exportBtn);
 
             info.appendChild(title);
             info.appendChild(meta);
